@@ -1,0 +1,8 @@
+{
+  "name": "Party Accessoires Verhuur",
+  "description": "A premium, multilingual party accessory rental store with modern 3D-inspired design, glowing neon effects, and AI-powered product inquiries.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}

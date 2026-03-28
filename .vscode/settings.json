@@ -1,0 +1,61 @@
+{
+  "css.lint.validProperties": ["composes"],
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  "eslint.enable": true,
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "html.validate.styles": false,
+  "css.validate": false,
+  "webhint.enable": false,
+  "vscode-edge-devtools.webhint": false,
+
+  "deno.enable": true,
+  "deno.enablePaths": ["supabase/functions"],
+  "deno.lint": true,
+  "deno.unstable": false,
+
+  "typescript.validate.enable": true,
+  "files.exclude": {
+    "**/node_modules": true
+  },
+
+  "markdownlint.config": {
+    "MD022": false,
+    "MD026": false,
+    "MD031": false,
+    "MD032": false,
+    "MD034": false,
+    "MD040": false,
+    "MD009": false,
+    "MD024": false,
+    "MD035": false,
+    "MD036": false,
+    "MD004": false,
+    "MD029": false
+  },
+  "sqltools.connections": [],
+  "chat.mcp.serverSampling": {
+    "party-accessoires-verhuur (11)/.vscode/mcp.json: party-accessoires-supabase": {
+      "allowedModels": [
+        "copilot/claude-haiku-4.5",
+        "copilot/gpt-5-mini",
+        "copilot/claude-sonnet-4.5"
+      ]
+    }
+  }
+}
