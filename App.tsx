@@ -9,6 +9,7 @@ import Admin from "./pages/Admin";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentCancel from "./pages/PaymentCancel";
 import CartDrawer from "./components/CartDrawer";
+import ScrollProgress from "./components/ScrollProgress";
 import InquiryModal from "./components/InquiryModal";
 import SizeSelectionModal from "./components/SizeSelectionModal";
 import LetterSelectionModal from "./components/LetterSelectionModal";
@@ -95,6 +96,7 @@ const App: React.FC = () => {
   return (
     <Router>
       <div className="min-h-screen selection:bg-pink-500 selection:text-white">
+        <ScrollProgress />
         <Navbar
           lang={lang}
           onLangChange={setLang}
