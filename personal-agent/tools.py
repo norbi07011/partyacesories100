@@ -12,6 +12,7 @@ from notifier import notify
 # Definicje narzędzi (JSON Schema) widziane przez model
 # ---------------------------------------------------------------------------
 _S = {"type": "string"}
+PROJECT_STATUSES = ["zapytanie", "potwierdzony", "produkcja", "postprodukcja", "oddany", "oplacony", "anulowany"]
 
 TOOLS: list[dict] = [
     # --- zadania ---
@@ -107,6 +108,35 @@ TOOLS: list[dict] = [
             "status": {"type": "string", "enum": ["nowy", "rozwijany", "zrealizowany", "odlozony"]},
         }, "required": ["id"]},
     },
+    # --- projekty / klienci ---
+    {
+        "name": "add_project",
+        "description": "Tworzy projekt/zlecenie (sesja, teledysk, reklama, ślub...) z klientem, terminem i stawką.",
+        "input_schema": {"type": "object", "properties": {
+            "name": _S, "client": _S, "contact": {"type": "string", "description": "telefon / e-mail klienta"},
+            "kind": {"type": "string", "enum": ["sesja", "teledysk", "reklama", "slub", "event", "inne"]},
+            "status": {"type": "string", "enum": PROJECT_STATUSES},
+            "deadline": {"type": "string", "description": "YYYY-MM-DD termin oddania"},
+            "fee": {"type": "number", "description": "stawka w PLN"},
+            "folder": {"type": "string", "description": "folder z materiałami na dysku"},
+            "notes": _S,
+        }, "required": ["name"]},
+    },
+    {
+        "name": "list_projects",
+        "description": "Lista projektów/zleceń (domyślnie aktywne) z liczbą otwartych zadań.",
+        "input_schema": {"type": "object", "properties": {
+            "status": {"type": "string", "description": "active | all | konkretny status"}, "query": _S}},
+    },
+    {
+        "name": "update_project",
+        "description": "Zmienia projekt: status, termin, stawka, opłacenie (paid=true), notatki, folder.",
+        "input_schema": {"type": "object", "properties": {
+            "id": {"type": "integer"}, "name": _S, "client": _S, "contact": _S, "kind": _S,
+            "status": {"type": "string", "enum": PROJECT_STATUSES}, "deadline": _S, "fee": {"type": "number"},
+            "paid": {"type": "boolean"}, "folder": _S, "notes": _S,
+        }, "required": ["id"]},
+    },
     # --- pamięć ---
     {
         "name": "remember",
@@ -122,13 +152,16 @@ TOOLS: list[dict] = [
     # --- pliki ---
     {
         "name": "search_files",
-        "description": "Szuka plików na komputerze użytkownika (w zaindeksowanych folderach) po słowach z nazwy pliku "
-                       "lub ścieżki. kind: zdjecie, raw, wideo, audio, projekt, dokument, inne. "
+        "description": "Szuka plików na komputerze użytkownika (w zaindeksowanych folderach) po słowach z nazwy pliku, "
+                       "ścieżki, aparatu lub obiektywu (EXIF). kind: zdjecie, raw, wideo, audio, projekt, dokument, inne. "
+                       "Daty filtrują po dacie zrobienia zdjęcia (EXIF) lub modyfikacji. "
                        "folders_only=true zwraca foldery (np. 'gdzie są zdjęcia z sesji X').",
         "input_schema": {"type": "object", "properties": {
             "query": _S,
             "kind": {"type": "string", "enum": ["zdjecie", "raw", "wideo", "audio", "projekt", "dokument", "inne"]},
             "ext": {"type": "string", "description": "rozszerzenie np. cr3, mov"},
+            "camera": {"type": "string", "description": "fragment nazwy aparatu, np. A7 IV"},
+            "lens": {"type": "string", "description": "fragment nazwy obiektywu, np. 85mm"},
             "modified_after": {"type": "string", "description": "YYYY-MM-DD"},
             "modified_before": {"type": "string", "description": "YYYY-MM-DD"},
             "folders_only": {"type": "boolean"},
@@ -268,6 +301,31 @@ async def _execute(name: str, a: dict):
             db.update("ideas", a["id"], _clean(a, {"title", "content", "category", "tags", "status"}))
             return {"ok": True}
 
+        case "add_project":
+            data = _clean(a, {"name", "client", "contact", "kind", "status", "deadline", "fee", "folder", "notes"})
+            pid = db.insert("projects", {"status": "zapytanie", **data, "created": now})
+            return {"ok": True, "id": pid}
+        case "list_projects":
+            status = a.get("status", "active")
+            where, p = [], []
+            if status == "active":
+                where.append("status NOT IN ('oplacony','anulowany')")
+            elif status != "all":
+                where.append("status = ?"); p.append(status)
+            for word in (a.get("query") or "").split():
+                where.append("(name LIKE ? OR client LIKE ? OR notes LIKE ?)"); p += [f"%{word}%"] * 3
+            clause = ("WHERE " + " AND ".join(where)) if where else ""
+            return db.query(
+                f"SELECT p.*, (SELECT COUNT(*) FROM tasks t WHERE t.status != 'done' AND "
+                f"(t.project_id = p.id OR t.project = p.name)) AS open_tasks FROM projects p {clause} "
+                f"ORDER BY deadline IS NULL, deadline", p)
+        case "update_project":
+            data = _clean(a, {"name", "client", "contact", "kind", "status", "deadline", "fee", "folder", "notes", "paid"})
+            if "paid" in data:
+                data["paid"] = 1 if data["paid"] else 0
+            db.update("projects", a["id"], data)
+            return {"ok": True}
+
         case "remember":
             mid = db.insert("memory", {"fact": a["fact"], "created": now})
             return {"ok": True, "id": mid}
@@ -279,6 +337,7 @@ async def _execute(name: str, a: dict):
             rows = file_indexer.search(
                 query=a.get("query", ""), kind=a.get("kind", ""), ext=a.get("ext", ""),
                 modified_after=a.get("modified_after", ""), modified_before=a.get("modified_before", ""),
+                camera=a.get("camera", ""), lens=a.get("lens", ""),
                 folders_only=bool(a.get("folders_only")), limit=a.get("limit", 40),
             )
             if not rows and not db.one("SELECT 1 FROM files LIMIT 1"):

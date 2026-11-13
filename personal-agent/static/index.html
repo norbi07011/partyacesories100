@@ -7,167 +7,22 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<style>
-:root{
-  --bg:#0c0c0d; --panel:#141416; --panel2:#1a1a1d; --line:#26262b; --text:#ecebe8; --muted:#8d8b86;
-  --accent:#d9a55b; --accent-soft:rgba(217,165,91,.12); --ok:#7fb48a; --warn:#e07a5f; --info:#7aa5d6;
-  --radius:14px; --serif:'Fraunces',Georgia,serif; --sans:'Inter',system-ui,-apple-system,Segoe UI,sans-serif;
-}
-:root[data-theme="light"]{
-  --bg:#f6f4ef; --panel:#ffffff; --panel2:#f1eee8; --line:#e3dfd6; --text:#1d1c1a; --muted:#77736b;
-  --accent:#a8702a; --accent-soft:rgba(168,112,42,.10);
-}
-*{box-sizing:border-box}
-html,body{margin:0;height:100%}
-body{background:var(--bg);color:var(--text);font:14px/1.5 var(--sans);-webkit-font-smoothing:antialiased}
-button,input,select,textarea{font:inherit;color:inherit}
-a{color:var(--accent)}
-.app{display:grid;grid-template-columns:232px 1fr;height:100vh}
-/* sidebar */
-aside{border-right:1px solid var(--line);padding:22px 14px;display:flex;flex-direction:column;gap:4px;background:var(--panel)}
-.brand{font-family:var(--serif);font-size:22px;padding:0 10px 18px;letter-spacing:.2px}
-.brand span{color:var(--accent)}
-.nav{display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:10px;color:var(--muted);cursor:pointer;border:0;background:none;text-align:left;width:100%}
-.nav svg{width:18px;height:18px;flex:none}
-.nav:hover{color:var(--text);background:var(--panel2)}
-.nav.active{color:var(--text);background:var(--accent-soft)}
-.nav.active svg{color:var(--accent)}
-.nav .badge{margin-left:auto;background:var(--accent);color:#111;border-radius:99px;font-size:11px;padding:0 7px;font-weight:600}
-.side-foot{margin-top:auto;padding:10px;color:var(--muted);font-size:12px;display:flex;flex-direction:column;gap:6px}
-.dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;background:var(--muted)}
-.dot.on{background:var(--ok)} .dot.off{background:var(--warn)}
-/* main */
-main{overflow:auto;padding:30px 36px 60px}
-.view{display:none;max-width:1180px;margin:0 auto}
-.view.active{display:block;animation:fade .25s ease}
-@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1}}
-h1{font-family:var(--serif);font-weight:400;font-size:34px;margin:0 0 4px;letter-spacing:-.3px}
-h2{font-family:var(--serif);font-weight:400;font-size:19px;margin:0 0 14px}
-.sub{color:var(--muted);margin:0 0 26px}
-.grid{display:grid;gap:18px}
-.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
-.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:20px}
-.card-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
-.card-h h2{margin:0}
-.link{color:var(--muted);cursor:pointer;font-size:12.5px;border:0;background:none}
-.link:hover{color:var(--accent)}
-.empty{color:var(--muted);font-size:13px;padding:6px 0}
-.row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
-.row:last-child{border-bottom:0}
-.row .t{flex:1;min-width:0}
-.row .t b{font-weight:500}
-.row .m{color:var(--muted);font-size:12.5px}
-.time{font-variant-numeric:tabular-nums;color:var(--accent);font-weight:500;min-width:44px}
-.pill{font-size:11px;padding:2px 8px;border-radius:99px;background:var(--panel2);color:var(--muted);white-space:nowrap}
-.pill.high{background:rgba(224,122,95,.15);color:var(--warn)}
-.pill.accent{background:var(--accent-soft);color:var(--accent)}
-.ellipsis{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-/* forms */
-.form{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
-input,select,textarea{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:9px 12px;outline:none;min-width:0}
-input:focus,select:focus,textarea:focus{border-color:var(--accent)}
-textarea{resize:vertical}
-.btn{border:0;border-radius:10px;padding:9px 16px;background:var(--accent);color:#16130e;font-weight:600;cursor:pointer;white-space:nowrap}
-.btn:hover{filter:brightness(1.08)}
-.btn.ghost{background:var(--panel2);color:var(--text);border:1px solid var(--line);font-weight:500}
-.icon-btn{border:0;background:none;color:var(--muted);cursor:pointer;padding:4px;border-radius:6px;line-height:0}
-.icon-btn:hover{color:var(--warn);background:var(--panel2)}
-.icon-btn svg{width:15px;height:15px}
-/* hero ask */
-.ask{display:flex;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:8px 8px 8px 18px;margin-bottom:22px}
-.ask input{flex:1;background:none;border:0;padding:8px 0;font-size:15px}
-/* chat */
-.chat{display:flex;flex-direction:column;height:calc(100vh - 150px);background:var(--panel);border:1px solid var(--line);border-radius:var(--radius)}
-.msgs{flex:1;overflow:auto;padding:24px;display:flex;flex-direction:column;gap:14px}
-.msg{max-width:78%;padding:12px 16px;border-radius:14px;line-height:1.6;word-wrap:break-word}
-.msg.user{align-self:flex-end;background:var(--accent-soft);border:1px solid rgba(217,165,91,.25)}
-.msg.assistant{align-self:flex-start;background:var(--panel2);border:1px solid var(--line)}
-.msg p{margin:0 0 8px} .msg p:last-child{margin:0}
-.msg ul{margin:4px 0 8px;padding-left:20px}
-.msg code{background:var(--bg);padding:1px 5px;border-radius:5px;font-size:12.5px}
-.msg h4{font-family:var(--serif);font-weight:600;margin:8px 0 4px;font-size:15px}
-.typing span{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--muted);margin-right:4px;animation:blink 1.2s infinite}
-.typing span:nth-child(2){animation-delay:.2s}.typing span:nth-child(3){animation-delay:.4s}
-@keyframes blink{0%,80%,100%{opacity:.25}40%{opacity:1}}
-.composer{border-top:1px solid var(--line);padding:14px;display:flex;gap:10px;align-items:flex-end}
-.composer textarea{flex:1;min-height:46px;max-height:180px;resize:none}
-.chips{display:flex;flex-wrap:wrap;gap:8px;padding:0 24px 14px}
-.chip{border:1px solid var(--line);background:none;color:var(--muted);border-radius:99px;padding:6px 12px;cursor:pointer;font-size:12.5px}
-.chip:hover{color:var(--text);border-color:var(--accent)}
-/* calendar */
-.cal-head{display:flex;align-items:center;gap:10px;margin-bottom:14px}
-.cal-head h2{margin:0;min-width:190px;text-transform:capitalize}
-.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
-.cal .dow{color:var(--muted);font-size:11.5px;text-transform:uppercase;letter-spacing:.6px;padding:0 6px 4px}
-.day{min-height:96px;background:var(--panel2);border:1px solid transparent;border-radius:10px;padding:6px;cursor:pointer;overflow:hidden}
-.day:hover{border-color:var(--line)}
-.day.other{opacity:.35}
-.day.today{border-color:var(--accent)}
-.day .n{font-size:12px;color:var(--muted);margin-bottom:4px}
-.day.today .n{color:var(--accent);font-weight:600}
-.ev{font-size:11.5px;padding:2px 6px;border-radius:5px;background:var(--accent-soft);color:var(--text);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ev.teledysk{background:rgba(122,165,214,.16)} .ev.spotkanie{background:rgba(127,180,138,.16)} .ev.montaz{background:rgba(224,122,95,.14)}
-/* kanban */
-.kanban{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
-.col{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px;min-height:200px}
-.col h3{font-size:12px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin:0 0 10px;font-weight:600}
-.task{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px;display:flex;gap:10px;align-items:flex-start}
-.task .t{flex:1;min-width:0}
-.check{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--muted);flex:none;cursor:pointer;margin-top:2px;background:none;padding:0}
-.check:hover{border-color:var(--accent)}
-.col.done .check{background:var(--ok);border-color:var(--ok)}
-.col.done .task b{text-decoration:line-through;color:var(--muted)}
-/* ideas */
-.ideas{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
-.idea{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px;display:flex;flex-direction:column;gap:8px}
-.idea h3{font-family:var(--serif);font-weight:400;font-size:17px;margin:0}
-.idea p{margin:0;color:var(--muted);font-size:13px;white-space:pre-wrap;max-height:140px;overflow:auto}
-.idea .foot{display:flex;gap:6px;align-items:center;margin-top:auto;flex-wrap:wrap}
-/* stats */
-.stat{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
-.stat .v{font-family:var(--serif);font-size:26px}
-.stat .l{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.6px}
-.up{color:var(--ok)} .down{color:var(--warn)}
-table{width:100%;border-collapse:collapse}
-td,th{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line)}
-th{color:var(--muted);font-weight:500;font-size:12px;text-transform:uppercase;letter-spacing:.5px}
-td.num{font-variant-numeric:tabular-nums;text-align:right} th.num{text-align:right}
-.toast{position:fixed;bottom:22px;right:22px;background:var(--panel2);border:1px solid var(--accent);padding:12px 18px;border-radius:12px;opacity:0;transform:translateY(10px);transition:.25s;pointer-events:none;z-index:9}
-.toast.show{opacity:1;transform:none}
-.theme-toggle{border:1px solid var(--line);background:none;border-radius:8px;padding:5px 9px;cursor:pointer;color:var(--muted);font-size:12px}
-/* responsive */
-@media (max-width:900px){
-  .g2,.g3,.kanban{grid-template-columns:1fr}
-  .app{grid-template-columns:1fr;grid-template-rows:auto 1fr}
-  aside{flex-direction:row;overflow-x:auto;padding:10px 12px;border-right:0;border-bottom:1px solid var(--line);gap:2px}
-  .brand,.side-foot{display:none}
-  .nav{width:auto;white-space:nowrap;padding:8px 10px}
-  .nav .lbl{display:none}
-  .nav.active .lbl{display:inline}
-  main{padding:20px 16px 40px}
-  h1{font-size:27px}
-  .chat{height:calc(100vh - 170px)}
-  .msg{max-width:92%}
-  .day{min-height:58px;padding:4px}
-  .ev{font-size:0;height:5px;padding:0;margin-bottom:2px}
-  #cal-wrap{grid-template-columns:1fr !important}
-}
-</style>
+<link rel="stylesheet" href="/static/app.css">
 </head>
 <body>
 <div class="app">
   <aside>
     <div class="brand">Studio <span>Agent</span></div>
-    <button class="nav active" data-view="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span class="lbl">Pulpit</span></button>
-    <button class="nav" data-view="chat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg><span class="lbl">Czat z agentem</span></button>
-    <button class="nav" data-view="calendar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span class="lbl">Kalendarz</span></button>
-    <button class="nav" data-view="tasks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg><span class="lbl">Zadania</span></button>
-    <button class="nav" data-view="ideas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg><span class="lbl">Pomysły</span></button>
-    <button class="nav" data-view="files"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span class="lbl">Pliki</span></button>
-    <button class="nav" data-view="crypto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg><span class="lbl">Krypto</span></button>
-    <button class="nav" data-view="notifications"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10 21h4"/></svg><span class="lbl">Powiadomienia</span><span class="badge" id="unread" hidden></span></button>
-    <button class="nav" data-view="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span class="lbl">Agent i pamięć</span></button>
+    <button class="nav active" data-view="home"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span class="lbl">Pulpit</span></button>
+    <button class="nav" data-view="chat"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg><span class="lbl">Czat z agentem</span></button>
+    <button class="nav" data-view="calendar"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span class="lbl">Kalendarz</span></button>
+    <button class="nav" data-view="tasks"><svg viewBox="0 0 24 24"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg><span class="lbl">Zadania</span></button>
+    <button class="nav" data-view="projects"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg><span class="lbl">Projekty i klienci</span></button>
+    <button class="nav" data-view="ideas"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg><span class="lbl">Pomysły</span></button>
+    <button class="nav" data-view="files"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/></svg><span class="lbl">Pliki i zdjęcia</span></button>
+    <button class="nav" data-view="crypto"><svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg><span class="lbl">Krypto</span></button>
+    <button class="nav" data-view="notifications"><svg viewBox="0 0 24 24"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10 21h4"/></svg><span class="lbl">Powiadomienia</span><span class="badge" id="unread" hidden></span></button>
+    <button class="nav" data-view="settings"><svg viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg><span class="lbl">Ustawienia</span></button>
     <div class="side-foot">
       <div><span class="dot" id="dot-claude"></span>Claude</div>
       <div><span class="dot" id="dot-tg"></span>Telegram</div>
@@ -176,21 +31,32 @@ td.num{font-variant-numeric:tabular-nums;text-align:right} th.num{text-align:rig
   </aside>
 
   <main>
+    <div class="topbar">
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+        <input id="gsearch" placeholder="Szukaj wszędzie… (Ctrl+K)" autocomplete="off">
+        <div class="search-res" id="gsearch-res" hidden></div>
+      </div>
+    </div>
+
     <!-- PULPIT -->
     <section class="view active" id="view-home">
       <h1 id="greet">Dzień dobry</h1>
       <p class="sub" id="today-date"></p>
+      <div id="onboarding"></div>
       <form class="ask" id="ask-form">
         <input id="ask-input" placeholder="Powiedz agentowi… np. „w sobotę 14:00 plener z Martą, Kazimierz Dolny”" autocomplete="off">
         <button class="btn">Wyślij</button>
       </form>
+      <div class="stats" id="home-stats"></div>
       <div class="grid g3">
         <div class="card"><div class="card-h"><h2>Dziś i jutro</h2><button class="link" data-goto="calendar">Kalendarz →</button></div><div id="home-events"></div></div>
         <div class="card"><div class="card-h"><h2>Do zrobienia</h2><button class="link" data-goto="tasks">Wszystkie →</button></div><div id="home-tasks"></div></div>
-        <div class="card"><div class="card-h"><h2>Powiadomienia</h2><button class="link" data-goto="notifications">Wszystkie →</button></div><div id="home-notes"></div></div>
+        <div class="card"><div class="card-h"><h2>Projekty</h2><button class="link" data-goto="projects">Wszystkie →</button></div><div id="home-projects"></div></div>
       </div>
-      <div class="grid g2" style="margin-top:18px">
+      <div class="grid g3" style="margin-top:18px">
         <div class="card"><div class="card-h"><h2>Ostatnie pomysły</h2><button class="link" data-goto="ideas">Wszystkie →</button></div><div id="home-ideas"></div></div>
+        <div class="card"><div class="card-h"><h2>Powiadomienia</h2><button class="link" data-goto="notifications">Wszystkie →</button></div><div id="home-notes"></div></div>
         <div class="card"><div class="card-h"><h2>Rynek</h2><button class="link" data-goto="crypto">Krypto →</button></div><div id="home-crypto"></div></div>
       </div>
     </section>
@@ -198,37 +64,33 @@ td.num{font-variant-numeric:tabular-nums;text-align:right} th.num{text-align:rig
     <!-- CZAT -->
     <section class="view" id="view-chat">
       <div class="card-h"><h1>Czat z agentem</h1><button class="link" id="chat-clear">Nowa rozmowa</button></div>
-      <div class="chat">
+      <div class="chat" id="chat-box">
         <div class="msgs" id="msgs"></div>
         <div class="chips" id="chips">
           <button class="chip">Co mam dziś w planie?</button>
           <button class="chip">Rozpisz mi preprodukcję teledysku na 2 tygodnie</button>
           <button class="chip">Pomysł na sesję portretową w deszczu</button>
-          <button class="chip">Gdzie są moje ostatnie pliki RAW?</button>
+          <button class="chip">Gdzie są moje zdjęcia zrobione obiektywem 85 mm?</button>
           <button class="chip">Znajdź w sieci trendy w teledyskach 2026</button>
         </div>
+        <div class="attach-preview" id="attach-preview" hidden></div>
         <form class="composer" id="chat-form">
-          <textarea id="chat-input" rows="1" placeholder="Napisz wiadomość… (Enter – wyślij, Shift+Enter – nowa linia)"></textarea>
-          <button class="btn">Wyślij</button>
+          <label class="icon-btn attach" title="Dołącz zdjęcie (ocena kadru)"><svg viewBox="0 0 24 24"><path d="M21 12.5l-8.5 8.5a5 5 0 0 1-7-7L14 5.5a3.5 3.5 0 0 1 5 5L10.5 19a2 2 0 0 1-3-3L15 8.5"/></svg><input type="file" id="chat-file" accept="image/*" multiple hidden></label>
+          <textarea id="chat-input" rows="1" placeholder="Napisz wiadomość… (Enter – wyślij, Shift+Enter – nowa linia, możesz wkleić zdjęcie)"></textarea>
+          <button class="btn" id="chat-send">Wyślij</button>
         </form>
       </div>
     </section>
 
     <!-- KALENDARZ -->
     <section class="view" id="view-calendar">
-      <h1>Kalendarz</h1><p class="sub">Sesje, zdjęcia do teledysków, spotkania i montaże. Agent przypomni Ci o nich na Telegramie.</p>
-      <form class="form" id="ev-form">
-        <input name="title" placeholder="Co? np. Sesja ślubna Nowak" required style="flex:2 1 220px">
-        <input name="start" type="datetime-local" required>
-        <input name="end" type="datetime-local">
-        <select name="kind"><option value="sesja">Sesja</option><option value="teledysk">Teledysk</option><option value="spotkanie">Spotkanie</option><option value="montaz">Montaż</option><option value="inne">Inne</option></select>
-        <input name="location" placeholder="Miejsce" style="flex:1 1 140px">
-        <input name="client" placeholder="Klient" style="flex:1 1 120px">
-        <button class="btn">Dodaj</button>
-      </form>
-      <div class="grid" style="grid-template-columns:minmax(0,1fr) 300px" id="cal-wrap">
+      <div class="card-h"><h1>Kalendarz</h1>
+        <div class="actions"><label class="btn ghost">Importuj .ics<input type="file" id="ics-file" accept=".ics,text/calendar" hidden></label><a class="btn ghost" href="/api/calendar.ics">Eksportuj .ics</a><button class="btn" id="ev-new">+ Wydarzenie</button></div>
+      </div>
+      <p class="sub">Kliknij dzień, żeby dodać wydarzenie, albo wydarzenie, żeby je edytować. Przypomnienia przychodzą na Telegram.</p>
+      <div class="grid cal-wrap">
         <div class="card">
-          <div class="cal-head"><button class="btn ghost" id="cal-prev">‹</button><h2 id="cal-title"></h2><button class="btn ghost" id="cal-next">›</button><button class="link" id="cal-today">dziś</button></div>
+          <div class="cal-head"><button class="btn ghost sq" id="cal-prev">‹</button><h2 id="cal-title"></h2><button class="btn ghost sq" id="cal-next">›</button><button class="link" id="cal-today">dziś</button></div>
           <div class="cal" id="cal"></div>
         </div>
         <div class="card"><h2>Nadchodzące</h2><div id="upcoming"></div></div>
@@ -237,324 +99,118 @@ td.num{font-variant-numeric:tabular-nums;text-align:right} th.num{text-align:rig
 
     <!-- ZADANIA -->
     <section class="view" id="view-tasks">
-      <h1>Zadania</h1><p class="sub">Kliknij kółko, aby przesunąć zadanie dalej.</p>
+      <h1>Zadania</h1><p class="sub">Kliknij kółko, aby przesunąć zadanie dalej, albo zadanie, żeby je edytować.</p>
       <form class="form" id="task-form">
         <input name="title" placeholder="Nowe zadanie…" required style="flex:2 1 240px">
-        <input name="project" placeholder="Projekt / klient" style="flex:1 1 140px">
+        <select name="project_id" class="project-select"><option value="">— bez projektu —</option></select>
         <input name="due" type="datetime-local">
         <select name="priority"><option value="normal">Normalny</option><option value="high">Pilne</option><option value="low">Niski</option></select>
         <button class="btn">Dodaj</button>
       </form>
+      <div class="filters" id="task-filter"></div>
       <div class="kanban">
-        <div class="col" data-status="todo"><h3>Do zrobienia</h3><div></div></div>
-        <div class="col" data-status="doing"><h3>W trakcie</h3><div></div></div>
-        <div class="col done" data-status="done"><h3>Zrobione</h3><div></div></div>
+        <div class="col" data-status="todo"><h3>Do zrobienia <span class="cnt"></span></h3><div></div></div>
+        <div class="col" data-status="doing"><h3>W trakcie <span class="cnt"></span></h3><div></div></div>
+        <div class="col done" data-status="done"><h3>Zrobione <span class="cnt"></span></h3><div></div></div>
       </div>
+    </section>
+
+    <!-- PROJEKTY -->
+    <section class="view" id="view-projects">
+      <div class="card-h"><h1>Projekty i klienci</h1><button class="btn" id="proj-new">+ Projekt</button></div>
+      <p class="sub">Zlecenia od zapytania do zapłaty. Agent łączy z nimi zadania i terminy.</p>
+      <div class="stats" id="proj-stats"></div>
+      <div class="filters" id="proj-filter">
+        <button class="chip active" data-f="active">Aktywne</button><button class="chip" data-f="all">Wszystkie</button><button class="chip" data-f="unpaid">Do zapłaty</button>
+      </div>
+      <div class="projects" id="projects"></div>
     </section>
 
     <!-- POMYSŁY -->
     <section class="view" id="view-ideas">
-      <h1>Pomysły</h1><p class="sub">Wszystko, co wpadnie Ci do głowy. Agent zapisuje tu też pomysły z rozmów.</p>
-      <form class="form" id="idea-form">
-        <input name="title" placeholder="Tytuł pomysłu" required style="flex:1 1 200px">
-        <select name="category"><option value="sesja">Sesja</option><option value="teledysk">Teledysk</option><option value="ujęcie">Ujęcie</option><option value="biznes">Biznes</option><option value="sprzęt">Sprzęt</option><option value="inne">Inne</option></select>
-        <input name="tags" placeholder="tagi, po przecinku" style="flex:1 1 140px">
-        <textarea name="content" placeholder="Opis, referencje, klimat, światło…" rows="2" style="flex:1 1 100%"></textarea>
-        <button class="btn">Zapisz pomysł</button>
-        <input id="idea-q" placeholder="Szukaj w pomysłach…" style="margin-left:auto">
-      </form>
+      <div class="card-h"><h1>Pomysły</h1><button class="btn" id="idea-new">+ Pomysł</button></div>
+      <p class="sub">Wszystko, co wpadnie Ci do głowy. Agent zapisuje tu też pomysły z rozmów i pomaga je rozwinąć.</p>
+      <div class="filters">
+        <input id="idea-q" placeholder="Szukaj w pomysłach…">
+        <div id="idea-cats"></div>
+      </div>
       <div class="ideas" id="ideas"></div>
     </section>
 
     <!-- PLIKI -->
     <section class="view" id="view-files">
-      <div class="card-h"><h1>Pliki</h1><button class="btn ghost" id="reindex">Przeskanuj foldery</button></div>
-      <p class="sub" id="files-sub">Agent zna pliki z folderów ustawionych w <code>WATCH_FOLDERS</code>.</p>
-      <div class="grid g3" id="file-stats" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-bottom:18px"></div>
+      <div class="card-h"><h1>Pliki i zdjęcia</h1><div class="actions"><span class="m" id="scan-status"></span><button class="btn ghost" id="reindex">Przeskanuj foldery</button></div></div>
+      <p class="sub" id="files-sub"></p>
+      <div class="stats" id="file-stats"></div>
       <form class="form" id="file-form">
-        <input id="file-q" placeholder="np. nowak ślub, teledysk final, 2026…" style="flex:2 1 260px">
+        <input id="file-q" placeholder="np. nowak ślub, teledysk final, 85mm…" style="flex:2 1 220px">
         <select id="file-kind"><option value="">Wszystkie typy</option><option value="zdjecie">Zdjęcia</option><option value="raw">RAW</option><option value="wideo">Wideo</option><option value="audio">Audio</option><option value="projekt">Projekty</option><option value="dokument">Dokumenty</option></select>
-        <select id="file-mode"><option value="1">Pokaż foldery</option><option value="0">Pokaż pliki</option></select>
+        <select id="file-camera"><option value="">Każdy aparat</option></select>
+        <select id="file-lens"><option value="">Każdy obiektyw</option></select>
+        <input type="date" id="file-after" title="Od">
+        <input type="date" id="file-before" title="Do">
+        <select id="file-mode"><option value="grid">Galeria</option><option value="list">Lista plików</option><option value="folders">Foldery</option></select>
         <button class="btn">Szukaj</button>
       </form>
-      <div class="card"><div id="file-results"></div></div>
+      <div id="file-results"></div>
     </section>
 
     <!-- KRYPTO -->
     <section class="view" id="view-crypto">
-      <h1>Krypto</h1><p class="sub">Ceny z CoinGecko. Alerty przychodzą na Telegram. To miejsce na przyszłe analizy w tle.</p>
-      <div class="grid g2">
-        <div class="card"><h2>Obserwowane</h2><table><thead><tr><th>Moneta</th><th class="num">USD</th><th class="num">PLN</th><th class="num">24h</th></tr></thead><tbody id="crypto-table"></tbody></table></div>
-        <div class="card"><h2>Alerty cenowe</h2>
-          <form class="form" id="alert-form">
-            <input name="coin" placeholder="bitcoin" required style="flex:1 1 110px">
-            <select name="direction"><option value="above">powyżej</option><option value="below">poniżej</option></select>
-            <input name="price" type="number" step="any" placeholder="cena" required style="width:110px">
-            <select name="currency"><option value="usd">USD</option><option value="pln">PLN</option></select>
-            <button class="btn">Dodaj</button>
-          </form>
-          <div id="alerts"></div>
-        </div>
+      <h1>Krypto</h1><p class="sub">Dane z CoinGecko, odświeżane co minutę. Alerty i duże ruchy (powyżej 8% w 24h) przychodzą na Telegram. Listę monet zmienisz w Ustawieniach.</p>
+      <div class="coins" id="coins"></div>
+      <div class="card" style="margin-top:18px"><h2>Alerty cenowe</h2>
+        <form class="form" id="alert-form">
+          <input name="coin" placeholder="bitcoin" required list="coin-list" style="flex:1 1 120px"><datalist id="coin-list"></datalist>
+          <select name="direction"><option value="above">powyżej</option><option value="below">poniżej</option></select>
+          <input name="price" type="number" step="any" placeholder="cena" required style="width:120px">
+          <select name="currency"><option value="usd">USD</option><option value="pln">PLN</option></select>
+          <button class="btn">Dodaj alert</button>
+        </form>
+        <div id="alerts"></div>
       </div>
     </section>
 
     <!-- POWIADOMIENIA -->
     <section class="view" id="view-notifications">
-      <div class="card-h"><h1>Powiadomienia</h1><button class="btn ghost" id="test-notify">Wyślij testowe</button></div>
+      <div class="card-h"><h1>Powiadomienia</h1><div class="actions"><button class="btn ghost" id="notes-clear">Wyczyść</button><button class="btn ghost" id="test-notify">Wyślij testowe</button></div></div>
       <p class="sub">Przypomnienia, poranne briefy, alerty. Te same trafiają na Telegram.</p>
       <div class="card"><div id="notes"></div></div>
     </section>
 
     <!-- USTAWIENIA -->
     <section class="view" id="view-settings">
-      <h1>Agent i pamięć</h1><p class="sub">Co agent o Tobie wie, z czym jest połączony i co robi w tle.</p>
-      <div class="grid g2">
-        <div class="card"><h2>Połączenia</h2><div id="status"></div></div>
+      <h1>Ustawienia</h1><p class="sub">Tu podłączasz agenta do Claude i Telegrama, ustawiasz foldery i harmonogram. Zmiany działają od razu, bez restartu.</p>
+      <form id="settings-form">
+        <div class="grid g2" id="settings-groups"></div>
+        <div class="save-bar"><span class="m" id="settings-msg">Wprowadź zmiany i zapisz.</span><button class="btn">Zapisz ustawienia</button></div>
+      </form>
+      <div class="grid g2" style="margin-top:18px">
         <div class="card"><h2>Zadania w tle</h2><div id="jobs"></div></div>
+        <div class="card"><h2>Dane i kopia zapasowa</h2>
+          <p class="m">Wszystko jest w jednym pliku bazy <code>data/agent.db</code> na Twoim komputerze. Kopia robi się co noc (ostatnie 7 dni).</p>
+          <div class="actions" style="margin-top:12px"><a class="btn ghost" href="/api/backup">Pobierz kopię bazy</a><a class="btn ghost" href="/api/calendar.ics">Eksport kalendarza</a></div>
+          <div id="disk" class="m" style="margin-top:12px"></div>
+        </div>
       </div>
-      <div class="card" style="margin-top:18px"><h2>Pamięć długoterminowa</h2>
+      <div class="card" style="margin-top:18px"><h2>Pamięć agenta</h2>
+        <p class="m" style="margin-bottom:12px">Fakty, które agent zna o Tobie. Dodaje je sam w rozmowie; tu możesz je dopisać lub usunąć.</p>
         <form class="form" id="mem-form"><input name="fact" placeholder="np. Mój główny aparat to Sony A7 IV, obiektywy 24-70 i 85 1.4" required style="flex:1"><button class="btn">Zapamiętaj</button></form>
         <div id="memory"></div>
       </div>
     </section>
   </main>
 </div>
+
+<div class="modal-bg" id="modal" hidden>
+  <form class="modal" id="modal-form">
+    <div class="card-h"><h2 id="modal-title"></h2><button type="button" class="icon-btn" id="modal-x" title="Zamknij"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-foot"><button type="button" class="btn danger" id="modal-del">Usuń</button><span style="flex:1"></span><button type="button" class="btn ghost" id="modal-extra" hidden></button><button type="button" class="btn ghost" id="modal-cancel">Anuluj</button><button class="btn">Zapisz</button></div>
+  </form>
+</div>
+<div class="lightbox" id="lightbox" hidden><img alt=""><div class="lb-info"></div></div>
 <div class="toast" id="toast"></div>
-
-<script>
-const $ = s => document.querySelector(s);
-const $$ = s => [...document.querySelectorAll(s)];
-const TRASH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M10 11v6M14 11v6M5 7l1 13h12l1-13M9 7V4h6v3"/></svg>';
-const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const pad = n => String(n).padStart(2,'0');
-const ymd = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-const fmtDT = s => s ? s.slice(0,16).replace('T',' ') : '';
-const fmtSize = b => { b = +b||0; const u=['B','KB','MB','GB','TB']; let i=0; while(b>=1024&&i<4){b/=1024;i++} return b.toFixed(i?1:0)+' '+u[i]; };
-const MONTHS = ['styczeń','luty','marzec','kwiecień','maj','czerwiec','lipiec','sierpień','wrzesień','październik','listopad','grudzień'];
-
-async function api(path, opts={}) {
-  const r = await fetch(path, {headers:{'Content-Type':'application/json'}, ...opts,
-    body: opts.body ? JSON.stringify(opts.body) : undefined});
-  if (!r.ok) { const t = await r.text(); toast('Błąd: ' + t.slice(0,120)); throw new Error(t); }
-  return r.json();
-}
-function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),2600); }
-const formData = f => Object.fromEntries(new FormData(f).entries());
-
-// --- markdown (bezpieczny: najpierw escape) ---
-function md(src){
-  const lines = esc(src).split('\n'); let html='', inList=false;
-  const inline = s => s
-    .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>')
-    .replace(/(^|[\s(])(https?:\/\/[^\s<)]+)/g,'$1<a href="$2" target="_blank" rel="noopener">$2</a>')
-    .replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>').replace(/(^|[^*])\*([^*\s][^*]*)\*/g,'$1<i>$2</i>')
-    .replace(/`([^`]+)`/g,'<code>$1</code>');
-  for (const l of lines){
-    const li = l.match(/^\s*(?:[-*•]|\d+\.)\s+(.*)/);
-    if (li){ if(!inList){html+='<ul>';inList=true} html+='<li>'+inline(li[1])+'</li>'; continue; }
-    if (inList){html+='</ul>';inList=false}
-    const h = l.match(/^#{1,6}\s+(.*)/);
-    if (h) html+='<h4>'+inline(h[1])+'</h4>';
-    else if (l.trim()) html+='<p>'+inline(l)+'</p>';
-  }
-  return html + (inList?'</ul>':'');
-}
-
-// --- nawigacja ---
-function show(view){
-  $$('.nav').forEach(n=>n.classList.toggle('active', n.dataset.view===view));
-  $$('.view').forEach(v=>v.classList.toggle('active', v.id==='view-'+view));
-  try{ localStorage.setItem('view', view) }catch(e){}
-  ({home:loadHome, chat:loadChat, calendar:loadCalendar, tasks:loadTasks, ideas:loadIdeas, files:loadFiles,
-    crypto:loadCrypto, notifications:loadNotes, settings:loadSettings})[view]?.();
-}
-$$('.nav').forEach(n=>n.onclick=()=>show(n.dataset.view));
-$$('[data-goto]').forEach(n=>n.onclick=()=>show(n.dataset.goto));
-
-// --- motyw ---
-(function(){ let t=null; try{t=localStorage.getItem('theme')}catch(e){} if(t) document.documentElement.dataset.theme=t; })();
-$('#theme').onclick=()=>{ const r=document.documentElement; r.dataset.theme = r.dataset.theme==='light'?'dark':'light'; try{localStorage.setItem('theme',r.dataset.theme)}catch(e){} };
-
-// --- PULPIT ---
-async function loadHome(){
-  const now=new Date(), h=now.getHours();
-  const st = await api('/api/status').catch(()=>({}));
-  const name = st.user ? ', '+st.user : '';
-  $('#greet').textContent = (h<5?'Dobranoc':h<12?'Dzień dobry':h<18?'Cześć':'Dobry wieczór') + name;
-  $('#today-date').textContent = now.toLocaleDateString('pl-PL',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-  const tomorrow = new Date(now.getTime()+864e5);
-  const [ev, tasks, notes, ideas] = await Promise.all([
-    api(`/api/events?start=${ymd(now)}&end=${ymd(tomorrow)}`), api('/api/tasks?status=open'),
-    api('/api/notifications?limit=6'), api('/api/ideas')]);
-  $('#home-events').innerHTML = ev.length ? ev.map(e=>`<div class="row"><span class="time">${e.start.slice(11,16)}</span><div class="t"><b>${esc(e.title)}</b><div class="m">${e.start.slice(0,10)===ymd(now)?'dziś':'jutro'}${e.location?' · '+esc(e.location):''}</div></div></div>`).join('') : '<div class="empty">Wolne. Dobry moment na kreatywną pracę.</div>';
-  $('#home-tasks').innerHTML = tasks.length ? tasks.slice(0,6).map(t=>`<div class="row"><div class="t ellipsis"><b>${esc(t.title)}</b>${t.due?`<div class="m">${fmtDT(t.due)}</div>`:''}</div>${t.priority==='high'?'<span class="pill high">pilne</span>':''}</div>`).join('') : '<div class="empty">Wszystko zrobione 🎉</div>';
-  $('#home-notes').innerHTML = notes.length ? notes.map(n=>`<div class="row"><div class="t"><b>${esc(n.title)}</b><div class="m">${fmtDT(n.created)}</div></div></div>`).join('') : '<div class="empty">Cisza.</div>';
-  $('#home-ideas').innerHTML = ideas.length ? ideas.slice(0,4).map(i=>`<div class="row"><div class="t ellipsis"><b>${esc(i.title)}</b><div class="m ellipsis">${esc(i.content)}</div></div>${i.category?`<span class="pill accent">${esc(i.category)}</span>`:''}</div>`).join('') : '<div class="empty">Brak pomysłów — powiedz agentowi, co Ci chodzi po głowie.</div>';
-  loadCryptoInto('#home-crypto', true);
-}
-$('#ask-form').onsubmit = e => { e.preventDefault(); const v=$('#ask-input').value.trim(); if(!v) return; $('#ask-input').value=''; show('chat'); sendChat(v); };
-
-// --- CZAT ---
-let chatLoaded=false, busy=false;
-function addMsg(role, text){ const d=document.createElement('div'); d.className='msg '+role; d.innerHTML = role==='assistant'?md(text):esc(text).replace(/\n/g,'<br>'); $('#msgs').appendChild(d); $('#msgs').scrollTop=1e9; return d; }
-async function loadChat(){
-  if (chatLoaded) return; chatLoaded=true;
-  const hist = await api('/api/chat/history?session=web');
-  $('#msgs').innerHTML='';
-  if (!hist.length) addMsg('assistant','Cześć! Jestem Twoim agentem. Planuję, pamiętam pomysły, znam Twoje pliki, szukam w sieci i piszę do Ciebie na Telegramie. **W czym mogę pomóc?**');
-  hist.forEach(m=>addMsg(m.role,m.content));
-  $('#chips').hidden = hist.length>0;
-}
-async function sendChat(text){
-  await loadChat();
-  if (busy) return; busy=true; $('#chips').hidden=true;
-  addMsg('user', text);
-  const t = addMsg('assistant',''); t.innerHTML='<span class="typing"><span></span><span></span><span></span></span>';
-  try { const r = await api('/api/chat',{method:'POST', body:{message:text, session:'web'}}); t.innerHTML=md(r.reply); }
-  catch(e){ t.innerHTML = md('⚠️ Nie udało się połączyć z agentem.'); }
-  busy=false; $('#msgs').scrollTop=1e9;
-}
-$('#chat-form').onsubmit = e => { e.preventDefault(); const v=$('#chat-input').value.trim(); if(!v) return; $('#chat-input').value=''; $('#chat-input').style.height=''; sendChat(v); };
-$('#chat-input').addEventListener('keydown', e => { if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); $('#chat-form').requestSubmit(); } });
-$('#chat-input').addEventListener('input', e => { e.target.style.height='auto'; e.target.style.height=Math.min(e.target.scrollHeight,180)+'px'; });
-$$('.chip').forEach(c=>c.onclick=()=>sendChat(c.textContent));
-$('#chat-clear').onclick = async()=>{ await api('/api/chat/history?session=web',{method:'DELETE'}); chatLoaded=false; loadChat(); $('#chips').hidden=false; };
-
-// --- KALENDARZ ---
-let calMonth = new Date(); calMonth.setDate(1);
-async function loadCalendar(){
-  const y=calMonth.getFullYear(), m=calMonth.getMonth();
-  $('#cal-title').textContent = MONTHS[m]+' '+y;
-  const first = new Date(y,m,1), offset=(first.getDay()+6)%7;
-  const start = new Date(y,m,1-offset), end=new Date(start.getTime()+41*864e5);
-  const [events, upcoming] = await Promise.all([api(`/api/events?start=${ymd(start)}&end=${ymd(end)}`), api('/api/events')]);
-  const byDay = {}; events.forEach(e=>(byDay[e.start.slice(0,10)] ||= []).push(e));
-  const today=ymd(new Date());
-  let html = ['Pn','Wt','Śr','Cz','Pt','So','Nd'].map(d=>`<div class="dow">${d}</div>`).join('');
-  for (let i=0;i<42;i++){
-    const d=new Date(y,m,1-offset+i), k=ymd(d);
-    html += `<div class="day ${d.getMonth()!==m?'other':''} ${k===today?'today':''}" data-day="${k}"><div class="n">${d.getDate()}</div>${(byDay[k]||[]).map(e=>`<div class="ev ${esc(e.kind)}" title="${esc(e.title)}">${e.start.slice(11,16)} ${esc(e.title)}</div>`).join('')}</div>`;
-  }
-  $('#cal').innerHTML = html;
-  $$('.day').forEach(d=>d.onclick=()=>{ const f=$('#ev-form'); f.start.value=d.dataset.day+'T10:00'; f.title.focus(); });
-  $('#upcoming').innerHTML = upcoming.length ? upcoming.slice(0,12).map(e=>`<div class="row"><div class="t"><b>${esc(e.title)}</b><div class="m">${fmtDT(e.start)}${e.location?' · '+esc(e.location):''}${e.client?' · '+esc(e.client):''}</div></div><button class="icon-btn" data-del-ev="${e.id}" title="Usuń">${TRASH}</button></div>`).join('') : '<div class="empty">Brak wydarzeń.</div>';
-  $$('[data-del-ev]').forEach(b=>b.onclick=async()=>{ if(!confirm('Usunąć wydarzenie?')) return; await api('/api/crud/events/'+b.dataset.delEv,{method:'DELETE'}); loadCalendar(); });
-}
-$('#cal-prev').onclick=()=>{calMonth.setMonth(calMonth.getMonth()-1); loadCalendar()};
-$('#cal-next').onclick=()=>{calMonth.setMonth(calMonth.getMonth()+1); loadCalendar()};
-$('#cal-today').onclick=()=>{calMonth=new Date(); calMonth.setDate(1); loadCalendar()};
-$('#ev-form').onsubmit = async e => { e.preventDefault(); await api('/api/crud/events',{method:'POST',body:formData(e.target)}); e.target.reset(); toast('Dodano do kalendarza'); loadCalendar(); };
-
-// --- ZADANIA ---
-const NEXT = {todo:'doing', doing:'done', done:'todo'};
-async function loadTasks(){
-  const tasks = await api('/api/tasks');
-  $$('.col').forEach(col=>{
-    const list = tasks.filter(t=>t.status===col.dataset.status);
-    col.querySelector('div').innerHTML = list.length ? list.map(t=>`<div class="task"><button class="check" data-next="${t.id}" data-s="${t.status}" title="Dalej"></button><div class="t"><b>${esc(t.title)}</b><div class="m">${[t.project&&esc(t.project), t.due&&fmtDT(t.due)].filter(Boolean).join(' · ')}</div>${t.notes?`<div class="m">${esc(t.notes)}</div>`:''}</div>${t.priority==='high'?'<span class="pill high">pilne</span>':''}<button class="icon-btn" data-del-task="${t.id}">${TRASH}</button></div>`).join('') : '<div class="empty">—</div>';
-  });
-  $$('[data-next]').forEach(b=>b.onclick=async()=>{ await api('/api/crud/tasks/'+b.dataset.next,{method:'PATCH',body:{status:NEXT[b.dataset.s]}}); loadTasks(); });
-  $$('[data-del-task]').forEach(b=>b.onclick=async()=>{ await api('/api/crud/tasks/'+b.dataset.delTask,{method:'DELETE'}); loadTasks(); });
-}
-$('#task-form').onsubmit = async e => { e.preventDefault(); await api('/api/crud/tasks',{method:'POST',body:formData(e.target)}); e.target.reset(); loadTasks(); };
-
-// --- POMYSŁY ---
-const IDEA_STATUS = ['nowy','rozwijany','zrealizowany','odlozony'];
-async function loadIdeas(){
-  const q = $('#idea-q').value.trim();
-  const ideas = await api('/api/ideas'+(q?'?q='+encodeURIComponent(q):''));
-  $('#ideas').innerHTML = ideas.length ? ideas.map(i=>`<div class="idea"><h3>${esc(i.title)}</h3>${i.content?`<p>${esc(i.content)}</p>`:''}<div class="foot">${i.category?`<span class="pill accent">${esc(i.category)}</span>`:''}${(i.tags||'').split(',').filter(x=>x.trim()).map(t=>`<span class="pill">#${esc(t.trim())}</span>`).join('')}<button class="pill" style="border:0;cursor:pointer" data-idea-st="${i.id}" data-s="${i.status}">${esc(i.status)}</button><span style="flex:1"></span><button class="icon-btn" data-del-idea="${i.id}">${TRASH}</button></div></div>`).join('') : '<div class="empty">Brak pomysłów.</div>';
-  $$('[data-idea-st]').forEach(b=>b.onclick=async()=>{ const n=IDEA_STATUS[(IDEA_STATUS.indexOf(b.dataset.s)+1)%4]; await api('/api/crud/ideas/'+b.dataset.ideaSt,{method:'PATCH',body:{status:n}}); loadIdeas(); });
-  $$('[data-del-idea]').forEach(b=>b.onclick=async()=>{ if(!confirm('Usunąć pomysł?')) return; await api('/api/crud/ideas/'+b.dataset.delIdea,{method:'DELETE'}); loadIdeas(); });
-}
-$('#idea-form').onsubmit = async e => { e.preventDefault(); await api('/api/crud/ideas',{method:'POST',body:formData(e.target)}); e.target.reset(); toast('Pomysł zapisany 💡'); loadIdeas(); };
-let ideaT; $('#idea-q').oninput=()=>{clearTimeout(ideaT); ideaT=setTimeout(loadIdeas,250)};
-$('#idea-q').onkeydown=e=>{ if(e.key==='Enter') e.preventDefault(); };
-
-// --- PLIKI ---
-const KIND_LBL = {zdjecie:'Zdjęcia',raw:'RAW',wideo:'Wideo',audio:'Audio',projekt:'Projekty',dokument:'Dokumenty',inne:'Inne'};
-async function loadFiles(){
-  const s = await api('/api/files/stats');
-  $('#files-sub').innerHTML = s.watch_folders.length ? `Obserwowane foldery: ${s.watch_folders.map(f=>`<code>${esc(f)}</code>`).join(', ')} · ostatni skan: ${fmtDT(s.last_index)||'—'}` : 'Ustaw foldery w pliku <code>.env</code> → <code>WATCH_FOLDERS</code>, np. <code>D:\\Zdjecia;D:\\Teledyski</code>, i uruchom agenta ponownie.';
-  $('#file-stats').innerHTML = `<div class="stat"><div class="v">${s.total.count.toLocaleString('pl-PL')}</div><div class="l">plików · ${fmtSize(s.total.size)}</div></div>` + s.by_kind.map(k=>`<div class="stat"><div class="v">${k.count.toLocaleString('pl-PL')}</div><div class="l">${KIND_LBL[k.kind]||k.kind} · ${fmtSize(k.size)}</div></div>`).join('');
-  if (!$('#file-results').innerHTML) renderFolders(s.recent_folders, 'Ostatnio zmieniane foldery');
-}
-function renderFolders(rows, title){
-  $('#file-results').innerHTML = (title?`<h2>${title}</h2>`:'') + (rows.length ? rows.map(r=>`<div class="row"><div class="t"><b class="ellipsis" style="display:block">${esc(r.folder)}</b><div class="m">${r.files} plików${r.size?' · '+fmtSize(r.size):''} · zmiana ${fmtDT(r.last_modified)}</div></div><button class="btn ghost" data-open="${esc(r.folder)}">Otwórz</button></div>`).join('') : '<div class="empty">Nic nie znaleziono.</div>');
-  bindOpen();
-}
-function bindOpen(){ $$('[data-open]').forEach(b=>b.onclick=async()=>{ const r=await api('/api/files/open',{method:'POST',body:{path:b.dataset.open}}); toast(r.ok?'Otwieram…':'Nie mogę otworzyć'); }); }
-$('#file-form').onsubmit = async e => {
-  e.preventDefault();
-  const folders = $('#file-mode').value==='1';
-  const rows = await api(`/api/files/search?q=${encodeURIComponent($('#file-q').value)}&kind=${$('#file-kind').value}&folders=${folders}`);
-  if (folders) return renderFolders(rows, '');
-  $('#file-results').innerHTML = rows.length ? rows.map(r=>`<div class="row"><div class="t"><b class="ellipsis" style="display:block">${esc(r.name)}</b><div class="m ellipsis">${esc(r.folder)} · ${fmtSize(r.size)} · ${fmtDT(r.mtime)}</div></div><span class="pill">${KIND_LBL[r.kind]||r.kind}</span><button class="btn ghost" data-open="${esc(r.folder)}">Folder</button></div>`).join('') : '<div class="empty">Nic nie znaleziono.</div>';
-  bindOpen();
-};
-$('#reindex').onclick = async()=>{ toast('Skanuję foldery…'); const r=await api('/api/files/reindex',{method:'POST'}); toast(`Zaindeksowano ${r.indexed} plików`); loadFiles(); };
-
-// --- KRYPTO ---
-async function loadCryptoInto(sel, compact){
-  const d = await api('/api/crypto').catch(()=>({prices:{},watchlist:[]}));
-  const rows = d.watchlist.map(c=>{ const p=d.prices[c]||{}; const ch=p.usd_24h_change; return {c,p,ch}; });
-  const cls = ch => ch==null?'':(ch>=0?'up':'down');
-  const chg = ch => ch==null?'—':(ch>=0?'+':'')+ch.toFixed(2)+'%';
-  if (compact) { $(sel).innerHTML = d.error ? '<div class="empty">Brak danych rynkowych.</div>' : rows.map(r=>`<div class="row"><div class="t"><b style="text-transform:capitalize">${esc(r.c)}</b></div><span>$${(r.p.usd??0).toLocaleString('en-US')}</span><span class="${cls(r.ch)}" style="min-width:64px;text-align:right">${chg(r.ch)}</span></div>`).join(''); return; }
-  $(sel).innerHTML = rows.map(r=>`<tr><td style="text-transform:capitalize">${esc(r.c)}</td><td class="num">${(r.p.usd??0).toLocaleString('en-US')}</td><td class="num">${(r.p.pln??0).toLocaleString('pl-PL')}</td><td class="num ${cls(r.ch)}">${chg(r.ch)}</td></tr>`).join('') || '<tr><td colspan="4" class="empty">Brak danych.</td></tr>';
-}
-async function loadCrypto(){
-  loadCryptoInto('#crypto-table');
-  const al = await api('/api/alerts');
-  $('#alerts').innerHTML = al.length ? al.map(a=>`<div class="row"><div class="t"><b style="text-transform:capitalize">${esc(a.coin)}</b> ${a.direction==='above'?'≥':'≤'} ${a.price} ${a.currency.toUpperCase()}</div><span class="pill ${a.active?'accent':''}">${a.active?'aktywny':'zadziałał'}</span><button class="icon-btn" data-del-alert="${a.id}">${TRASH}</button></div>`).join('') : '<div class="empty">Brak alertów.</div>';
-  $$('[data-del-alert]').forEach(b=>b.onclick=async()=>{ await api('/api/crud/alerts/'+b.dataset.delAlert,{method:'DELETE'}); loadCrypto(); });
-}
-$('#alert-form').onsubmit = async e => { e.preventDefault(); await api('/api/alerts',{method:'POST',body:formData(e.target)}); e.target.reset(); loadCrypto(); };
-
-// --- POWIADOMIENIA ---
-const LVL = {reminder:'przypomnienie', crypto:'krypto', brief:'brief', alert:'alert', info:'info'};
-async function loadNotes(){
-  const n = await api('/api/notifications?limit=100');
-  $('#notes').innerHTML = n.length ? n.map(x=>`<div class="row" style="align-items:flex-start"><div class="t"><b>${esc(x.title)}</b>${x.body?`<div class="m" style="white-space:pre-wrap">${esc(x.body)}</div>`:''}<div class="m">${fmtDT(x.created)}</div></div><span class="pill ${x.read?'':'accent'}">${LVL[x.level]||x.level}</span></div>`).join('') : '<div class="empty">Brak powiadomień.</div>';
-  await api('/api/notifications/read',{method:'POST'}); poll();
-}
-$('#test-notify').onclick = async()=>{ const r=await api('/api/notifications/test',{method:'POST'}); toast(r.telegram?'Wysłano (także na Telegram)':'Wysłano (Telegram nie jest skonfigurowany)'); loadNotes(); };
-
-// --- USTAWIENIA ---
-async function loadSettings(){
-  const s = await api('/api/status');
-  const line = (ok,label,hint) => `<div class="row"><span class="dot ${ok?'on':'off'}"></span><div class="t"><b>${label}</b><div class="m">${hint}</div></div></div>`;
-  $('#status').innerHTML =
-    line(s.claude,'Claude (mózg agenta)', s.claude?'model: '+esc(s.model):'Brak ANTHROPIC_API_KEY w .env') +
-    line(s.telegram && s.telegram_chats,'Telegram', !s.telegram_token?'Brak TELEGRAM_BOT_TOKEN w .env': !s.telegram_chats?'Napisz /start do bota i wpisz chat_id do TELEGRAM_ALLOWED_CHAT_IDS':'połączony, odbiorcy: '+s.telegram_chats) +
-    line(s.watch_folders.length,'Pliki na dysku', s.watch_folders.length? s.watch_folders.map(esc).join(', ') : 'Ustaw WATCH_FOLDERS w .env') +
-    line(true,'Wyszukiwanie w sieci','web_search + web_fetch (przez Claude)');
-  $('#jobs').innerHTML = s.jobs.map(j=>`<div class="row"><div class="t"><b>${({reminders:'Przypomnienia o terminach',brief:'Poranny brief na Telegram',crypto:'Alerty krypto',reindex:'Nocne skanowanie plików'})[j.id]||j.id}</b></div><span class="m">następnie: ${esc(j.next_run||'—')}</span></div>`).join('');
-  const mem = await api('/api/memory');
-  $('#memory').innerHTML = mem.length ? mem.map(m=>`<div class="row"><div class="t">${esc(m.fact)}</div><button class="icon-btn" data-del-mem="${m.id}">${TRASH}</button></div>`).join('') : '<div class="empty">Agent jeszcze nic o Tobie nie wie. Opowiedz mu o sobie w czacie.</div>';
-  $$('[data-del-mem]').forEach(b=>b.onclick=async()=>{ await api('/api/crud/memory/'+b.dataset.delMem,{method:'DELETE'}); loadSettings(); });
-}
-$('#mem-form').onsubmit = async e => { e.preventDefault(); await api('/api/crud/memory',{method:'POST',body:formData(e.target)}); e.target.reset(); loadSettings(); };
-
-// --- odpytywanie statusu + powiadomienia w przeglądarce ---
-let lastNoteId = null;
-async function poll(){
-  try{
-    const s = await api('/api/status');
-    $('#dot-claude').className='dot '+(s.claude?'on':'off');
-    $('#dot-tg').className='dot '+(s.telegram&&s.telegram_chats?'on':'off');
-    const u=$('#unread'); u.hidden=!s.unread; u.textContent=s.unread;
-    const [latest] = await api('/api/notifications?limit=1');
-    if (latest && lastNoteId!==null && latest.id>lastNoteId && 'Notification' in window && Notification.permission==='granted')
-      new Notification(latest.title,{body:latest.body});
-    if (latest) lastNoteId = latest.id; else lastNoteId = lastNoteId ?? 0;
-  }catch(e){}
-}
-if ('Notification' in window && Notification.permission==='default') document.addEventListener('click',()=>Notification.requestPermission(),{once:true});
-setInterval(poll, 30000); poll();
-
-let start='home'; try{ start=localStorage.getItem('view')||'home' }catch(e){}
-show(start);
-</script>
+<script src="/static/app.js"></script>
 </body>
 </html>

@@ -3,7 +3,8 @@ import sqlite3
 import threading
 from datetime import datetime
 
-from config import DB_PATH, TZ
+import config
+from config import DB_PATH
 
 _lock = threading.RLock()
 _conn = sqlite3.connect(DB_PATH, check_same_thread=False)
@@ -84,6 +85,20 @@ CREATE TABLE IF NOT EXISTS alerts (
     active INTEGER DEFAULT 1,
     created TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS projects (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    client TEXT DEFAULT '',
+    kind TEXT DEFAULT 'sesja',               -- sesja | teledysk | reklama | slub | event | inne
+    status TEXT DEFAULT 'zapytanie',         -- zapytanie | potwierdzony | produkcja | postprodukcja | oddany | oplacony | anulowany
+    deadline TEXT,
+    fee REAL,
+    paid INTEGER DEFAULT 0,
+    contact TEXT DEFAULT '',
+    folder TEXT DEFAULT '',
+    notes TEXT DEFAULT '',
+    created TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS kv (
     key TEXT PRIMARY KEY,
     value TEXT
@@ -92,16 +107,30 @@ CREATE TABLE IF NOT EXISTS kv (
 
 
 def now() -> datetime:
-    return datetime.now(TZ).replace(tzinfo=None)
+    return datetime.now(config.TZ).replace(tzinfo=None)
 
 
 def now_str() -> str:
     return now().strftime("%Y-%m-%dT%H:%M:%S")
 
 
+MIGRATIONS = {
+    "files": {"camera": "TEXT", "lens": "TEXT", "iso": "INTEGER", "focal": "TEXT", "aperture": "TEXT",
+              "shutter": "TEXT", "taken": "TEXT"},
+    "events": {"project_id": "INTEGER"},
+    "tasks": {"project_id": "INTEGER"},
+}
+
+
 def init() -> None:
     with _lock:
         _conn.executescript(SCHEMA)
+        for table, cols in MIGRATIONS.items():
+            have = {r[1] for r in _conn.execute(f"PRAGMA table_info({table})")}
+            for col, typ in cols.items():
+                if col not in have:
+                    _conn.execute(f"ALTER TABLE {table} ADD COLUMN {col} {typ}")
+        _conn.execute("CREATE INDEX IF NOT EXISTS idx_files_camera ON files(camera)")
         _conn.commit()
 
 
@@ -150,3 +179,13 @@ def kv_get(key: str, default: str | None = None) -> str | None:
 
 def kv_set(key: str, value: str) -> None:
     execute("INSERT INTO kv(key, value) VALUES(?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value", (key, value))
+
+
+def backup_to(target) -> None:
+    """Spójna kopia bazy (działa także w trakcie pracy)."""
+    with _lock:
+        dest = sqlite3.connect(target)
+        try:
+            _conn.backup(dest)
+        finally:
+            dest.close()

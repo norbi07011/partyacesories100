@@ -1,4 +1,5 @@
 """Bot Telegram: rozmowa z agentem z telefonu + kanał powiadomień."""
+import base64
 import logging
 
 from telegram import Update
@@ -9,17 +10,20 @@ import agent
 import db
 import file_indexer
 import notifier
-from config import TELEGRAM_ALLOWED_CHAT_IDS, TELEGRAM_BOT_TOKEN
+import config
 
 log = logging.getLogger("telegram")
 _app: Application | None = None
+_sender_registered = False
+STATE = {"running": False, "error": None, "username": None}
 
 HELP = (
     "Cześć! Jestem Twoim agentem. Po prostu pisz do mnie normalnie, np.:\n"
     "• jutro 10:00 sesja z Kasią w Łazienkach\n"
     "• pomysł: teledysk nagrany w jednym ujęciu w pustym basenie\n"
     "• gdzie są zdjęcia ze ślubu Nowaków?\n"
-    "• znajdź w sieci najlepsze lampy LED do 2000 zł\n\n"
+    "• znajdź w sieci najlepsze lampy LED do 2000 zł\n"
+    "• wyślij zdjęcie z podpisem „co poprawić?” – ocenię kadr\n\n"
     "Skróty:\n"
     "/dzis – plan na dziś\n/zadania – otwarte zadania\n/pomysl <tekst> – szybki zapis pomysłu\n"
     "/szukaj <fraza> – szukaj plików\n/nowy – wyczyść kontekst rozmowy"
@@ -27,16 +31,19 @@ HELP = (
 
 
 def _allowed(update: Update) -> bool:
-    return update.effective_chat is not None and update.effective_chat.id in TELEGRAM_ALLOWED_CHAT_IDS
+    return update.effective_chat is not None and update.effective_chat.id in config.TELEGRAM_ALLOWED_CHAT_IDS
 
 
 async def _guard(update: Update) -> bool:
     if _allowed(update):
         return True
-    chat_id = update.effective_chat.id if update.effective_chat else "?"
+    chat = update.effective_chat
+    chat_id = chat.id if chat else "?"
+    who = (chat.full_name or chat.title or "") if chat else ""
+    db.kv_set("tg_pending_chat", f"{chat_id}|{who}")
     await update.effective_message.reply_text(
         f"🔒 Ten bot jest prywatny.\nTwoje chat_id: {chat_id}\n"
-        f"Wpisz je w .env jako TELEGRAM_ALLOWED_CHAT_IDS i uruchom agenta ponownie."
+        f"Otwórz dashboard → Ustawienia → Telegram i kliknij „Dodaj ten czat”."
     )
     return False
 
@@ -108,38 +115,90 @@ async def on_message(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     await _send_long(update, reply)
 
 
+async def on_photo(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
+    if not await _guard(update):
+        return
+    msg = update.effective_message
+    await ctx.bot.send_chat_action(update.effective_chat.id, ChatAction.TYPING)
+    if msg.photo:
+        file = await msg.photo[-1].get_file()
+        media_type = "image/jpeg"
+    elif msg.document and (msg.document.mime_type or "").startswith("image/"):
+        if msg.document.file_size and msg.document.file_size > 4_500_000:
+            await msg.reply_text("Ten plik jest za duży (max ok. 4,5 MB) – wyślij go jako zwykłe zdjęcie.")
+            return
+        file = await msg.document.get_file()
+        media_type = msg.document.mime_type
+    else:
+        return
+    data = bytes(await file.download_as_bytearray())
+    reply = await agent.run(msg.caption or "", session=f"tg:{update.effective_chat.id}",
+                            images=[{"media_type": media_type, "data": base64.b64encode(data).decode()}])
+    await _send_long(update, reply)
+
+
+async def on_voice(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
+    if await _guard(update):
+        await update.effective_message.reply_text("🎙 Wiadomości głosowe jeszcze nie są obsługiwane – napisz proszę tekstem.")
+
+
 async def _broadcast(text: str) -> None:
     if not _app:
         return
-    for chat_id in TELEGRAM_ALLOWED_CHAT_IDS:
+    if not _app or not STATE["running"]:
+        return
+    for chat_id in config.TELEGRAM_ALLOWED_CHAT_IDS:
         for i in range(0, len(text), 4000):
             await _app.bot.send_message(chat_id, text[i:i + 4000], disable_web_page_preview=True)
 
 
 async def start() -> bool:
-    global _app
-    if not TELEGRAM_BOT_TOKEN:
+    global _app, _sender_registered
+    STATE.update(running=False, error=None, username=None)
+    if not config.TELEGRAM_BOT_TOKEN:
         log.info("Telegram wyłączony (brak TELEGRAM_BOT_TOKEN)")
         return False
-    _app = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
-    _app.add_handler(CommandHandler(["start", "help", "pomoc"], cmd_start))
-    _app.add_handler(CommandHandler("dzis", cmd_today))
-    _app.add_handler(CommandHandler("zadania", cmd_tasks))
-    _app.add_handler(CommandHandler("pomysl", cmd_idea))
-    _app.add_handler(CommandHandler("szukaj", cmd_search))
-    _app.add_handler(CommandHandler("nowy", cmd_new))
-    _app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, on_message))
-    await _app.initialize()
-    await _app.start()
-    await _app.updater.start_polling(drop_pending_updates=True)
-    if TELEGRAM_ALLOWED_CHAT_IDS:
+    try:
+        _app = Application.builder().token(config.TELEGRAM_BOT_TOKEN).build()
+        _app.add_handler(CommandHandler(["start", "help", "pomoc"], cmd_start))
+        _app.add_handler(CommandHandler("dzis", cmd_today))
+        _app.add_handler(CommandHandler("zadania", cmd_tasks))
+        _app.add_handler(CommandHandler("pomysl", cmd_idea))
+        _app.add_handler(CommandHandler("szukaj", cmd_search))
+        _app.add_handler(CommandHandler("nowy", cmd_new))
+        _app.add_handler(MessageHandler(filters.PHOTO | filters.Document.IMAGE, on_photo))
+        _app.add_handler(MessageHandler(filters.VOICE | filters.AUDIO, on_voice))
+        _app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, on_message))
+        await _app.initialize()
+        await _app.start()
+        await _app.updater.start_polling(drop_pending_updates=True)
+        STATE["username"] = _app.bot.username
+    except Exception as e:  # noqa: BLE001
+        STATE["error"] = str(e)
+        log.error("Telegram nie wystartował: %s", e)
+        _app = None
+        return False
+    STATE["running"] = True
+    if not _sender_registered:
         notifier.register_sender(_broadcast)
-    log.info("Telegram bot działa")
+        _sender_registered = True
+    log.info("Telegram bot @%s działa", STATE["username"])
     return True
 
 
 async def stop() -> None:
+    global _app
     if _app:
-        await _app.updater.stop()
-        await _app.stop()
-        await _app.shutdown()
+        try:
+            await _app.updater.stop()
+            await _app.stop()
+            await _app.shutdown()
+        except Exception as e:  # noqa: BLE001
+            log.warning("Zatrzymanie Telegrama: %s", e)
+    _app = None
+    STATE["running"] = False
+
+
+async def restart() -> bool:
+    await stop()
+    return await start()
