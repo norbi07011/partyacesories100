@@ -230,11 +230,12 @@ def _clean(data: dict, allowed: set[str]) -> dict:
 
 async def execute(name: str, args: dict):
     """Zwraca tekst (JSON) albo listę bloków treści (np. zdjęcia dla view_photos)."""
-    import extra_tools
     import mcp_client
+    import modules
     try:
-        if name in extra_tools.NAMES:
-            result = await extra_tools.execute(name, args or {})
+        mod = modules.owner(name)
+        if mod is not None:
+            result = await mod.execute(name, args or {})
         elif mcp_client.manager.owns(name):
             return await mcp_client.manager.call(name, args or {})
         else:

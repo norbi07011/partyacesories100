@@ -1,0 +1,12 @@
+/* Komputer, Doradca, Pamięć */
+.nav-group{font-size:10.5px;text-transform:uppercase;letter-spacing:.9px;color:var(--muted);opacity:.7;padding:14px 10px 4px}
+.insight{display:flex;gap:14px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.insight:last-child{border-bottom:0}
+.insight .t{flex:1 1 320px;min-width:0}
+.insight.sev-critical b{color:var(--warn)}
+.advisor-home{margin-bottom:18px;border-color:rgba(217,165,91,.35)}
+.status-line{display:flex;gap:8px;align-items:center}
+@media (max-width:760px){
+  .nav-group{display:none}
+  .insight .actions{width:100%}
+}

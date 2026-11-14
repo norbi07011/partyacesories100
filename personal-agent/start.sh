@@ -11,6 +11,7 @@ cd "$(dirname "$0")"
 MODEL=$(grep -E '^OLLAMA_MODEL=' .env | cut -d= -f2); MODEL=${MODEL:-qwen3:8b}
 if command -v ollama >/dev/null 2>&1; then
   ollama list | grep -q "$MODEL" || { echo "Pobieram model $MODEL (jednorazowo kilka GB)..."; ollama pull "$MODEL" || true; }
+  ollama list | grep -q "nomic-embed-text" || ollama pull nomic-embed-text || true
 else
   echo "Brak Ollamy. Zainstaluj: https://ollama.com/download  (Linux: curl -fsSL https://ollama.com/install.sh | sh)"
 fi

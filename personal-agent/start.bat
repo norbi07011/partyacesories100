@@ -36,6 +36,11 @@ if defined OLLAMA_EXE (
     echo Pobieram model %OLLAMA_MODEL% - jednorazowo kilka GB, prosze czekac...
     "%OLLAMA_EXE%" pull %OLLAMA_MODEL%
   )
+  "%OLLAMA_EXE%" list | findstr /i "nomic-embed-text" >nul
+  if errorlevel 1 (
+    echo Pobieram model pamieci nomic-embed-text - ok. 270 MB...
+    "%OLLAMA_EXE%" pull nomic-embed-text
+  )
 )
 
 start "" http://127.0.0.1:8765/

@@ -86,6 +86,43 @@ async def backup() -> None:
         old.unlink(missing_ok=True)
 
 
+async def advisor_monitor() -> None:
+    import advisor
+    await advisor.run_monitor()
+
+
+async def rules_tick() -> None:
+    import advisor
+    await advisor.tick_rules()
+
+
+async def weekly_review() -> None:
+    import advisor
+    await advisor.weekly_review()
+
+
+async def kb_reindex() -> None:
+    import knowledge_base
+    await knowledge_base.reindex()
+
+
+async def websites_check() -> None:
+    try:
+        import websites
+    except ImportError:
+        return
+    await websites.check_all()
+
+
+async def trading_tick() -> None:
+    try:
+        from trading import bots, paper
+    except ImportError:
+        return
+    await paper.check_positions()
+    await bots.run_bots()
+
+
 JOBS = {
     "reminders": ("Przypomnienia o terminach", check_reminders),
     "brief": ("Poranny brief na Telegram", morning_brief),
@@ -94,6 +131,12 @@ JOBS = {
     "finance_report": ("Miesięczny raport finansowy (1. dnia miesiąca)", monthly_finance_report),
     "reindex": ("Nocne skanowanie plików", reindex_files),
     "backup": ("Kopia zapasowa bazy", backup),
+    "advisor": ("Doradca: szukanie problemów i okazji (co godzinę)", advisor_monitor),
+    "rules": ("Automatyzacje „jeśli… to…”", rules_tick),
+    "weekly": ("Przegląd tygodnia (poniedziałek)", weekly_review),
+    "kb": ("Indeksowanie wiedzy lokalnej (noc)", kb_reindex),
+    "websites": ("Monitoring stron klientów (co 10 min)", websites_check),
+    "trading": ("Trading demo: SL/TP i boty (co minutę)", trading_tick),
 }
 
 
@@ -109,6 +152,12 @@ def _plan() -> None:
     scheduler.add_job(reindex_files, "cron", hour=3, minute=30, id="reindex", max_instances=1, timezone=tz)
     scheduler.add_job(monthly_finance_report, "cron", day=1, hour=9, minute=7, id="finance_report", timezone=tz)
     scheduler.add_job(backup, "cron", hour=3, minute=10, id="backup", timezone=tz)
+    scheduler.add_job(advisor_monitor, "interval", minutes=60, id="advisor", max_instances=1)
+    scheduler.add_job(rules_tick, "interval", minutes=1, id="rules", max_instances=1)
+    scheduler.add_job(weekly_review, "cron", day_of_week="mon", hour=8, minute=23, id="weekly", timezone=tz)
+    scheduler.add_job(kb_reindex, "cron", hour=4, minute=5, id="kb", max_instances=1, timezone=tz)
+    scheduler.add_job(websites_check, "interval", minutes=10, id="websites", max_instances=1)
+    scheduler.add_job(trading_tick, "interval", minutes=1, id="trading", max_instances=1)
 
 
 def start() -> None:

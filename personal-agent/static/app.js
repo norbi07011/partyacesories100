@@ -526,17 +526,20 @@ const GROUPS = [
   {title:'Claude — opcjonalnie (chmura, płatny)', keys:['ANTHROPIC_API_KEY','AGENT_MODEL','AGENT_EFFORT','AGENT_FALLBACKS'], id:'claude'},
   {title:'Telegram', keys:['TELEGRAM_BOT_TOKEN','TELEGRAM_ALLOWED_CHAT_IDS'], id:'telegram'},
   {title:'Ty', keys:['USER_NAME','USER_PROFILE','LOCATION','TIMEZONE']},
-  {title:'Głos i rozmowa', keys:['VOICE_NAME','VOICE_TTS','VOICE_STT','WHISPER_MODEL','TELEGRAM_VOICE_REPLY'], id:'voice'},
+  {title:'Głos i rozmowa', keys:['VOICE_MODE','VOICE_TTS','VOICE_NAME','PIPER_VOICE','VOICE_STT','WHISPER_MODEL','TELEGRAM_VOICE_REPLY'], id:'voice'},
+  {title:'Wyszukiwanie i komputer', keys:['SEARXNG_URL','COMPUTER_SHELL']},
   {title:'Pliki na dysku', keys:['WATCH_FOLDERS','INDEX_EXIF']},
   {title:'Harmonogram i przypomnienia', keys:['MORNING_BRIEF_ENABLED','MORNING_BRIEF_HOUR','MORNING_BRIEF_MINUTE','REMINDER_MINUTES']},
   {title:'Krypto', keys:['CRYPTO_WATCHLIST','CRYPTO_CHECK_MINUTES']},
   {title:'Serwer', keys:['HOST','PORT']},
 ];
-const BOOL = new Set(['AGENT_FALLBACKS','INDEX_EXIF','MORNING_BRIEF_ENABLED','TELEGRAM_VOICE_REPLY']);
+const BOOL = new Set(['AGENT_FALLBACKS','INDEX_EXIF','MORNING_BRIEF_ENABLED','TELEGRAM_VOICE_REPLY','COMPUTER_SHELL']);
 const SELECTS = {
   LLM_PROVIDER:[['ollama','Lokalny model (Ollama) — darmowy, prywatny'],['claude','Claude (chmura) — najmądrzejszy, płatny']],
   VOICE_NAME:[['pl-PL-ZofiaNeural','Zofia — kobiecy'],['pl-PL-MarekNeural','Marek — męski']],
-  VOICE_TTS:[['edge','Naturalny głos (edge-tts, internet)'],['browser','Głos systemu (przeglądarka)']],
+  VOICE_TTS:[['edge','Naturalny głos (edge-tts, internet)'],['piper','Głos offline (Piper, lokalnie)'],['browser','Głos systemu (przeglądarka)']],
+  PIPER_VOICE:[['pl_PL-gosia-medium','Gosia — kobiecy'],['pl_PL-darkman-medium','Darkman — męski'],['pl_PL-mc_speech-medium','MC Speech — męski']],
+  VOICE_MODE:[['ptt','Dyktafon — mikrofon tylko po naciśnięciu'],['auto','Ciągłe słuchanie (jak telefon)']],
   VOICE_STT:[['browser','Przeglądarka (Chrome/Edge) — zalecane'],['whisper','Whisper — lokalnie, działa offline i w Firefoksie']],
   WHISPER_MODEL:[['tiny','tiny — najszybszy'],['base','base'],['small','small — zalecany'],['medium','medium — najdokładniejszy, wolny']],
   AGENT_EFFORT:[['low','low — szybko i tanio'],['medium','medium — zalecane'],['high','high — dokładniej'],['xhigh','xhigh'],['max','max — najdokładniej, najdrożej']] };

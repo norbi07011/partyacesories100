@@ -476,6 +476,16 @@ def list_documents(a: dict) -> list[dict]:
 # ------------------------------------------------------------------ sieć (model lokalny)
 async def web_search(query: str, max_results: int = 6) -> list[dict]:
     import asyncio
+    n = max(1, min(int(max_results or 6), 10))
+    if config.SEARXNG_URL:  # własna wyszukiwarka – bez limitów i śledzenia
+        try:
+            async with httpx.AsyncClient(timeout=20) as client:
+                r = await client.get(f"{config.SEARXNG_URL}/search", params={"q": query, "format": "json", "language": "pl"})
+                r.raise_for_status()
+                return [{"title": x.get("title"), "url": x.get("url"), "snippet": x.get("content"), "engine": x.get("engine")}
+                        for x in r.json().get("results", [])[:n]]
+        except Exception as e:  # noqa: BLE001 - spróbuj DuckDuckGo
+            pass  # SearXNG niedostępny – awaryjnie DuckDuckGo
     try:
         from ddgs import DDGS
     except ImportError:
@@ -529,6 +539,8 @@ async def execute(name: str, a: dict):
             data["amount"] = abs(float(data["amount"]))
             data["date"] = a.get("date") or db.now().strftime("%Y-%m-%d")
             tid = db.insert("transactions", {"currency": "PLN", **data, "created": db.now_str()})
+            import advisor
+            asyncio.create_task(advisor.on_transaction(data))
             return {"ok": True, "id": tid, "zapisano": data}
         case "list_transactions":
             where, p = ["1=1"], []

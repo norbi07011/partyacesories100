@@ -21,6 +21,14 @@ wyszukiwarka plików na dysku, wyszukiwarka w internecie, powiadomienia na Teleg
 
 | Funkcja | Jak |
 |---|---|
+| 📱 Sterowanie z telefonu | Aplikacja na telefon (PWA) + logowanie hasłem i 2FA. Zakładka **Komputer**: CPU/RAM/dyski, procesy, zrzut ekranu, otwieranie programów, blokada/uśpienie/restart/wyłączenie. Ryzykowne akcje czekają na Twoją zgodę (dashboard albo przycisk na Telegramie). Komendy Telegram `/komputer`, `/zrzut` |
+| 🧭 Doradca | Co godzinę sam szuka problemów i okazji: zaległe zadania, nieopłacone projekty, skoki kosztów, brak sprzedaży, mało miejsca, strony klientów, magazyn. Ważne zgłasza na Telegram. Automatyzacje „jeśli… to…” i przegląd tygodnia w poniedziałek |
+| 🧠 Pamięć lokalna | Wyszukiwanie po znaczeniu w dokumentach, pomysłach, rozmowach i plikach z Twoich folderów (lokalnie przez Ollamę), graf osób i firm, dziennik decyzji. Nic nie wychodzi do sieci |
+| 👕 Stratfanat | Produkty i magazyn wg rozmiarów, sprzedaż i dostawy (od razu w finansach), kolekcje i dropy, trendy, projekty z makietami ubrań (SVG) i wizualizacjami AI (lokalny ComfyUI). Umiejętności: projektant mody, trendy streetwear, rozwój marki, kampania dropu |
+| 🌐 Strony WWW klientów | Monitoring działania co 10 min, SSL, domeny, odnowienia hostingu, audyt SEO/wydajności, abonamenty |
+| 📈 Trading demo | Z Twojego projektu MESSUAI: wykres świecowy ze wskaźnikami, analizy agentek AI, konto demo (wirtualne pieniądze), boty demo, backtest, baza wiedzy tradingowej. Żadnych prawdziwych zleceń |
+| 📥 Foto/wideo | Import z karty pamięci do uporządkowanych folderów + kopia zapasowa, foldery do archiwizacji, napisy .srt do filmów (lokalnie) |
+| 🎙 Dyktafon | W rozmowie mikrofon włącza się dopiero po naciśnięciu „Dyktafon” (albo spacji); głos offline Piper; własna wyszukiwarka SearXNG; testy jakości modelu |
 | 🆓 Darmowy model lokalny | Domyślnie agent działa na Twoim komputerze przez Ollamę (Qwen3 8B): bez opłat i bez wysyłania danych do chmury. Claude można włączyć w Ustawieniach |
 | 👤 Zna Cię od startu | Plik `profil.md` (edycja w Ustawieniach → Profil i firma): Stratfanat, strony WWW, teledyski, fotografia, krypto, cele i stawki |
 | 💰 Finanse i portfel | Przychody, koszty, straty i inwestycje w podziale na obszary (Stratfanat, WWW, teledyski, foto, krypto). Wykresy, marża, porównanie z poprzednim miesiącem, portfel z wyceną krypto, eksport CSV. Mówisz „zapłaciłem 120 zł za hosting”, a agent sam to zapisuje |
@@ -86,7 +94,23 @@ Za pierwszym razem skrypt zainstaluje wszystko sam. Dashboard otworzy się pod *
 Zakładka **Umiejętności → Serwery MCP → „Wstaw przykłady”**. Włącz wybrany serwer (`"enabled": true`) i kliknij „Zapisz i połącz”.
 Serwery uruchamiane przez `npx` wymagają [Node.js](https://nodejs.org). Katalog serwerów: https://github.com/modelcontextprotocol/servers
 
-### 6. Autostart z Windows (opcjonalnie)
+### 6. Dostęp z telefonu (gdy nie ma Cię w domu)
+1. Dashboard → **Komputer → Dostęp z telefonu**: ustaw hasło (i najlepiej 2FA – zeskanuj kod QR w Google Authenticator/Aegis).
+2. Zainstaluj **Tailscale** na komputerze i telefonie (https://tailscale.com/download), zaloguj się tym samym kontem.
+3. Na komputerze raz uruchom: `tailscale serve --bg 8765` – dostaniesz adres `https://<komputer>.<sieć>.ts.net`
+   (HTTPS jest potrzebny do mikrofonu w rozmowie głosowej na telefonie).
+4. Otwórz ten adres na telefonie, zaloguj się i wybierz „Dodaj do ekranu głównego” – masz aplikację Studio Agent.
+Komputer musi być włączony (możesz wyłączyć usypianie albo użyć Wake-on-LAN).
+
+### 7. Wyszukiwarka SearXNG (opcjonalnie, bez limitów)
+Z Docker Desktop: w folderze `searxng/` uruchom `docker compose up -d` (najpierw zmień `secret_key` w `settings.yml`),
+potem w Ustawieniach wpisz `SEARXNG_URL = http://127.0.0.1:8888`.
+
+### 8. Wizualizacje ubrań AI (opcjonalnie)
+Zainstaluj [ComfyUI](https://github.com/comfyanonymous/ComfyUI) z modelem SDXL i uruchom (port 8188).
+Agent sam wyśle tam prompt projektu. Bez ComfyUI dostajesz techniczne makiety SVG.
+
+### 9. Autostart z Windows (opcjonalnie)
 Naciśnij `Win + R`, wpisz `shell:startup` i wklej tam skrót do `start.bat`.
 
 ## Przykładowe polecenia
@@ -147,6 +171,17 @@ Naciśnij `Win + R`, wpisz `shell:startup` i wklej tam skrót do `start.bat`.
 | `voice.py` | Głos: synteza (edge-tts) i rozpoznawanie mowy (faster-whisper) |
 | `memory.py` | Pamięć: wyszukiwanie w historii (FTS5) i streszczenia rozmów |
 | `skills.py`, `skills/` | Umiejętności (instrukcje w Markdown) |
+| `auth.py` | Logowanie przy dostępie z sieci (hasło, 2FA, sesje) |
+| `computer.py` | Sterowanie komputerem + kolejka zatwierdzeń |
+| `advisor.py` | Doradca: wnioski, automatyzacje, przegląd tygodnia |
+| `knowledge_base.py` | Pamięć lokalna: wyszukiwanie semantyczne, graf osób i firm, decyzje |
+| `media.py` | Import z karty, archiwizacja, napisy |
+| `evals.py` | Testy jakości modelu |
+| `stratfanat.py`, `brand/` | Marka Stratfanat: magazyn, sprzedaż, kolekcje, projekty, trendy |
+| `websites.py` | Strony klientów: monitoring i audyt |
+| `trading/`, `knowledge/trading/` | Trading demo (z projektu MESSUAI) |
+| `modules.py` | Rejestr modułów z narzędziami |
+| `searxng/` | Gotowa konfiguracja własnej wyszukiwarki |
 | `local_llm.py` | Darmowy model lokalny (Ollama): pętla agenta, pobieranie modeli |
 | `finance.py` | Finanse, raporty i portfel |
 | `profil.md` | Co agent wie o Tobie od startu |

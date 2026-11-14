@@ -3,11 +3,12 @@ import asyncio
 import base64
 import logging
 
-from telegram import Update
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ChatAction
-from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
+from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes, MessageHandler, filters
 
 import agent
+import computer
 import db
 import file_indexer
 import notifier
@@ -17,6 +18,7 @@ import config
 log = logging.getLogger("telegram")
 _app: Application | None = None
 _sender_registered = False
+_approval_registered = False
 STATE = {"running": False, "error": None, "username": None}
 
 HELP = (
@@ -29,7 +31,7 @@ HELP = (
     "• nagraj głosówkę – odpowiem tekstem i głosem\n\n"
     "Skróty:\n"
     "/dzis – plan na dziś\n/zadania – otwarte zadania\n/pomysl <tekst> – szybki zapis pomysłu\n"
-    "/szukaj <fraza> – szukaj plików\n/nowy – wyczyść kontekst rozmowy"
+    "/szukaj <fraza> – szukaj plików\n/komputer – stan komputera\n/zrzut – zrzut ekranu\n/nowy – wyczyść kontekst rozmowy"
 )
 
 
@@ -174,6 +176,54 @@ async def on_voice(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
             log.warning("Głos odpowiedzi nieudany: %s", e)
 
 
+async def cmd_computer(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
+    if not await _guard(update):
+        return
+    st = await asyncio.to_thread(computer.status)
+    if st.get("error"):
+        await update.effective_message.reply_text(st["error"])
+        return
+    disks = "\n".join(f"  💽 {d['mount']}: wolne {d['free_gb']} GB z {d['total_gb']} GB" for d in st["disks"][:5])
+    bat = f"\n🔋 {st['battery']['pct']}%{' (ładuje)' if st['battery']['plugged'] else ''}" if st.get("battery") else ""
+    await update.effective_message.reply_text(
+        f"🖥 {st['host']} ({st['system']})\n⚙️ CPU {st['cpu_pct']}% · RAM {st['ram_used_pct']}% z {st['ram_total_gb']} GB"
+        f"\n⏱ działa {st['uptime_h']} h{bat}\n{disks}")
+
+
+async def cmd_screenshot(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
+    if not await _guard(update):
+        return
+    shot = await asyncio.to_thread(computer.screenshot)
+    if shot.get("error"):
+        await update.effective_message.reply_text(shot["error"])
+        return
+    with open(shot["path"], "rb") as f:
+        await update.effective_message.reply_photo(f, caption="🖥 Ekran komputera")
+
+
+async def on_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
+    q = update.callback_query
+    if not q or not q.message or q.message.chat.id not in config.TELEGRAM_ALLOWED_CHAT_IDS:
+        return
+    action, _, aid = (q.data or "").partition(":")
+    if action not in ("ok", "no") or not aid.isdigit():
+        await q.answer()
+        return
+    res = await computer.decide(int(aid), action == "ok")
+    await q.answer("Zatwierdzono" if action == "ok" else "Odrzucono")
+    status = {"done": "✅ Wykonano", "failed": "⚠️ Nie udało się", "rejected": "❌ Odrzucono"}.get(res.get("status"), res.get("error", ""))
+    await q.edit_message_text(f"{q.message.text}\n\n{status}")
+
+
+async def _send_approval(action_id: int, summary: str) -> None:
+    if not _app or not STATE["running"] or not config.TELEGRAM_ALLOWED_CHAT_IDS:
+        raise RuntimeError("Telegram niepołączony")
+    kb = InlineKeyboardMarkup([[InlineKeyboardButton("✅ Zatwierdź", callback_data=f"ok:{action_id}"),
+                                InlineKeyboardButton("❌ Odrzuć", callback_data=f"no:{action_id}")]])
+    for chat_id in config.TELEGRAM_ALLOWED_CHAT_IDS:
+        await _app.bot.send_message(chat_id, f"🛡 Agent prosi o zgodę:\n{summary}", reply_markup=kb)
+
+
 async def _broadcast(text: str) -> None:
     if not _app:
         return
@@ -198,6 +248,9 @@ async def start() -> bool:
         _app.add_handler(CommandHandler("pomysl", cmd_idea))
         _app.add_handler(CommandHandler("szukaj", cmd_search))
         _app.add_handler(CommandHandler("nowy", cmd_new))
+        _app.add_handler(CommandHandler("komputer", cmd_computer))
+        _app.add_handler(CommandHandler("zrzut", cmd_screenshot))
+        _app.add_handler(CallbackQueryHandler(on_callback))
         _app.add_handler(MessageHandler(filters.PHOTO | filters.Document.IMAGE, on_photo))
         _app.add_handler(MessageHandler(filters.VOICE | filters.AUDIO, on_voice))
         _app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, on_message))
@@ -211,9 +264,13 @@ async def start() -> bool:
         _app = None
         return False
     STATE["running"] = True
+    global _approval_registered
     if not _sender_registered:
         notifier.register_sender(_broadcast)
         _sender_registered = True
+    if not _approval_registered:
+        computer.register_approval_sender(_send_approval)
+        _approval_registered = True
     log.info("Telegram bot @%s działa", STATE["username"])
     return True
 

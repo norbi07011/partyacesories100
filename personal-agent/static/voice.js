@@ -77,7 +77,7 @@ function makeRecorder(stream, analyser, onAudio, {silenceMs=1100, threshold=0.02
   }
   function stop(){ speaking=false; startedLoud=0; try{ rec && rec.state!=='inactive' && rec.stop(); }catch(e){} }
   tick();
-  return { pause(){ stop(); paused=true; }, get speaking(){ return speaking; }, destroy(){ stopped=true; stop(); } };
+  return { pause(){ stop(); paused=true; }, flush(){ if (speaking) stop(); }, get speaking(){ return speaking; }, destroy(){ stopped=true; stop(); } };
 }
 let paused = false;
 async function whisper(blob){
@@ -114,14 +114,17 @@ $('#dictate').onclick = async () => {
 /* =====================================================================
    ROZMOWA GŁOSOWA
    ===================================================================== */
-const call = { active:false, state:'idle', muted:false, speaker:true, rec:null, recorder:null, micStream:null, micAnalyser:null,
+const call = { ptt:true, pttActive:false, interim:'', active:false, state:'idle', muted:false, speaker:true, rec:null, recorder:null, micStream:null, micAnalyser:null,
   camStream:null, pendingFrame:null, t0:0, timer:null, finalText:'', submitT:null, queue:[], playing:false, streamDone:true, raf:null, simLevel:0, ctrl:null };
 
 const STATUS_TXT = { idle:'', listening:'Słucham…', thinking:'Myślę…', speaking:'Mówi…', muted:'Mikrofon wyciszony' };
 function setState(s, label){
   call.state = s;
-  $('#call-status').textContent = label || (call.muted && s==='listening' ? STATUS_TXT.muted : STATUS_TXT[s]);
-  if (s === 'listening') startListening(); else pauseListening();
+  const waiting = s === 'listening' && call.ptt && !call.pttActive;
+  $('#call-status').textContent = label || (call.muted && s==='listening' ? STATUS_TXT.muted : waiting ? 'Naciśnij Dyktafon i mów' : STATUS_TXT[s]);
+  $('#c-ptt')?.classList.toggle('active', s === 'listening' && call.pttActive);
+  $('#c-ptt')?.classList.toggle('pulse', waiting);
+  if (s === 'listening' && !waiting) startListening(); else pauseListening();
 }
 
 async function openCall(){
@@ -138,6 +141,8 @@ async function openCall(){
     $('#call-status').textContent = 'Brak dostępu do mikrofonu — zezwól w przeglądarce (ikona kłódki przy adresie).';
   }
   const st = await voiceStatus();
+  call.ptt = (st.voice_mode || 'ptt') !== 'auto'; call.pttActive = false;
+  $('#c-ptt').hidden = !call.ptt;
   call.useWhisper = !SR || st.stt_engine === 'whisper';
   if (call.useWhisper && !st.whisper_installed) {
     $('#cap-agent').textContent = 'Ta przeglądarka nie rozpoznaje mowy, a Whisper nie jest zainstalowany. Użyj Chrome lub Edge albo zainstaluj faster-whisper (requirements-voice.txt).';
@@ -146,10 +151,11 @@ async function openCall(){
   call.timer = setInterval(()=>{ const s=Math.floor((Date.now()-call.t0)/1000); $('#call-timer').textContent = `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`; }, 500);
   drawOrb();
   const hello = (typeof chatGreetingName === 'function') ? chatGreetingName() : '';
-  pushTranscript('agent', 'Cześć' + hello + '! Słucham cię.');
-  $('#cap-agent').textContent = 'Cześć' + hello + '! Słucham cię.';
+  const greet = 'Cześć' + hello + (call.ptt ? '! Naciśnij dyktafon, kiedy będziesz gotowy.' : '! Słucham cię.');
+  pushTranscript('agent', greet);
+  $('#cap-agent').textContent = greet;
   setState('speaking');
-  await speakText('Cześć' + hello + '! Słucham cię.');
+  await speakText(greet);
   if (call.active) setState('listening');
 }
 
@@ -175,7 +181,7 @@ function startListening(){
     if (!call.recorder) call.recorder = makeRecorder(call.micStream, call.micAnalyser, async blob => {
       if (call.state !== 'listening') return;
       setState('thinking', 'Rozpoznaję mowę…');
-      try { const t = await whisper(blob); if (t.trim()) submit(t.trim()); else setState('listening'); }
+      try { const t = await whisper(blob); if (t.trim()) submit(t.trim()); else { call.pttActive = false; setState('listening'); } }
       catch(e) { $('#cap-agent').textContent = '⚠️ ' + e.message; setState('listening'); }
     });
     return;
@@ -187,6 +193,7 @@ function startListening(){
     let interim = '', fin = '';
     for (let i = e.resultIndex; i < e.results.length; i++) { const t = e.results[i][0].transcript; if (e.results[i].isFinal) fin += t; else interim += t; }
     if (fin) call.finalText += ' ' + fin;
+    call.interim = interim;
     $('#cap-user').textContent = (call.finalText + ' ' + interim).trim();
     clearTimeout(call.submitT);
     if (call.finalText.trim()) call.submitT = setTimeout(()=>{ const t = call.finalText.trim(); call.finalText=''; submit(t); }, interim ? 1400 : 700);
@@ -205,6 +212,7 @@ function pauseListening(){
 let sentenceBuf = '';
 async function submit(text){
   if (!call.active || !text) return;
+  call.pttActive = false;
   setState('thinking');
   $('#cap-user').textContent = text; $('#cap-agent').textContent = '';
   pushTranscript('user', text);
@@ -336,6 +344,25 @@ function drawOrb(){
   g.globalCompositeOperation = 'source-over';
   if (call.active) call.raf = requestAnimationFrame(drawOrb);
 }
+
+/* ---------- dyktafon (push-to-talk) ---------- */
+function pttPress(){
+  if (!call.active) return;
+  if (call.state === 'speaking') { call.queue = []; stopSpeaking(); }
+  if (call.state === 'thinking') return;
+  if (!call.pttActive) {               // start mówienia
+    call.pttActive = true; call.finalText = ''; call.interim = ''; $('#cap-user').textContent = '';
+    setState('listening');
+    return;
+  }
+  // drugie naciśnięcie: wyślij to, co powiedziałeś
+  if (call.useWhisper) { call.recorder && call.recorder.flush(); return; }
+  const text = (call.finalText + ' ' + (call.interim || '')).trim();
+  call.finalText = ''; call.interim = '';
+  if (text) submit(text); else { call.pttActive = false; setState('listening'); }
+}
+$('#c-ptt').onclick = pttPress;
+document.addEventListener('keydown', e => { if (call.active && call.ptt && e.code === 'Space' && !e.repeat && e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'INPUT') { e.preventDefault(); pttPress(); } });
 
 /* ---------- przyciski ---------- */
 $('#call-open-side').onclick = openCall;

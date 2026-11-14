@@ -34,7 +34,6 @@ TOOL_LABELS = {
     "add_price_alert": "Ustawiam alert cenowy", "list_price_alerts": "Sprawdzam alerty",
     "add_project": "Zakładam projekt", "list_projects": "Przeglądam projekty", "update_project": "Aktualizuję projekt",
     "web_search": "Szukam w internecie", "web_fetch": "Czytam stronę",
-    **extra_tools.LABELS,
 }
 # które widoki dashboardu odświeżyć po danym narzędziu
 TOOL_CHANGES = {
@@ -43,7 +42,6 @@ TOOL_CHANGES = {
     "add_idea": "ideas", "update_idea": "ideas", "remember": "memory", "forget": "memory",
     "add_project": "projects", "update_project": "projects", "add_price_alert": "alerts",
     "send_notification": "notifications", "reindex_files": "files",
-    **extra_tools.CHANGES,
 }
 
 BASE_PROMPT = """Jesteś osobistym agentem AI, doradcą i asystentem użytkownika.
@@ -63,7 +61,11 @@ Twoje role:
 - Planując plener sprawdzasz pogodę oraz złotą i niebieską godzinę (weather_forecast).
 - Oglądasz zdjęcia z dysku (view_photos), czytasz dokumenty (read_document), sprawdzasz pliki wideo (media_info).
 - Dłuższe materiały (shot-listy, wyceny, briefy, call sheety) zapisujesz w bibliotece dokumentów (save_document).
-- Pamiętasz wszystko: gdy użytkownik nawiązuje do wcześniejszych rozmów lub ustaleń, użyj recall.
+- Pamiętasz wszystko: gdy użytkownik nawiązuje do wcześniejszych rozmów lub ustaleń, użyj recall, a do wiedzy z dokumentów
+  i plików – knowledge_search. Nowe osoby i firmy (klienci, modelki, dostawcy, drukarnie) zapisuj w grafie pamięci
+  (remember_entity, link_entities), ważne decyzje – log_decision.
+- Jesteś doradcą: przy pytaniach „co robić / jak idzie” użyj umiejętności Doradca biznesowy i advisor_insights.
+- Możesz sterować komputerem użytkownika (computer_*). Ryzykowne akcje czekają na jego zatwierdzenie – nie obchodź tego.
 - Prowadzisz finanse: każdy przychód, koszt, stratę i inwestycję, o której wspomni użytkownik, zapisujesz od razu
   (add_transaction) z właściwym obszarem (Stratfanat, Strony WWW, Teledyski, Fotografia, Krypto, Prywatne).
   Gdy prosi o statystyki / raport / „jak mi idzie” – użyj umiejętności Raport finansowy i pokaż wykresy jako bloki ```chart.
@@ -95,9 +97,17 @@ Liczby i godziny zapisuj tak, by dobrze brzmiały. Jeśli wynik jest długi (np.
 save_document i powiedz krótko, co zapisałeś. Gdy coś jest niejasne, dopytaj jednym krótkim pytaniem."""
 
 
+def _merge_registry() -> None:
+    import modules
+    TOOL_LABELS.update(modules.labels())
+    TOOL_CHANGES.update(modules.changes())
+
+
 def tool_list(local: bool = False) -> list[dict]:
+    import modules
+    _merge_registry()
     web = extra_tools.LOCAL_WEB_TOOLS if local else SERVER_TOOLS
-    return [*TOOLS, *extra_tools.TOOLS, *mcp_client.manager.tool_defs(), *web]
+    return [*TOOLS, *modules.tools(), *mcp_client.manager.tool_defs(), *web]
 
 
 def profile_text() -> str:
@@ -150,7 +160,7 @@ async def _noop(_: dict) -> None:
 
 
 async def run(user_text: str, session: str = "web", save: bool = True,
-              images: list[dict] | None = None, emit: Emit | None = None, voice: bool = False) -> str:
+              images: list[dict] | None = None, emit: Emit | None = None, voice: bool = False, executor=None) -> str:
     """Wykonuje polecenie użytkownika i zwraca odpowiedź tekstową.
 
     images: lista {"media_type": "image/jpeg", "data": "<base64>"}
@@ -172,14 +182,15 @@ async def run(user_text: str, session: str = "web", save: bool = True,
             import local_llm
             system = "\n\n".join(b["text"] for b in _system_prompt(voice))
             parts, changed, error = await local_llm.run_loop(system, history, text, images, tool_list(local=True),
-                                                             execute, emit, MAX_STEPS)
+                                                             executor or execute, emit, MAX_STEPS)
         else:
             content: list[dict] = [
                 {"type": "image", "source": {"type": "base64", "media_type": im["media_type"], "data": im["data"]}}
                 for im in (images or [])
             ]
             content.append({"type": "text", "text": text})
-            parts, changed, error = await _run_claude([*history, {"role": "user", "content": content}], voice, emit)
+            parts, changed, error = await _run_claude([*history, {"role": "user", "content": content}], voice, emit,
+                                                      executor or execute)
         if error:
             return "⚠️ " + error
         reply = "\n\n".join(parts).strip() or "✅ Gotowe."
@@ -201,7 +212,8 @@ async def complete(prompt: str, max_tokens: int = 4000) -> str:
     return "\n".join(b.text for b in resp.content if b.type == "text").strip()
 
 
-async def _run_claude(messages: list[dict], voice: bool, emit: Emit) -> tuple[list[str], set[str], str | None]:
+async def _run_claude(messages: list[dict], voice: bool, emit: Emit, executor=None) -> tuple[list[str], set[str], str | None]:
+    executor = executor or execute
     extra = {"betas": ["server-side-fallback-2026-07-01"], "fallbacks": "default"} if config.FALLBACKS else {}
     client = get_client()
     parts: list[str] = []
@@ -253,7 +265,7 @@ async def _run_claude(messages: list[dict], voice: bool, emit: Emit) -> tuple[li
         if response.stop_reason != "tool_use":
             break
         calls = [b for b in response.content if b.type == "tool_use"]
-        results = await asyncio.gather(*(execute(c.name, c.input) for c in calls))
+        results = await asyncio.gather(*(executor(c.name, c.input) for c in calls))
         messages.append({"role": "user", "content": [
             {"type": "tool_result", "tool_use_id": c.id, "content": r} for c, r in zip(calls, results)
         ]})

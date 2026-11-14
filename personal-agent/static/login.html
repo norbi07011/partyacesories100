@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0c0c0d">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/static/icons/icon-180.png">
+<title>Studio Agent – logowanie</title>
+<style>
+:root{--bg:#0c0c0d;--panel:#141416;--panel2:#1a1a1d;--line:#26262b;--text:#ecebe8;--muted:#8d8b86;--accent:#d9a55b;--warn:#e07a5f}
+*{box-sizing:border-box}html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;display:flex;align-items:center;justify-content:center;padding:16px}
+.box{width:min(380px,100%);background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:28px}
+h1{font:400 28px Georgia,serif;margin:0 0 4px}h1 span{color:var(--accent)}
+p{color:var(--muted);margin:0 0 22px;font-size:13.5px}
+label{display:block;font-size:12px;color:var(--muted);margin:14px 0 6px}
+input{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;color:var(--text);font-size:16px;outline:none}
+input:focus{border-color:var(--accent)}
+button{width:100%;margin-top:20px;border:0;border-radius:10px;padding:13px;background:var(--accent);color:#16130e;font-weight:600;font-size:15px;cursor:pointer}
+.err{color:var(--warn);font-size:13px;margin-top:12px;min-height:18px}
+</style>
+</head>
+<body>
+<form class="box" id="f">
+  <h1>Studio <span>Agent</span></h1>
+  <p>Dostęp zdalny – zaloguj się, żeby sterować agentem i komputerem.</p>
+  <label for="pw">Hasło</label>
+  <input id="pw" type="password" autocomplete="current-password" required>
+  <div id="code-wrap" hidden><label for="code">Kod z aplikacji 2FA</label><input id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6"></div>
+  <button>Zaloguj</button>
+  <div class="err" id="err"></div>
+</form>
+<script>
+fetch('/api/auth/status').then(r=>r.json()).then(s=>{ document.getElementById('code-wrap').hidden = !s.totp_enabled;
+  if (!s.password_set) document.getElementById('err').textContent = 'Hasło nie jest ustawione – ustaw je na komputerze: Komputer → Dostęp z telefonu.'; });
+document.getElementById('f').onsubmit = async e => {
+  e.preventDefault();
+  const r = await fetch('/api/auth/login', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({password: document.getElementById('pw').value, code: document.getElementById('code').value})});
+  if (r.ok) location.href = '/'; else { const j = await r.json().catch(()=>({})); document.getElementById('err').textContent = j.detail || 'Błąd logowania'; }
+};
+</script>
+</body>
+</html>

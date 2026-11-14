@@ -383,3 +383,9 @@ th{color:var(--muted);font-weight:500;font-size:12px;text-transform:uppercase;le
 .fin-table tbody td{border-bottom:1px solid var(--line);vertical-align:middle}
 .fin-table td:nth-child(3){width:100%}
 .fin-table td.num,.fin-table th.num{white-space:nowrap}
+.cbtn.ptt{width:74px;height:74px;background:var(--accent);color:#16130e}
+.cbtn.ptt svg{width:30px;height:30px}
+.cbtn.ptt.active{background:#e5484d;color:#fff;animation:pulse 1.2s infinite}
+.cbtn.ptt.pulse{box-shadow:0 0 0 0 rgba(217,165,91,.6);animation:pttglow 2s infinite}
+@keyframes pttglow{0%,100%{box-shadow:0 0 0 0 rgba(217,165,91,.5)}50%{box-shadow:0 0 0 12px rgba(217,165,91,0)}}
+.cbtn.ptt span{top:80px}

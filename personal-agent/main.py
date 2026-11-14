@@ -6,11 +6,19 @@ from contextlib import asynccontextmanager
 
 import uvicorn
 from fastapi import Body, FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse, PlainTextResponse, Response, StreamingResponse
+from fastapi.responses import (FileResponse, JSONResponse, PlainTextResponse, RedirectResponse, Response,
+                               StreamingResponse)
 from fastapi.staticfiles import StaticFiles
 
+import advisor
 import agent
+import auth
+import computer
 import config
+import evals
+import knowledge_base
+import media
+import modules
 import crypto
 import db
 import file_indexer
@@ -35,6 +43,19 @@ async def lifespan(app: FastAPI):
     db.init()
     memory.init()
     finance.init()
+    for mod in (auth, computer, advisor, knowledge_base, evals):
+        mod.init()
+    for name in ("stratfanat", "websites", "trading"):
+        try:
+            m = __import__(name)
+            m.init()
+            if hasattr(m, "router"):
+                pass
+            if hasattr(m, "alerts"):
+                advisor.register_provider(m.alerts)
+        except Exception as e:  # noqa: BLE001
+            log.warning("Moduł %s: %s", name, e)
+    modules.loaded()
     scheduler.start()
     await telegram_bot.start()
     await mcp_client.manager.start()
@@ -50,6 +71,156 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Studio Agent", lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=config.BASE_DIR / "static"), name="static")
+
+
+@app.middleware("http")
+async def auth_guard(request: Request, call_next):
+    """Z komputera: bez logowania. Z sieci/tunelu (telefon): wymagane hasło (+2FA)."""
+    path = request.url.path
+    if auth.is_remote(request) and not auth.is_public(path):
+        if not auth.session_valid(request.cookies.get(auth.COOKIE)):
+            if path.startswith("/api/"):
+                return JSONResponse({"detail": "Zaloguj się"}, status_code=401)
+            return RedirectResponse("/login")
+    response = await call_next(request)
+    response.headers.setdefault("X-Frame-Options", "DENY")
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    return response
+
+
+def _include_routers() -> None:
+    for name, attr in (("stratfanat", "router"), ("websites", "router"), ("trading.api", "router")):
+        try:
+            m = __import__(name, fromlist=[attr])
+            app.include_router(getattr(m, attr))
+        except Exception as e:  # noqa: BLE001
+            log.warning("API modułu %s niedostępne: %s", name, e)
+
+
+_include_routers()
+
+
+@app.get("/login")
+def login_page():
+    return FileResponse(config.BASE_DIR / "static" / "login.html", headers={"Cache-Control": "no-store"})
+
+
+@app.get("/manifest.webmanifest")
+def manifest():
+    return JSONResponse({
+        "name": "Studio Agent", "short_name": "Agent", "start_url": "/", "scope": "/", "display": "standalone",
+        "background_color": "#0c0c0d", "theme_color": "#0c0c0d", "lang": "pl", "orientation": "portrait",
+        "icons": [{"src": "/static/icons/icon-192.png", "sizes": "192x192", "type": "image/png"},
+                  {"src": "/static/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}],
+    }, media_type="application/manifest+json")
+
+
+@app.get("/sw.js")
+def service_worker():
+    return FileResponse(config.BASE_DIR / "static" / "sw.js", media_type="application/javascript",
+                        headers={"Cache-Control": "no-cache", "Service-Worker-Allowed": "/"})
+
+
+# ================================================================ logowanie
+@app.get("/api/auth/status")
+def auth_status(request: Request):
+    return auth.status(request)
+
+
+@app.post("/api/auth/login")
+def auth_login(request: Request, payload: dict = Body(...)):
+    try:
+        token = auth.login(payload.get("password", ""), payload.get("code"), auth.client_ip(request),
+                           request.headers.get("user-agent", ""))
+    except ValueError as e:
+        raise HTTPException(401, str(e))
+    secure = request.headers.get("x-forwarded-proto") == "https" or request.url.scheme == "https"
+    resp = JSONResponse({"ok": True})
+    resp.set_cookie(auth.COOKIE, token, max_age=auth.SESSION_DAYS * 86400, httponly=True, samesite="lax", secure=secure)
+    return resp
+
+
+@app.post("/api/auth/logout")
+def auth_logout(request: Request):
+    auth.logout(request.cookies.get(auth.COOKIE))
+    resp = JSONResponse({"ok": True})
+    resp.delete_cookie(auth.COOKIE)
+    return resp
+
+
+def _local_only(request: Request) -> None:
+    if auth.is_remote(request):
+        raise HTTPException(403, "Tę zmianę można zrobić tylko na komputerze")
+
+
+@app.post("/api/auth/password")
+def auth_password(request: Request, payload: dict = Body(...)):
+    _local_only(request)
+    try:
+        auth.set_password(payload.get("password", ""))
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    return {"ok": True}
+
+
+@app.post("/api/auth/totp/setup")
+def auth_totp_setup(request: Request):
+    _local_only(request)
+    return auth.totp_setup()
+
+
+@app.post("/api/auth/totp/enable")
+def auth_totp_enable(request: Request, payload: dict = Body(...)):
+    _local_only(request)
+    if not auth.totp_enable(payload.get("code", "")):
+        raise HTTPException(400, "Kod się nie zgadza – sprawdź czas w telefonie i spróbuj ponownie")
+    return {"ok": True}
+
+
+@app.post("/api/auth/totp/disable")
+def auth_totp_disable(request: Request):
+    _local_only(request)
+    auth.totp_disable()
+    return {"ok": True}
+
+
+@app.get("/api/auth/sessions")
+def auth_sessions():
+    return auth.sessions()
+
+
+@app.delete("/api/auth/sessions")
+def auth_sessions_clear():
+    auth.logout_all()
+    return {"ok": True}
+
+
+@app.get("/api/remote/info")
+def remote_info():
+    """Jak wejść z telefonu: adresy w sieci domowej + stan Tailscale."""
+    import shutil
+    import socket
+    import subprocess
+    ips = set()
+    try:
+        for info in socket.getaddrinfo(socket.gethostname(), None, socket.AF_INET):
+            if not info[4][0].startswith("127."):
+                ips.add(info[4][0])
+    except OSError:
+        pass
+    ts = {"installed": bool(shutil.which("tailscale")), "ip": None, "dns": None}
+    if ts["installed"]:
+        try:
+            out = subprocess.run(["tailscale", "status", "--json"], capture_output=True, text=True, timeout=5)
+            j = json.loads(out.stdout or "{}")
+            me = j.get("Self", {})
+            ts.update(ip=(me.get("TailscaleIPs") or [None])[0], dns=(me.get("DNSName") or "").rstrip(".") or None,
+                      online=me.get("Online"))
+        except Exception:  # noqa: BLE001
+            pass
+    return {"lan_ips": sorted(ips), "port": config.PORT, "host": config.HOST, "tailscale": ts,
+            "cloudflared": bool(shutil.which("cloudflared")), "password_set": auth.password_set(),
+            "totp_enabled": auth.totp_enabled()}
 
 
 @app.get("/")
@@ -243,7 +414,7 @@ def get_row(table: str, row_id: int):
 
 
 @app.post("/api/crud/{table}")
-def create(table: str, payload: dict = Body(...)):
+async def create(table: str, payload: dict = Body(...)):
     fields = _check(table)
     data = _norm({k: v for k, v in payload.items() if k in fields})
     data = {k: v for k, v in data.items() if v is not None}
@@ -260,7 +431,10 @@ def create(table: str, payload: dict = Body(...)):
             raise HTTPException(400, "Podaj typ i kwotę")
         data["amount"] = abs(data["amount"])
         data.setdefault("date", db.now().strftime("%Y-%m-%d"))
-    return {"id": db.insert(table, {**data, "created": db.now_str()})}
+    new_id = db.insert(table, {**data, "created": db.now_str()})
+    if table == "transactions":
+        asyncio.create_task(advisor.on_transaction(data))
+    return {"id": new_id}
 
 
 @app.patch("/api/crud/{table}/{row_id}")
@@ -361,6 +535,236 @@ async def llm_pull(payload: dict = Body(...)):
     return {"started": True, "model": model}
 
 
+# ================================================================ komputer
+@app.get("/api/computer/status")
+async def computer_status():
+    return await asyncio.to_thread(computer.status)
+
+
+@app.get("/api/computer/processes")
+async def computer_processes(sort: str = "cpu", limit: int = 20):
+    return await asyncio.to_thread(computer.processes, sort, limit)
+
+
+@app.post("/api/computer/screenshot")
+async def computer_screenshot():
+    shot = await asyncio.to_thread(computer.screenshot)
+    if shot.get("error"):
+        raise HTTPException(503, shot["error"])
+    return {"path": shot["path"], "width": shot["width"], "height": shot["height"], "url": "/api/computer/screenshot/latest"}
+
+
+@app.get("/api/computer/screenshot/latest")
+def computer_screenshot_latest():
+    files = sorted((config.DATA_DIR / "screens").glob("screen-*.jpg")) if (config.DATA_DIR / "screens").exists() else []
+    if not files:
+        raise HTTPException(404)
+    return FileResponse(files[-1], media_type="image/jpeg", headers={"Cache-Control": "no-store"})
+
+
+@app.post("/api/computer/open")
+async def computer_open(payload: dict = Body(...)):
+    return await computer.execute("computer_open", {"target": payload.get("target", "")})
+
+
+@app.post("/api/computer/action")
+async def computer_action(payload: dict = Body(...)):
+    """Akcja z dashboardu (np. przycisk Uśpij) – też przechodzi przez zatwierdzanie."""
+    tool = payload.get("tool")
+    if tool not in computer.RISKY:
+        raise HTTPException(400, "Nieznana akcja")
+    return await computer.request_action(tool, payload.get("args") or {}, source="dashboard")
+
+
+@app.get("/api/computer/actions")
+def computer_actions(status: str = ""):
+    if status:
+        return db.query("SELECT * FROM computer_actions WHERE status = ? ORDER BY id DESC LIMIT 50", (status,))
+    return db.query("SELECT * FROM computer_actions ORDER BY id DESC LIMIT 50")
+
+
+@app.post("/api/computer/actions/{action_id}/{decision}")
+async def computer_decide(action_id: int, decision: str):
+    return await computer.decide(action_id, decision == "approve")
+
+
+@app.get("/api/computer/log")
+def computer_log():
+    return db.query("SELECT * FROM computer_log ORDER BY id DESC LIMIT 100")
+
+
+# ================================================================ doradca i reguły
+@app.get("/api/advisor/insights")
+def advisor_insights(status: str = "open"):
+    return advisor.list_insights(status)
+
+
+@app.post("/api/advisor/run")
+async def advisor_run():
+    new = await advisor.run_monitor()
+    return {"new": len(new), "insights": advisor.list_insights()}
+
+
+@app.post("/api/advisor/insights/{iid}")
+def advisor_set(iid: int, payload: dict = Body(...)):
+    db.update("insights", iid, {"status": payload.get("status", "done"), "updated": db.now_str()})
+    return {"ok": True}
+
+
+@app.get("/api/rules")
+def rules_list():
+    return db.query("SELECT * FROM rules ORDER BY id DESC")
+
+
+@app.post("/api/rules")
+def rules_add(payload: dict = Body(...)):
+    if not payload.get("name") or payload.get("trigger") not in ("daily", "hourly", "weekly", "insight", "transaction") \
+            or payload.get("action") not in ("notify", "task", "agent"):
+        raise HTTPException(400, "Podaj nazwę, wyzwalacz i akcję")
+    return {"id": db.insert("rules", {k: payload.get(k, "") for k in ("name", "trigger", "trigger_value", "action", "action_value")}
+                            | {"enabled": 1, "created": db.now_str()})}
+
+
+@app.patch("/api/rules/{rid}")
+def rules_patch(rid: int, payload: dict = Body(...)):
+    db.update("rules", rid, {k: v for k, v in payload.items() if k in ("name", "trigger", "trigger_value", "action", "action_value", "enabled")})
+    return {"ok": True}
+
+
+@app.delete("/api/rules/{rid}")
+def rules_delete(rid: int):
+    db.execute("DELETE FROM rules WHERE id = ?", (rid,))
+    return {"ok": True}
+
+
+@app.post("/api/rules/{rid}/run")
+async def rules_run(rid: int):
+    r = db.one("SELECT * FROM rules WHERE id = ?", (rid,))
+    if not r:
+        raise HTTPException(404)
+    asyncio.create_task(advisor._apply(r))
+    return {"ok": True}
+
+
+# ================================================================ wiedza lokalna
+@app.get("/api/kb/search")
+async def kb_search(q: str, limit: int = 10):
+    return await knowledge_base.search(q, limit)
+
+
+@app.post("/api/kb/reindex")
+async def kb_reindex():
+    asyncio.create_task(knowledge_base.reindex())
+    return {"started": True}
+
+
+@app.get("/api/kb/status")
+def kb_status():
+    total = db.one("SELECT COUNT(*) n, SUM(vec IS NOT NULL) e FROM kb_chunks")
+    return {**knowledge_base.STATE, "chunks": total["n"], "embedded": total["e"] or 0, "last": db.kv_get("kb_last_index"),
+            "embed_model": knowledge_base.EMBED_MODEL}
+
+
+@app.get("/api/kb/graph")
+def kb_graph():
+    return knowledge_base.graph()
+
+
+@app.get("/api/kb/entity")
+def kb_entity(name: str):
+    return knowledge_base.entity_info(name)
+
+
+@app.post("/api/kb/entities")
+def kb_entity_add(payload: dict = Body(...)):
+    if not payload.get("name"):
+        raise HTTPException(400, "Podaj nazwę")
+    return {"id": knowledge_base.upsert_entity(payload["name"], payload.get("type", "osoba"), payload.get("notes", ""),
+                                               payload.get("contact", ""))}
+
+
+@app.delete("/api/kb/entities/{eid}")
+def kb_entity_delete(eid: int):
+    db.execute("DELETE FROM kb_relations WHERE a = ? OR b = ?", (eid, eid))
+    db.execute("DELETE FROM kb_entities WHERE id = ?", (eid,))
+    return {"ok": True}
+
+
+@app.post("/api/kb/relations")
+def kb_relation_add(payload: dict = Body(...)):
+    return knowledge_base.link(payload["a"], payload["rel"], payload["b"], payload.get("a_type", "osoba"), payload.get("b_type", "firma"))
+
+
+@app.get("/api/kb/decisions")
+def kb_decisions():
+    return db.query("SELECT * FROM kb_decisions ORDER BY date DESC, id DESC LIMIT 200")
+
+
+@app.post("/api/kb/decisions")
+def kb_decision_add(payload: dict = Body(...)):
+    if not payload.get("topic") or not payload.get("decision"):
+        raise HTTPException(400, "Podaj temat i decyzję")
+    return {"id": db.insert("kb_decisions", {"date": payload.get("date") or db.now().strftime("%Y-%m-%d"), "topic": payload["topic"],
+            "decision": payload["decision"], "reason": payload.get("reason", ""), "people": payload.get("people", ""),
+            "created": db.now_str()})}
+
+
+@app.delete("/api/kb/decisions/{did}")
+def kb_decision_delete(did: int):
+    db.execute("DELETE FROM kb_decisions WHERE id = ?", (did,))
+    return {"ok": True}
+
+
+# ================================================================ foto / wideo
+@app.get("/api/media/cards")
+async def media_cards():
+    return await asyncio.to_thread(media.detect_cards)
+
+
+@app.post("/api/media/import")
+async def media_import(payload: dict = Body(...)):
+    if media.IMPORT["running"]:
+        return {"running": True}
+    if not payload.get("source") or not payload.get("project"):
+        raise HTTPException(400, "Wybierz kartę i wpisz nazwę projektu")
+    if payload.get("library"):
+        db.kv_set("media_library", payload["library"])
+    asyncio.create_task(media.import_card(payload["source"], payload["project"], payload.get("backup") or None))
+    return {"started": True}
+
+
+@app.get("/api/media/import")
+def media_import_status():
+    return {**media.IMPORT, "library": str(media._library() or "")}
+
+
+@app.get("/api/media/archive")
+async def media_archive(months: int = 6, min_gb: float = 2):
+    return await asyncio.to_thread(media.archive_candidates, months, min_gb)
+
+
+@app.post("/api/media/subtitles")
+async def media_subtitles(payload: dict = Body(...)):
+    res = await asyncio.to_thread(media.subtitles_sync, payload.get("path", ""), payload.get("language", "pl"))
+    if res.get("error"):
+        raise HTTPException(400, res["error"])
+    return res
+
+
+# ================================================================ testy jakości
+@app.post("/api/evals/run")
+async def evals_run():
+    if evals.STATE["running"]:
+        return {"running": True}
+    asyncio.create_task(evals.run())
+    return {"started": True}
+
+
+@app.get("/api/evals")
+def evals_history():
+    return evals.history()
+
+
 # ================================================================ dokumenty
 @app.get("/api/documents")
 def list_documents(q: str = "", kind: str = ""):
@@ -396,13 +800,31 @@ async def voice_tts(payload: dict = Body(...)):
     text = (payload.get("text") or "").strip()
     if not text:
         raise HTTPException(400, "Brak tekstu")
-    if config.VOICE_TTS != "edge":
+    engine = voice.status()["tts_engine"]
+    if engine == "piper":
+        try:
+            audio = await asyncio.to_thread(voice.piper_tts_sync, text)
+        except Exception as e:  # noqa: BLE001
+            raise HTTPException(503, f"Głos offline niedostępny: {e}")
+        return Response(audio, media_type="audio/wav", headers={"Cache-Control": "no-store"})
+    if engine != "edge":
         raise HTTPException(503, "Wybrano głos przeglądarki")
     try:
         audio = await asyncio.wait_for(voice.tts(text, payload.get("voice")), timeout=25)
-    except Exception as e:  # noqa: BLE001 - dashboard przełączy się na głos przeglądarki
+    except Exception as e:  # noqa: BLE001 - spróbuj głosu offline, potem przeglądarki
+        if voice.PiperVoice and voice.piper_installed_voices():
+            audio = await asyncio.to_thread(voice.piper_tts_sync, text)
+            return Response(audio, media_type="audio/wav", headers={"Cache-Control": "no-store"})
         raise HTTPException(503, f"Synteza mowy niedostępna: {type(e).__name__}")
     return Response(audio, media_type="audio/mpeg", headers={"Cache-Control": "no-store"})
+
+
+@app.post("/api/voice/piper/download")
+async def voice_piper_download(payload: dict = Body(...)):
+    if voice.PIPER_DL["running"]:
+        return {"running": True}
+    asyncio.create_task(voice.download_piper_voice(payload.get("voice") or config.PIPER_VOICE))
+    return {"started": True}
 
 
 @app.post("/api/voice/transcribe")
@@ -424,8 +846,9 @@ async def voice_transcribe(request: Request):
 # ================================================================ umiejętności i MCP
 @app.get("/api/skills")
 def skills_list():
+    agent._merge_registry()
     builtin_tools = [{"name": t["name"], "label": agent.TOOL_LABELS.get(t["name"], t["name"]),
-                      "description": t.get("description", "")[:240]} for t in [*agent.TOOLS, *agent.extra_tools.TOOLS]]
+                      "description": t.get("description", "")[:240]} for t in [*agent.TOOLS, *modules.tools()]]
     builtin_tools += [{"name": "web_search", "label": "Szukam w internecie", "description": "Wyszukiwanie w sieci (Claude)"},
                       {"name": "web_fetch", "label": "Czytam stronę", "description": "Czytanie stron internetowych (Claude)"}]
     return {"skills": skills.all_skills(), "tools": builtin_tools, "mcp": mcp_client.manager.status(),

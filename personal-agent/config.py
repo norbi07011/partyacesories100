@@ -49,7 +49,11 @@ SETTINGS: dict[str, tuple[str, str, bool]] = {
     "CRYPTO_WATCHLIST": ("Obserwowane krypto (ID z CoinGecko, po przecinku)", "bitcoin,ethereum,solana", False),
     "CRYPTO_CHECK_MINUTES": ("Co ile minut sprawdzać alerty krypto", "5", False),
     "VOICE_NAME": ("Głos agenta (edge-tts): pl-PL-ZofiaNeural albo pl-PL-MarekNeural", "pl-PL-ZofiaNeural", False),
-    "VOICE_TTS": ("Synteza mowy: edge (naturalny głos, internet) albo browser (głos systemu)", "edge", False),
+    "VOICE_TTS": ("Synteza mowy: edge (naturalny, internet), piper (offline, lokalnie) albo browser (głos systemu)", "edge", False),
+    "PIPER_VOICE": ("Głos offline Piper", "pl_PL-gosia-medium", False),
+    "VOICE_MODE": ("Rozmowa: ptt (mikrofon tylko po naciśnięciu Dyktafonu) albo auto (ciągłe słuchanie)", "ptt", False),
+    "SEARXNG_URL": ("Własna wyszukiwarka SearXNG (np. http://127.0.0.1:8888) – puste = DuckDuckGo", "", False),
+    "COMPUTER_SHELL": ("Pozwól agentowi uruchamiać polecenia powłoki (zawsze z zatwierdzeniem) (1/0)", "0", False),
     "VOICE_STT": ("Rozpoznawanie mowy: browser (Chrome/Edge) albo whisper (lokalnie, offline)", "browser", False),
     "WHISPER_MODEL": ("Model Whisper: tiny / base / small / medium (większy = dokładniej, wolniej)", "small", False),
     "TELEGRAM_VOICE_REPLY": ("Odpowiadaj głosem na głosówki z Telegrama (1/0)", "1", False),
@@ -117,6 +121,10 @@ def reload() -> None:
     g["VOICE_TTS"] = (v["VOICE_TTS"] or "edge").lower()
     g["VOICE_STT"] = (v["VOICE_STT"] or "browser").lower()
     g["WHISPER_MODEL"] = v["WHISPER_MODEL"] or "small"
+    g["PIPER_VOICE"] = v["PIPER_VOICE"] or "pl_PL-gosia-medium"
+    g["VOICE_MODE"] = (v["VOICE_MODE"] or "ptt").lower()
+    g["SEARXNG_URL"] = (v["SEARXNG_URL"] or "").rstrip("/")
+    g["COMPUTER_SHELL"] = v["COMPUTER_SHELL"] == "1"
     g["TELEGRAM_VOICE_REPLY"] = v["TELEGRAM_VOICE_REPLY"] != "0"
     g["LOCATION"] = v["LOCATION"] or "Warszawa"
     g["HOST"] = v["HOST"] or "127.0.0.1"

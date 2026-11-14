@@ -1,0 +1,12 @@
+use_default_settings: true
+server:
+  # Zmień na losowy ciąg przed pierwszym uruchomieniem (np. wynik: python -c "import secrets;print(secrets.token_hex(32))")
+  secret_key: "zmien-mnie-na-losowy-ciag"
+  limiter: false
+  image_proxy: false
+search:
+  safe_search: 0
+  default_lang: "pl"
+  formats:
+    - html
+    - json
