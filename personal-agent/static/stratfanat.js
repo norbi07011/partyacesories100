@@ -97,7 +97,7 @@
         <div class="stat"><div class="v ${k.low_stock_count?'down':''}">${num(k.low_stock_count)}</div><div class="l">niskie stany</div></div>
         <div class="stat"><div class="v">${nd?(ndDays===0?'dziś':ndDays+' dni'):'—'}</div><div class="l">${nd?'do dropu: '+esc(nd.name):'brak zaplanowanego dropu'}</div></div>
       </div>
-      ${ov.alerts?.length?`<div class="card" style="margin-bottom:18px"><h2>Na co zwrócić uwagę</h2>${ov.alerts.slice(0,6).map(a=>`<div class="bx-alert ${esc(a.severity)}"><div class="ic">${a.severity==='info'?'💡':'⚠️'}</div><div class="t"><b>${esc(a.title)}</b>${esc(a.body||'')}<div class="sug">${esc(a.suggestion||'')}</div></div></div>`).join('')}</div>`:''}
+      ${alertsHtml(ov.alerts)}
       <div class="card" style="margin-bottom:18px"><div class="card-h"><h2>Szybka sprzedaż</h2><span class="m">zdejmie ze stanu i doda przychód w Finansach</span></div>${quickSaleForm()}</div>
       <div class="grid g2">${ov.charts.length ? ov.charts.map(c=>`<div class="card">${renderChart(c)}</div>`).join('') : `<div class="card"><div class="bx-empty">Wykresy pojawią się po pierwszej zapisanej sprzedaży.<br>Powiedz agentowi np. „sprzedałem 2 bluzy Ulica M na Instagramie”.</div></div>`}</div>
       <div class="grid g2" style="margin-top:18px">
@@ -106,6 +106,14 @@
         <div class="card"><h2>Ostatnia sprzedaż</h2>${ov.recent_sales.length?`<div class="bx-list">${ov.recent_sales.map(s=>`<div class="row"><div class="t"><b>${esc(s.name)}</b> <span class="pill">${esc(s.size)}</span> ×${s.qty}<div class="m">${esc(s.date)} · ${esc(CH_LBL[s.channel]||s.channel)}</div></div><div class="amount">${fmtMoney(s.total)}</div><button class="icon-btn del" title="Cofnij sprzedaż (przywraca stan i usuwa przychód)" data-act="undo-sale" data-id="${s.id}"><svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M5 7l1 13h12l1-13M9 7V4h6v3"/></svg></button></div>`).join('')}</div>`:'<div class="bx-empty">Brak sprzedaży.</div>'}</div>
       </div>`;
     bindQuickSale(b);
+  }
+  function alertsHtml(all){
+    const other = (all||[]).filter(a=>!a.key.startsWith('sf_low_stock_'));
+    const low = (all||[]).filter(a=>a.key.startsWith('sf_low_stock_') && a.severity==='warn');
+    if (!other.length && !low.length) return '';
+    const item = a => `<div class="bx-alert ${esc(a.severity)}"><div class="ic">${a.severity==='info'?'💡':'⚠️'}</div><div class="t"><b>${esc(a.title)}</b><span class="m">${esc(a.body||'')}</span><div class="sug">${esc(a.suggestion||'')}</div></div></div>`;
+    const lowItem = low.length ? `<div class="bx-alert warn"><div class="ic">📦</div><div class="t"><b>${low.length} ${low.length===1?'rozmiar sprzedaje się, a stan jest niski':'rozmiarów sprzedaje się, a stan jest niski'}</b><span class="m">${low.slice(0,6).map(a=>esc(a.title.replace('Niski stan: ',''))).join(' · ')}${low.length>6?' …':''}</span><div class="sug">Zobacz sekcję „Niskie stany” poniżej i zamów dodruk.</div></div></div>` : '';
+    return `<div class="card" style="margin-bottom:18px"><h2>Na co zwrócić uwagę</h2>${other.slice(0,4).map(item).join('')}${lowItem}</div>`;
   }
   function quickSaleForm(){
     if (!PRODUCTS.length) return '<div class="bx-empty">Najpierw dodaj produkt (przycisk „+ Produkt”).</div>';
