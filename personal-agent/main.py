@@ -45,7 +45,7 @@ async def lifespan(app: FastAPI):
     finance.init()
     for mod in (auth, computer, advisor, knowledge_base, evals):
         mod.init()
-    for name in ("stratfanat", "websites", "trading"):
+    for name in ("stratfanat", "inspiration", "websites", "trading"):
         try:
             m = __import__(name)
             m.init()
@@ -89,7 +89,7 @@ async def auth_guard(request: Request, call_next):
 
 
 def _include_routers() -> None:
-    for name, attr in (("stratfanat", "router"), ("websites", "router"), ("trading.api", "router")):
+    for name, attr in (("inspiration", "router"), ("stratfanat", "router"), ("websites", "router"), ("trading.api", "router")):
         try:
             m = __import__(name, fromlist=[attr])
             app.include_router(getattr(m, attr))

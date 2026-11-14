@@ -114,6 +114,14 @@ async def websites_check() -> None:
     await websites.check_all()
 
 
+async def inspiration_fetch() -> None:
+    try:
+        import inspiration
+    except ImportError:
+        return
+    await inspiration.scheduled_fetch()
+
+
 async def trading_tick() -> None:
     try:
         from trading import bots, paper
@@ -137,6 +145,7 @@ JOBS = {
     "kb": ("Indeksowanie wiedzy lokalnej (noc)", kb_reindex),
     "websites": ("Monitoring stron klientów (co 10 min)", websites_check),
     "trading": ("Trading demo: SL/TP i boty (co minutę)", trading_tick),
+    "inspiration": ("Inspiracje Stratfanat z Pinteresta (codziennie)", inspiration_fetch),
 }
 
 
@@ -157,6 +166,7 @@ def _plan() -> None:
     scheduler.add_job(weekly_review, "cron", day_of_week="mon", hour=8, minute=23, id="weekly", timezone=tz)
     scheduler.add_job(kb_reindex, "cron", hour=4, minute=5, id="kb", max_instances=1, timezone=tz)
     scheduler.add_job(websites_check, "interval", minutes=10, id="websites", max_instances=1)
+    scheduler.add_job(inspiration_fetch, "cron", hour=7, minute=40, id="inspiration", max_instances=1, timezone=tz)
     scheduler.add_job(trading_tick, "interval", minutes=1, id="trading", max_instances=1)
 
 

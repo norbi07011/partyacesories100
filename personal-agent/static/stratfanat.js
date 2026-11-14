@@ -1,8 +1,8 @@
-/* Studio Agent – widok Stratfanat: sprzedaż, magazyn, dropy, projekty (makiety + AI), trendy, DNA marki.
+/* Studio Agent – widok Stratfanat: sprzedaż, magazyn, dropy, projekty (makiety + AI), trendy, inspiracje (Pinterest), DNA marki.
    Korzysta z globali app.js: api, esc, toast, md, renderChart, fmtMoney, fmtDT, show, sendChat, LOADERS, store. */
 (function(){
   const root = () => document.getElementById('view-stratfanat');
-  const TABS = [['overview','Przegląd'],['stock','Magazyn'],['drops','Dropy'],['designs','Projekty'],['trends','Trendy'],['brand','DNA marki']];
+  const TABS = [['overview','Przegląd'],['stock','Magazyn'],['drops','Dropy'],['designs','Projekty'],['trends','Trendy'],['inspo','Inspiracje'],['brand','DNA marki']];
   const STATUS = ['pomysł','projektowanie','produkcja','premiera','zakończona'];
   const CH_LBL = {sklep:'Sklep', instagram:'Instagram', vinted:'Vinted', event:'Event', inny:'Inny'};
   const TREND_ST = ['nowy','testujemy','wdrożony','odrzucony'];
@@ -78,6 +78,7 @@
       else if (tab==='drops') await renderDrops(b);
       else if (tab==='designs') await renderDesigns(b);
       else if (tab==='trends') await renderTrends(b);
+      else if (tab==='inspo') await renderInspo(b);
       else await renderBrand(b);
     } catch(e) { b.innerHTML = `<div class="card"><div class="bx-empty">Nie udało się wczytać danych (${esc(e.message)}). Czy moduł Stratfanat jest podłączony?</div></div>`; }
   }
@@ -340,6 +341,48 @@
       { onSubmit: async d => { await api('/api/stratfanat/trends',{method:'POST',body:d}); toast('Zapisano ✓'); renderTab(); } });
   }
 
+  /* ---------- INSPIRACJE (Pinterest) ---------- */
+  let inspoQ = '', inspoStar = false;
+  const STAR = on => `<svg viewBox="0 0 24 24" ${on?'style="fill:currentColor"':''}><path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"/></svg>`;
+  async function renderInspo(b){
+    const r = await api('/api/stratfanat/inspiration?limit=150'+(inspoQ?'&q='+encodeURIComponent(inspoQ):'')+(inspoStar?'&starred=true':''));
+    const ago = s => s ? fmtDT(s) : 'jeszcze nie pobierano';
+    b.innerHTML = `<div class="card-h"><h2>Inspiracje</h2><div class="actions">
+        <button class="btn ghost" data-act="inspo-fetch">↻ Pobierz nowe</button>
+        <button class="btn" data-ask="Przejrzyj moje inspiracje z Pinteresta dla Stratfanat: odśwież źródła (pinterest_inspiration), obejrzyj najciekawsze piny (view_inspirations) i powiedz, jakie motywy się powtarzają (kroje, grafiki, typografia, układy, kolory). Zaproponuj 3 kierunki dla Stratfanat zgodne z DNA marki, zapisz je na tablicy trendów i oznacz gwiazdką najlepsze piny.">✨ Analiza z agentem</button></div></div>
+      <p class="sub">Moodboard z Twoich linków do Pinteresta. Miniatury zapisują się na Twoim dysku, a agent korzysta z nich przy researchu trendów i projektowaniu. Nowe piny pobierają się codziennie o 7:40.</p>
+      <div class="card sf-isrc"><div class="card-h"><h2>Źródła</h2></div>
+        ${r.sources.map(s=>`<div class="sf-isrc-row ${s.active?'':'off'}"><label class="sw-t" title="aktywne"><input type="checkbox" data-src-active="${s.id}" ${s.active?'checked':''}></label>
+          <div class="t"><b>${esc(s.name||s.url)}</b><a class="m" href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.url)}</a>
+          <span class="m">${s.pins} pinów · ${ago(s.last_fetch)}${s.last_error?` · <span style="color:var(--warn)" title="${esc(s.last_error)}">błąd pobierania</span>`:''}</span></div>
+          <button class="link" data-act="inspo-src-fetch" data-id="${s.id}">pobierz</button>
+          <button class="icon-btn del" data-act="inspo-src-del" data-id="${s.id}" title="Usuń źródło"><svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M5 7l1 13h12l1-13M9 7V4h6v3"/></svg></button></div>`).join('')||'<p class="m">Brak źródeł.</p>'}
+        <form class="sf-isrc-add" id="sf-isrc-add"><input name="url" placeholder="Link do Pinteresta (wyszukiwanie, tablica, profil) albo hasło, np. heavyweight hoodie" required><button class="btn sq">+ Dodaj</button></form>
+      </div>
+      ${r.palette.length?`<div class="sf-ipal" title="Najczęstsze kolory na moodboardzie">${r.palette.map(c=>`<span style="background:${c.hex};flex:${c.udzial}" title="${c.hex} · ${c.udzial}%"><i>${c.hex}</i></span>`).join('')}</div>`:''}
+      <div class="sf-ibar"><input type="search" id="sf-iq" placeholder="Szukaj w pinach…" value="${esc(inspoQ)}"><button class="chip ${inspoStar?'active':''}" data-act="inspo-star-filter">★ Ulubione</button><span class="m">${r.pins.length} z ${r.total}</span></div>
+      ${r.pins.length?`<div class="sf-pins">${r.pins.map(p=>`<figure class="sf-pin ${p.starred?'star':''}">
+          <img loading="lazy" src="${esc(p.thumb)}" alt="${esc(p.title)}" data-zoom="${esc(p.thumb)}" data-cap="${esc(p.title||p.description.slice(0,80))}" referrerpolicy="no-referrer">
+          <div class="ov"><button class="icon-btn" data-act="inspo-star" data-id="${p.id}" data-on="${p.starred?1:0}" title="Ulubione">${STAR(p.starred)}</button>
+            <button class="icon-btn del" data-act="inspo-del" data-id="${p.id}" title="Usuń"><svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M5 7l1 13h12l1-13M9 7V4h6v3"/></svg></button></div>
+          <figcaption>${p.title?`<b>${esc(p.title)}</b>`:''}${p.note?`<span class="m">✎ ${esc(p.note)}</span>`:''}
+            <div class="foot"><span class="sw">${p.colors.slice(0,5).map(c=>`<i style="background:${esc(c)}" title="${esc(c)}"></i>`).join('')}</span><span style="flex:1"></span>
+            ${p.link?`<a class="link" href="${esc(p.link)}" target="_blank" rel="noopener">pin ↗</a>`:''}
+            <button class="link" data-ask="Obejrzyj pin #${p.id} z moodboardu (view_inspirations) i zaprojektuj na jego podstawie produkt Stratfanat (umiejętność Projektant mody) – weź kierunek, nie kopiuj grafiki. Narysuj makietę.">projektuj →</button></div></figcaption></figure>`).join('')}</div>`
+      :`<div class="card"><div class="bx-empty">Brak pinów. Kliknij „Pobierz nowe”, żeby ściągnąć inspiracje z Twoich źródeł${inspoQ||inspoStar?' (albo wyczyść filtr)':''}.</div></div>`}`;
+    const f = b.querySelector('#sf-isrc-add');
+    f.onsubmit = async e => { e.preventDefault(); const url = f.url.value.trim(); if (!url) return;
+      const s = await api('/api/stratfanat/inspiration/sources',{method:'POST',body:{url}}); toast('Pobieram piny…');
+      const x = await api('/api/stratfanat/inspiration/fetch',{method:'POST',body:{source_id:s.id}}); fetchToast(x); renderTab(); };
+    const q = b.querySelector('#sf-iq'); let tm;
+    q.oninput = () => { clearTimeout(tm); tm = setTimeout(() => { inspoQ = q.value.trim(); renderTab().then(()=>{ const n = document.getElementById('sf-iq'); n.focus(); n.setSelectionRange(n.value.length, n.value.length); }); }, 350); };
+  }
+  function fetchToast(x){
+    if (x.ok===false) return toast((x.error||'Nie udało się pobrać').slice(0,160));
+    if (x.bledy && x.bledy.length) return toast(`Nowe piny: ${x.nowe||0} · błędy w ${x.bledy.length} źródłach`);
+    toast(`Nowe piny: ${x.nowe||0} ✓`);
+  }
+
   /* ---------- DNA MARKI ---------- */
   async function renderBrand(b){
     const r = await api('/api/stratfanat/brand');
@@ -373,6 +416,12 @@
       case 'new-drop': return dropModal(null);
       case 'edit-drop': return dropModal(COLLECTIONS.find(c=>c.id===id));
       case 'new-trend': return trendModal();
+      case 'inspo-fetch': { toast('Pobieram z Pinteresta…'); a.disabled = true; const x = await api('/api/stratfanat/inspiration/fetch',{method:'POST',body:{}}).finally(()=>a.disabled=false); fetchToast(x); return renderTab(); }
+      case 'inspo-src-fetch': { toast('Pobieram…'); const x = await api('/api/stratfanat/inspiration/fetch',{method:'POST',body:{source_id:id}}); fetchToast(x); return renderTab(); }
+      case 'inspo-src-del': if (!confirm('Usunąć to źródło? Pobrane piny zostaną.')) return; await api('/api/stratfanat/inspiration/sources/'+id,{method:'DELETE'}); return renderTab();
+      case 'inspo-star': { const on = a.dataset.on!=='1'; await api('/api/stratfanat/inspiration/pins/'+id,{method:'PATCH',body:{starred:on}}); a.dataset.on = on?1:0; a.innerHTML = STAR(on); a.closest('.sf-pin').classList.toggle('star', on); return; }
+      case 'inspo-star-filter': inspoStar = !inspoStar; return renderTab();
+      case 'inspo-del': if (!confirm('Usunąć pin z moodboardu?')) return; await api('/api/stratfanat/inspiration/pins/'+id,{method:'DELETE'}); a.closest('.sf-pin').remove(); return;
       case 'del-trend': if (!confirm('Usunąć trend?')) return; await api('/api/stratfanat/trends/'+id,{method:'DELETE'}); return renderTab();
       case 'del-design': if (!confirm('Usunąć projekt i jego pliki?')) return; await api('/api/stratfanat/designs/'+id,{method:'DELETE'}); return renderTab();
       case 'ai-design': {
@@ -396,6 +445,7 @@
       return;
     }
     if (t.dataset.collStatus){ await api('/api/stratfanat/collections/'+t.dataset.collStatus,{method:'PATCH',body:{status:t.value}}); toast('Status: '+t.value); return renderTab(); }
+    if (t.dataset.srcActive){ await api('/api/stratfanat/inspiration/sources/'+t.dataset.srcActive,{method:'PATCH',body:{active:t.checked?1:0}}); t.closest('.sf-isrc-row').classList.toggle('off', !t.checked); return; }
     if (t.dataset.trendStatus){ await api('/api/stratfanat/trends/'+t.dataset.trendStatus,{method:'PATCH',body:{status:t.value}}); toast('Zapisano'); }
   }
 

@@ -1284,6 +1284,8 @@ TREND_SOURCES = [
     {"nazwa": "Hypebeast", "url": "https://hypebeast.com/fashion", "po_co": "dropy, collaby, sylwetki, co się wyprzedaje"},
     {"nazwa": "Highsnobiety", "url": "https://www.highsnobiety.com/", "po_co": "kultura streetwear, raporty trendów, marki niszowe"},
     {"nazwa": "Vogue Runway", "url": "https://www.vogue.com/fashion-shows", "po_co": "kierunki z wybiegów (sezon wcześniej niż ulica)"},
+    {"nazwa": "Pinterest – źródła użytkownika", "url": "https://nl.pinterest.com/search/pins/?q=streetwear%20ui%20design",
+     "po_co": "moodboard użytkownika (pinterest_inspiration / view_inspirations) – jego gust i kierunek wizualny"},
     {"nazwa": "Pinterest Trends", "url": "https://trends.pinterest.com/", "po_co": "rosnące frazy estetyki, palety, moodboardy (PL/EU)"},
     {"nazwa": "TikTok Creative Center", "url": "https://ads.tiktok.com/business/creativecenter/inspiration/popular/hashtag/pc/en",
      "po_co": "rosnące hashtagi, dźwięki, formaty wideo do promocji dropu"},
@@ -1328,6 +1330,8 @@ def trend_research(topic: str) -> dict:
         "temat": t, "sezon": _season_hint(),
         "plan": [
             "1. Przeczytaj DNA marki (fragment niżej / brand_profile) – trend musi pasować do misji, grupy docelowej i stylu.",
+            "1b. Inspiracje użytkownika: pinterest_inspiration() (odświeża jego źródła, m.in. Pinterest „streetwear ui design”), "
+            "potem view_inspirations – opisz, co się powtarza (kroje, grafiki, typografia, układy, kolory) i zestaw z paletą moodboardu.",
             "2. Wyszukaj web_search każde zapytanie z listy (min. 5), otwórz 3–5 najlepszych źródeł web_fetch.",
             "3. Oddziel sygnał od szumu: trend potwierdzony w min. 2 niezależnych źródłach (wybieg/media + ulica/resell/social).",
             "4. Dla każdego trendu oceń: dopasowanie do DNA (0–4), popyt w PL – Google Trends/Vinted (0–2), "
@@ -1549,7 +1553,7 @@ TOOLS: list[dict] = [
      "input_schema": {"type": "object", "properties": {"limit": _I}}},
     {"name": "trend_research",
      "description": "Plan researchu trendów streetwear dla Stratfanat: zapytania do web_search, źródła (Hypebeast, Highsnobiety, "
-                    "Vogue Runway, Pinterest Trends, TikTok Creative Center, Google Trends, Grailed, Depop, Vinted), "
+                    "Vogue Runway, Pinterest (moodboard użytkownika), Pinterest Trends, TikTok Creative Center, Google Trends, Grailed, Depop, Vinted), "
                     "skala oceny dopasowania do DNA marki. Po researchu zapisz wyniki save_trend.",
      "input_schema": {"type": "object", "properties": {"topic": _S}, "required": ["topic"]}},
     {"name": "save_trend",

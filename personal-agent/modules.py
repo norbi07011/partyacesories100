@@ -4,7 +4,7 @@ import importlib
 import logging
 
 log = logging.getLogger("modules")
-MODULE_NAMES = ["extra_tools", "computer", "advisor", "knowledge_base", "media", "stratfanat", "websites", "trading.tools"]
+MODULE_NAMES = ["extra_tools", "computer", "advisor", "knowledge_base", "media", "stratfanat", "inspiration", "websites", "trading.tools"]
 _loaded = None
 
 
