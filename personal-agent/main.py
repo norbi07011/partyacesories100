@@ -15,9 +15,13 @@ import crypto
 import db
 import file_indexer
 import ics
+import mcp_client
+import memory
 import notifier
 import scheduler
+import skills
 import telegram_bot
+import voice
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("main")
@@ -27,13 +31,17 @@ MAX_IMAGES = 4
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     db.init()
+    memory.init()
     scheduler.start()
     await telegram_bot.start()
+    await mcp_client.manager.start()
+    voice.preload()
     if config.WATCH_FOLDERS:
         asyncio.create_task(asyncio.to_thread(file_indexer.reindex))
     log.info("Dashboard: http://%s:%s", config.HOST, config.PORT)
     yield
     await telegram_bot.stop()
+    await mcp_client.manager.stop()
     scheduler.scheduler.shutdown(wait=False)
 
 
@@ -79,7 +87,8 @@ async def chat_stream(payload: dict = Body(...)):
 
     async def work():
         try:
-            reply = await agent.run(msg, session=payload.get("session", "web"), images=images, emit=emit)
+            reply = await agent.run(msg, session=payload.get("session", "web"), images=images, emit=emit,
+                                    voice=bool(payload.get("voice")))
             await queue.put({"type": "done", "reply": reply})
         except Exception as e:  # noqa: BLE001
             log.exception("Błąd agenta")
@@ -176,6 +185,9 @@ def global_search(q: str):
                           (like, like, like)),
         "projects": db.query("SELECT id, name, client FROM projects WHERE name LIKE ? OR client LIKE ? LIMIT 6", (like, like)),
         "folders": file_indexer.search(q, folders_only=True, limit=6),
+        "documents": db.query("SELECT id, title, kind FROM documents WHERE title LIKE ? OR content LIKE ? LIMIT 6",
+                              (like, like)),
+        "conversations": memory.recall(q, limit=5)["rozmowy"],
     }
 
 
@@ -186,8 +198,9 @@ FIELDS = {
     "ideas": {"title", "content", "category", "tags", "status"},
     "memory": {"fact"},
     "projects": {"name", "client", "contact", "kind", "status", "deadline", "fee", "paid", "folder", "notes"},
+    "documents": {"title", "kind", "content", "project_id"},
 }
-REQUIRED = {"tasks": "title", "events": "title", "ideas": "title", "memory": "fact", "projects": "name"}
+REQUIRED = {"tasks": "title", "events": "title", "ideas": "title", "memory": "fact", "projects": "name", "documents": "title"}
 
 
 def _check(table: str) -> set[str]:
@@ -247,6 +260,8 @@ def patch(table: str, row_id: int, payload: dict = Body(...)):
         raise HTTPException(400, "Brak nazwy")
     if table in ("tasks", "events") and ({"due", "start"} & data.keys()):
         data["reminded"] = 0
+    if table == "documents":
+        data["updated"] = db.now_str()
     db.update(table, row_id, data)
     return {"ok": True}
 
@@ -257,6 +272,129 @@ def delete(table: str, row_id: int):
         raise HTTPException(404)
     db.execute(f"DELETE FROM {table} WHERE id = ?", (row_id,))
     return {"ok": True}
+
+
+# ================================================================ dokumenty
+@app.get("/api/documents")
+def list_documents(q: str = "", kind: str = ""):
+    where, params = ["1=1"], []
+    if q:
+        where.append("(title LIKE ? OR content LIKE ?)")
+        params += [f"%{q}%"] * 2
+    if kind:
+        where.append("kind = ?")
+        params.append(kind)
+    return db.query(f"SELECT id, title, kind, project_id, created, updated, substr(content, 1, 220) AS preview "
+                    f"FROM documents WHERE {' AND '.join(where)} ORDER BY COALESCE(updated, created) DESC", params)
+
+
+@app.get("/api/documents/{doc_id}/download")
+def download_document(doc_id: int):
+    d = db.one("SELECT * FROM documents WHERE id = ?", (doc_id,))
+    if not d:
+        raise HTTPException(404)
+    safe = "".join(c if c.isalnum() or c in " -_" else "_" for c in d["title"])[:80].strip() or "dokument"
+    return Response(f"# {d['title']}\n\n{d['content']}", media_type="text/markdown; charset=utf-8",
+                    headers={"Content-Disposition": f'attachment; filename="{safe}.md"'})
+
+
+# ================================================================ głos
+@app.get("/api/voice/status")
+def voice_status():
+    return voice.status()
+
+
+@app.post("/api/voice/tts")
+async def voice_tts(payload: dict = Body(...)):
+    text = (payload.get("text") or "").strip()
+    if not text:
+        raise HTTPException(400, "Brak tekstu")
+    if config.VOICE_TTS != "edge":
+        raise HTTPException(503, "Wybrano głos przeglądarki")
+    try:
+        audio = await asyncio.wait_for(voice.tts(text, payload.get("voice")), timeout=25)
+    except Exception as e:  # noqa: BLE001 - dashboard przełączy się na głos przeglądarki
+        raise HTTPException(503, f"Synteza mowy niedostępna: {type(e).__name__}")
+    return Response(audio, media_type="audio/mpeg", headers={"Cache-Control": "no-store"})
+
+
+@app.post("/api/voice/transcribe")
+async def voice_transcribe(request: Request):
+    audio = await request.body()
+    if not audio:
+        raise HTTPException(400, "Brak nagrania")
+    if len(audio) > 25_000_000:
+        raise HTTPException(413, "Nagranie za długie")
+    ctype = request.headers.get("content-type", "")
+    suffix = ".ogg" if "ogg" in ctype else ".mp4" if "mp4" in ctype else ".wav" if "wav" in ctype else ".webm"
+    try:
+        text = await voice.transcribe(audio, suffix)
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(503, f"Rozpoznawanie mowy niedostępne: {e}")
+    return {"text": text}
+
+
+# ================================================================ umiejętności i MCP
+@app.get("/api/skills")
+def skills_list():
+    builtin_tools = [{"name": t["name"], "label": agent.TOOL_LABELS.get(t["name"], t["name"]),
+                      "description": t.get("description", "")[:240]} for t in [*agent.TOOLS, *agent.extra_tools.TOOLS]]
+    builtin_tools += [{"name": "web_search", "label": "Szukam w internecie", "description": "Wyszukiwanie w sieci (Claude)"},
+                      {"name": "web_fetch", "label": "Czytam stronę", "description": "Czytanie stron internetowych (Claude)"}]
+    return {"skills": skills.all_skills(), "tools": builtin_tools, "mcp": mcp_client.manager.status(),
+            "mcp_available": mcp_client.AVAILABLE}
+
+
+@app.post("/api/skills")
+def skills_save(payload: dict = Body(...)):
+    name = (payload.get("name") or "").strip()
+    body = (payload.get("body") or "").strip()
+    if not name or not body:
+        raise HTTPException(400, "Podaj nazwę i instrukcje")
+    return {"id": skills.save(name, payload.get("description", ""), body, payload.get("id") or None)}
+
+
+@app.patch("/api/skills/{skill_id}")
+def skills_toggle(skill_id: str, payload: dict = Body(...)):
+    skills.set_enabled(skill_id, bool(payload.get("enabled")))
+    return {"ok": True}
+
+
+@app.delete("/api/skills/{skill_id}")
+def skills_delete(skill_id: str):
+    return {"ok": skills.delete(skill_id)}
+
+
+@app.get("/api/mcp/config")
+def mcp_config_get():
+    text = config.MCP_CONFIG.read_text(encoding="utf-8") if config.MCP_CONFIG.exists() else '{\n  "servers": {}\n}'
+    example = (config.BASE_DIR / "mcp_servers.example.json")
+    return {"text": text, "example": example.read_text(encoding="utf-8") if example.exists() else ""}
+
+
+@app.post("/api/mcp/config")
+async def mcp_config_save(payload: dict = Body(...)):
+    try:
+        mcp_client.save_config(payload.get("text", ""))
+    except ValueError as e:
+        raise HTTPException(400, f"Błąd w JSON: {e}")
+    await mcp_client.manager.reload()
+    await asyncio.sleep(1.5)
+    return {"ok": True, "servers": mcp_client.manager.status()}
+
+
+@app.post("/api/mcp/reload")
+async def mcp_reload():
+    await mcp_client.manager.reload()
+    await asyncio.sleep(1.5)
+    return {"servers": mcp_client.manager.status()}
+
+
+@app.get("/api/memory/summary")
+def memory_summary():
+    rows = db.query("SELECT text, created FROM summaries ORDER BY id DESC LIMIT 1")
+    total = (db.one("SELECT COUNT(*) AS n FROM chat") or {"n": 0})["n"]
+    return {"summary": rows[0] if rows else None, "messages": total}
 
 
 # ================================================================ kalendarz .ics
@@ -436,6 +574,9 @@ def status():
         "watch_folders": config.WATCH_FOLDERS,
         "files_indexing": file_indexer.STATUS["running"],
         "jobs": scheduler.jobs(),
+        "voice": voice.status(),
+        "mcp_tools": len(mcp_client.manager.tool_map),
+        "skills": len(skills.enabled()),
         "disk": scheduler.disk_free(),
         "unread": (db.one("SELECT COUNT(*) AS n FROM notifications WHERE read = 0") or {"n": 0})["n"],
         "last_notification": (db.one("SELECT MAX(id) AS id FROM notifications") or {"id": None})["id"],

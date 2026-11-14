@@ -1,4 +1,5 @@
 """Bot Telegram: rozmowa z agentem z telefonu + kanał powiadomień."""
+import asyncio
 import base64
 import logging
 
@@ -10,6 +11,7 @@ import agent
 import db
 import file_indexer
 import notifier
+import voice
 import config
 
 log = logging.getLogger("telegram")
@@ -23,7 +25,8 @@ HELP = (
     "• pomysł: teledysk nagrany w jednym ujęciu w pustym basenie\n"
     "• gdzie są zdjęcia ze ślubu Nowaków?\n"
     "• znajdź w sieci najlepsze lampy LED do 2000 zł\n"
-    "• wyślij zdjęcie z podpisem „co poprawić?” – ocenię kadr\n\n"
+    "• wyślij zdjęcie z podpisem „co poprawić?” – ocenię kadr\n"
+    "• nagraj głosówkę – odpowiem tekstem i głosem\n\n"
     "Skróty:\n"
     "/dzis – plan na dziś\n/zadania – otwarte zadania\n/pomysl <tekst> – szybki zapis pomysłu\n"
     "/szukaj <fraza> – szukaj plików\n/nowy – wyczyść kontekst rozmowy"
@@ -138,8 +141,37 @@ async def on_photo(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def on_voice(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
-    if await _guard(update):
-        await update.effective_message.reply_text("🎙 Wiadomości głosowe jeszcze nie są obsługiwane – napisz proszę tekstem.")
+    """Głosówka → Whisper (lokalnie) → agent → odpowiedź tekstem i głosem."""
+    if not await _guard(update):
+        return
+    msg = update.effective_message
+    media = msg.voice or msg.audio
+    if not media:
+        return
+    await ctx.bot.send_chat_action(update.effective_chat.id, ChatAction.TYPING)
+    data = bytes(await (await media.get_file()).download_as_bytearray())
+    try:
+        text = await voice.transcribe(data, ".ogg")
+    except Exception as e:  # noqa: BLE001
+        await msg.reply_text("🎙 Nie mogę odsłuchać głosówki: rozpoznawanie mowy (Whisper) nie działa.\n"
+                             f"Szczegóły: {str(e)[:200]}\nZainstaluj: pip install faster-whisper")
+        return
+    if not text:
+        await msg.reply_text("🎙 Nic nie usłyszałem – spróbuj jeszcze raz.")
+        return
+    await msg.reply_text(f"🎙 „{text}”")
+    reply = await agent.run(text, session=f"tg:{update.effective_chat.id}", voice=True)
+    await _send_long(update, reply)
+    if config.TELEGRAM_VOICE_REPLY:
+        try:
+            mp3 = await voice.tts(reply)
+            ogg = await asyncio.to_thread(voice.mp3_to_ogg_opus, mp3) if mp3 else None
+            if ogg:
+                await msg.reply_voice(ogg)
+            elif mp3:
+                await msg.reply_audio(mp3, title="Odpowiedź agenta")
+        except Exception as e:  # noqa: BLE001 - tekst już wysłany
+            log.warning("Głos odpowiedzi nieudany: %s", e)
 
 
 async def _broadcast(text: str) -> None:

@@ -7,6 +7,10 @@ import anthropic
 
 import config
 import db
+import extra_tools
+import mcp_client
+import memory
+import skills
 from tools import SERVER_TOOLS, TOOLS, execute
 
 log = logging.getLogger("agent")
@@ -30,6 +34,7 @@ TOOL_LABELS = {
     "add_price_alert": "Ustawiam alert cenowy", "list_price_alerts": "Sprawdzam alerty",
     "add_project": "Zakładam projekt", "list_projects": "Przeglądam projekty", "update_project": "Aktualizuję projekt",
     "web_search": "Szukam w internecie", "web_fetch": "Czytam stronę",
+    **extra_tools.LABELS,
 }
 # które widoki dashboardu odświeżyć po danym narzędziu
 TOOL_CHANGES = {
@@ -38,6 +43,7 @@ TOOL_CHANGES = {
     "add_idea": "ideas", "update_idea": "ideas", "remember": "memory", "forget": "memory",
     "add_project": "projects", "update_project": "projects", "add_price_alert": "alerts",
     "send_notification": "notifications", "reindex_files": "files",
+    **extra_tools.CHANGES,
 }
 
 BASE_PROMPT = """Jesteś osobistym agentem AI, doradcą i asystentem użytkownika.
@@ -53,7 +59,11 @@ Twoje role:
   odnaleźć - podawaj pełne ścieżki folderów.
 - Szukasz w internecie (web_search / web_fetch), gdy pytanie dotyczy aktualnych informacji, cen, sprzętu,
   lokacji, trendów - i podajesz źródła.
-- Krypto: sprawdzasz ceny i ustawiasz alerty. Nie udzielasz porad inwestycyjnych - podajesz dane i ryzyka.
+- Krypto: sprawdzasz ceny, analizę techniczną i ustawiasz alerty. Nie udzielasz porad inwestycyjnych - podajesz dane i ryzyka.
+- Planując plener sprawdzasz pogodę oraz złotą i niebieską godzinę (weather_forecast).
+- Oglądasz zdjęcia z dysku (view_photos), czytasz dokumenty (read_document), sprawdzasz pliki wideo (media_info).
+- Dłuższe materiały (shot-listy, wyceny, briefy, call sheety) zapisujesz w bibliotece dokumentów (save_document).
+- Pamiętasz wszystko: gdy użytkownik nawiązuje do wcześniejszych rozmów lub ustaleń, użyj recall.
 
 Zasady:
 - Odpowiadaj po polsku, zwięźle i konkretnie. Formatuj krótkim markdownem (listy, pogrubienia).
@@ -76,14 +86,30 @@ def get_client() -> anthropic.AsyncAnthropic:
     return _client
 
 
-def _system_prompt() -> list[dict]:
+VOICE_PROMPT = """TRYB ROZMOWY GŁOSOWEJ: Twoja odpowiedź zostanie przeczytana na głos. Mów naturalnie i krótko
+(zwykle 1-3 zdania, maks. ok. 80 słów), jak w rozmowie telefonicznej. Bez markdown, list, tabel, emoji i linków.
+Liczby i godziny zapisuj tak, by dobrze brzmiały. Jeśli wynik jest długi (np. shot-lista), zapisz go narzędziem
+save_document i powiedz krótko, co zapisałeś. Gdy coś jest niejasne, dopytaj jednym krótkim pytaniem."""
+
+
+def tool_list() -> list[dict]:
+    return [*TOOLS, *extra_tools.TOOLS, *mcp_client.manager.tool_defs(), *SERVER_TOOLS]
+
+
+def _system_prompt(voice: bool = False) -> list[dict]:
     facts = db.query("SELECT id, fact FROM memory ORDER BY id")
-    memory = "\n".join(f"[{f['id']}] {f['fact']}" for f in facts) or "(pusto)"
+    mem = "\n".join(f"[{f['id']}] {f['fact']}" for f in facts) or "(pusto)"
     who = f"Użytkownik: {config.USER_NAME or 'nieznane imię'}. {config.USER_PROFILE}".strip()
-    return [
-        {"type": "text", "text": BASE_PROMPT},
-        {"type": "text", "text": f"{who}\n\nPamięć długoterminowa (fakty o użytkowniku):\n{memory}"},
-    ]
+    blocks = [{"type": "text", "text": BASE_PROMPT}]
+    catalog = skills.catalog_text()
+    if catalog:
+        blocks.append({"type": "text", "text": catalog})
+    summary = memory.current_summary()
+    blocks.append({"type": "text", "text": f"{who}\n\nPamięć długoterminowa (fakty o użytkowniku):\n{mem}"
+                   + (f"\n\nNotatnik pamięci (streszczenie wcześniejszych rozmów):\n{summary}" if summary else "")})
+    if voice:
+        blocks.append({"type": "text", "text": VOICE_PROMPT})
+    return blocks
 
 
 def _history(session: str) -> list[dict]:
@@ -110,7 +136,7 @@ async def _noop(_: dict) -> None:
 
 
 async def run(user_text: str, session: str = "web", save: bool = True,
-              images: list[dict] | None = None, emit: Emit | None = None) -> str:
+              images: list[dict] | None = None, emit: Emit | None = None, voice: bool = False) -> str:
     """Wykonuje polecenie użytkownika i zwraca odpowiedź tekstową.
 
     images: lista {"media_type": "image/jpeg", "data": "<base64>"}
@@ -143,8 +169,8 @@ async def run(user_text: str, session: str = "web", save: bool = True,
                 async with client.beta.messages.stream(
                     model=config.MODEL,
                     max_tokens=32000,
-                    system=_system_prompt(),
-                    tools=[*TOOLS, *SERVER_TOOLS],
+                    system=_system_prompt(voice),
+                    tools=tool_list(),
                     messages=messages,
                     output_config={"effort": config.EFFORT},
                     cache_control={"type": "ephemeral"},
@@ -201,7 +227,8 @@ async def run(user_text: str, session: str = "web", save: bool = True,
 
         reply = "\n\n".join(parts).strip() or "✅ Gotowe."
         if save:
-            saved_user = ("[📷 zdjęcie] " if images else "") + (user_text or "")
+            saved_user = ("🎙 " if voice else "") + ("[📷 zdjęcie] " if images else "") + (user_text or "")
             db.insert("chat", {"session": session, "role": "user", "content": saved_user, "created": db.now_str()})
             db.insert("chat", {"session": session, "role": "assistant", "content": reply, "created": db.now_str()})
+            asyncio.create_task(memory.maybe_summarize(client))
         return reply

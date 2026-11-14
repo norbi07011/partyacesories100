@@ -19,6 +19,9 @@ UPLOAD_DIR = DATA_DIR / "uploads"
 UPLOAD_DIR.mkdir(exist_ok=True)
 THUMB_DIR = DATA_DIR / "thumbs"
 THUMB_DIR.mkdir(exist_ok=True)
+SKILLS_DIR = BASE_DIR / "skills"
+SKILLS_DIR.mkdir(exist_ok=True)
+MCP_CONFIG = BASE_DIR / "mcp_servers.json"
 
 # Ustawienia edytowalne z dashboardu: klucz -> (opis, domyślna wartość, czy sekret)
 SETTINGS: dict[str, tuple[str, str, bool]] = {
@@ -39,6 +42,12 @@ SETTINGS: dict[str, tuple[str, str, bool]] = {
     "REMINDER_MINUTES": ("Ile minut przed wydarzeniem przypominać", "60", False),
     "CRYPTO_WATCHLIST": ("Obserwowane krypto (ID z CoinGecko, po przecinku)", "bitcoin,ethereum,solana", False),
     "CRYPTO_CHECK_MINUTES": ("Co ile minut sprawdzać alerty krypto", "5", False),
+    "VOICE_NAME": ("Głos agenta (edge-tts): pl-PL-ZofiaNeural albo pl-PL-MarekNeural", "pl-PL-ZofiaNeural", False),
+    "VOICE_TTS": ("Synteza mowy: edge (naturalny głos, internet) albo browser (głos systemu)", "edge", False),
+    "VOICE_STT": ("Rozpoznawanie mowy: browser (Chrome/Edge) albo whisper (lokalnie, offline)", "browser", False),
+    "WHISPER_MODEL": ("Model Whisper: tiny / base / small / medium (większy = dokładniej, wolniej)", "small", False),
+    "TELEGRAM_VOICE_REPLY": ("Odpowiadaj głosem na głosówki z Telegrama (1/0)", "1", False),
+    "LOCATION": ("Twoje miasto (pogoda i złota godzina domyślnie dla niego)", "Warszawa", False),
     "HOST": ("Adres serwera (zmiana wymaga restartu)", "127.0.0.1", False),
     "PORT": ("Port serwera (zmiana wymaga restartu)", "8765", False),
 }
@@ -93,6 +102,12 @@ def reload() -> None:
     g["REMINDER_MINUTES"] = _int(v["REMINDER_MINUTES"], 60)
     g["CRYPTO_WATCHLIST"] = [c.lower() for c in _split(v["CRYPTO_WATCHLIST"])]
     g["CRYPTO_CHECK_MINUTES"] = max(1, _int(v["CRYPTO_CHECK_MINUTES"], 5))
+    g["VOICE_NAME"] = v["VOICE_NAME"] or "pl-PL-ZofiaNeural"
+    g["VOICE_TTS"] = (v["VOICE_TTS"] or "edge").lower()
+    g["VOICE_STT"] = (v["VOICE_STT"] or "browser").lower()
+    g["WHISPER_MODEL"] = v["WHISPER_MODEL"] or "small"
+    g["TELEGRAM_VOICE_REPLY"] = v["TELEGRAM_VOICE_REPLY"] != "0"
+    g["LOCATION"] = v["LOCATION"] or "Warszawa"
     g["HOST"] = v["HOST"] or "127.0.0.1"
     g["PORT"] = _int(v["PORT"], 8765)
 

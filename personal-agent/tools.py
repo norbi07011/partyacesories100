@@ -228,11 +228,21 @@ def _clean(data: dict, allowed: set[str]) -> dict:
     return {k: v for k, v in data.items() if k in allowed and v is not None}
 
 
-async def execute(name: str, args: dict) -> str:
+async def execute(name: str, args: dict):
+    """Zwraca tekst (JSON) albo listę bloków treści (np. zdjęcia dla view_photos)."""
+    import extra_tools
+    import mcp_client
     try:
-        result = await _execute(name, args or {})
+        if name in extra_tools.NAMES:
+            result = await extra_tools.execute(name, args or {})
+        elif mcp_client.manager.owns(name):
+            return await mcp_client.manager.call(name, args or {})
+        else:
+            result = await _execute(name, args or {})
     except Exception as e:  # noqa: BLE001 - błąd wraca do modelu jako tool_result
         return json.dumps({"error": f"{type(e).__name__}: {e}"}, ensure_ascii=False)
+    if isinstance(result, list) and result and isinstance(result[0], dict) and result[0].get("type") in ("text", "image"):
+        return result
     return json.dumps(result, ensure_ascii=False, default=str)
 
 

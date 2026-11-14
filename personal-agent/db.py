@@ -99,6 +99,15 @@ CREATE TABLE IF NOT EXISTS projects (
     notes TEXT DEFAULT '',
     created TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS documents (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    kind TEXT DEFAULT 'notatka',             -- shotlista | wycena | brief | callsheet | scenariusz | umowa | notatka | inne
+    content TEXT DEFAULT '',
+    project_id INTEGER,
+    created TEXT NOT NULL,
+    updated TEXT
+);
 CREATE TABLE IF NOT EXISTS kv (
     key TEXT PRIMARY KEY,
     value TEXT

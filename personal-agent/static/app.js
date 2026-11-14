@@ -41,7 +41,13 @@ function md(src){
     .replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>').replace(/(^|[^*\w])\*([^*\s][^*]*)\*/g,'$1<i>$2</i>')
     .replace(/(^|\W)_([^_\s][^_]*)_(?=\W|$)/g,'$1<i>$2</i>')
     .replace(/`([^`]+)`/g,'<code>$1</code>');
+  let table = null;
+  const flushTable = () => { if (!table) return; const rows = table.filter(r=>!/^\s*\|?\s*:?-{2,}/.test(r));
+    html += '<table>' + rows.map((r,i)=>{ const cells = r.trim().replace(/^\||\|$/g,'').split('|'); const tag = i===0?'th':'td';
+      return '<tr>' + cells.map(c=>`<${tag}>${inline(c.trim())}</${tag}>`).join('') + '</tr>'; }).join('') + '</table>'; table = null; };
   for (const l of lines){
+    if (/^\s*\|.*\|\s*$/.test(l)) { if (list){ html+=`</${list}>`; list=null; } (table ||= []).push(l); continue; }
+    flushTable();
     const ul = l.match(/^\s*[-*•]\s+(.*)/), ol = l.match(/^\s*\d+[.)]\s+(.*)/);
     if (ul||ol){ const tag = ul?'ul':'ol'; if(list!==tag){ if(list) html+=`</${list}>`; html+=`<${tag}>`; list=tag; } html+='<li>'+inline((ul||ol)[1])+'</li>'; continue; }
     if (list){ html+=`</${list}>`; list=null; }
@@ -49,6 +55,7 @@ function md(src){
     if (h) html+='<h4>'+inline(h[1])+'</h4>';
     else if (l.trim()) html+='<p>'+inline(l)+'</p>';
   }
+  flushTable();
   return html + (list?`</${list}>`:'');
 }
 
@@ -79,7 +86,7 @@ function show(view){
 $$('.nav').forEach(n=>n.onclick=()=>show(n.dataset.view));
 document.addEventListener('click', e => { const g = e.target.closest('[data-goto]'); if (g) show(g.dataset.goto); });
 function refresh(what){ // po zmianach z czatu
-  const map = {tasks:['tasks','home','projects'], events:['calendar','home'], ideas:['ideas','home'], projects:['projects','home'], memory:['settings'], alerts:['crypto'], notifications:['notifications','home'], files:['files']};
+  const map = {tasks:['tasks','home','projects'], events:['calendar','home'], ideas:['ideas','home'], projects:['projects','home'], memory:['settings'], alerts:['crypto'], notifications:['notifications','home'], files:['files'], documents:['documents']};
   const views = new Set((what||[]).flatMap(w=>map[w]||[]));
   if (what?.includes('projects')) loadProjectsCache();
   if (views.has(current) && current!=='chat') LOADERS[current]();
@@ -120,6 +127,11 @@ const SCHEMAS = {
     {name:'folder',label:'Folder z materiałami',full:1},{name:'paid',label:'Opłacony',type:'checkbox'},
     {name:'notes',label:'Notatki',type:'textarea',full:1}]},
 };
+SCHEMAS.documents = { title:'Dokument', fields:[
+  {name:'title',label:'Tytuł',full:1,req:1},
+  {name:'kind',label:'Rodzaj',type:'select',opts:[['shotlista','Shot-lista'],['wycena','Wycena'],['brief','Brief'],['callsheet','Call sheet'],['scenariusz','Scenariusz'],['umowa','Umowa'],['notatka','Notatka'],['inne','Inne']]},
+  {name:'project_id',label:'Projekt',type:'select',opts:projOpts},
+  {name:'content',label:'Treść (markdown: **pogrubienie**, - listy, | tabele |)',type:'textarea',full:1,rows:16}]};
 let modalState = null;
 function openModal(table, row={}, opts={}){
   const sc = SCHEMAS[table]; modalState = {table, id: row.id, extra: opts.extra};
@@ -198,9 +210,9 @@ LOADERS.home = async function(){
   });
 };
 document.addEventListener('click', e => {
-  const t = e.target.closest('[data-ev],[data-task],[data-idea],[data-proj]'); if (!t || e.target.closest('button.check,.icon-btn')) return;
+  const t = e.target.closest('[data-ev],[data-task],[data-idea],[data-proj],[data-doc]'); if (!t || e.target.closest('button.check,.icon-btn')) return;
   if (t.dataset.ev) edit('events', t.dataset.ev); else if (t.dataset.task) edit('tasks', t.dataset.task);
-  else if (t.dataset.idea) editIdea(t.dataset.idea); else if (t.dataset.proj) edit('projects', t.dataset.proj);
+  else if (t.dataset.idea) editIdea(t.dataset.idea); else if (t.dataset.proj) edit('projects', t.dataset.proj); else if (t.dataset.doc) openDoc(t.dataset.doc);
 });
 $('#ask-form').onsubmit = e => { e.preventDefault(); const v=$('#ask-input').value.trim(); if(!v) return; $('#ask-input').value=''; show('chat'); sendChat(v); };
 
@@ -209,7 +221,7 @@ let chatLoaded=false, busy=false, attachments=[];
 function addMsg(role, text, images){
   const d=document.createElement('div'); d.className='msg '+role;
   const imgs = (images||[]).map(im=>`<img class="att" src="data:${im.media_type};base64,${im.data}" alt="">`).join('');
-  d.innerHTML = imgs + (role==='assistant' ? md(text) : esc(text).replace(/\n/g,'<br>'));
+  d.innerHTML = imgs + (role==='assistant' ? `<button class="icon-btn speak" title="Przeczytaj na głos"><svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 9a4 4 0 0 1 0 6"/></svg></button><div class="body">${md(text)}</div>` : esc(text).replace(/\n/g,'<br>'));
   $('#msgs').appendChild(d); $('#msgs').scrollTop=1e9; return d;
 }
 LOADERS.chat = async function(){
@@ -488,14 +500,20 @@ $('#notes-clear').onclick = async()=>{ if(!confirm('Usunąć wszystkie powiadomi
 const GROUPS = [
   {title:'Claude — mózg agenta', keys:['ANTHROPIC_API_KEY','AGENT_MODEL','AGENT_EFFORT','AGENT_FALLBACKS'], id:'claude'},
   {title:'Telegram', keys:['TELEGRAM_BOT_TOKEN','TELEGRAM_ALLOWED_CHAT_IDS'], id:'telegram'},
-  {title:'Ty', keys:['USER_NAME','USER_PROFILE','TIMEZONE']},
+  {title:'Ty', keys:['USER_NAME','USER_PROFILE','LOCATION','TIMEZONE']},
+  {title:'Głos i rozmowa', keys:['VOICE_NAME','VOICE_TTS','VOICE_STT','WHISPER_MODEL','TELEGRAM_VOICE_REPLY'], id:'voice'},
   {title:'Pliki na dysku', keys:['WATCH_FOLDERS','INDEX_EXIF']},
   {title:'Harmonogram i przypomnienia', keys:['MORNING_BRIEF_ENABLED','MORNING_BRIEF_HOUR','MORNING_BRIEF_MINUTE','REMINDER_MINUTES']},
   {title:'Krypto', keys:['CRYPTO_WATCHLIST','CRYPTO_CHECK_MINUTES']},
   {title:'Serwer', keys:['HOST','PORT']},
 ];
-const BOOL = new Set(['AGENT_FALLBACKS','INDEX_EXIF','MORNING_BRIEF_ENABLED']);
-const SELECTS = { AGENT_EFFORT:[['low','low — szybko i tanio'],['medium','medium — zalecane'],['high','high — dokładniej'],['xhigh','xhigh'],['max','max — najdokładniej, najdrożej']] };
+const BOOL = new Set(['AGENT_FALLBACKS','INDEX_EXIF','MORNING_BRIEF_ENABLED','TELEGRAM_VOICE_REPLY']);
+const SELECTS = {
+  VOICE_NAME:[['pl-PL-ZofiaNeural','Zofia — kobiecy'],['pl-PL-MarekNeural','Marek — męski']],
+  VOICE_TTS:[['edge','Naturalny głos (edge-tts, internet)'],['browser','Głos systemu (przeglądarka)']],
+  VOICE_STT:[['browser','Przeglądarka (Chrome/Edge) — zalecane'],['whisper','Whisper — lokalnie, działa offline i w Firefoksie']],
+  WHISPER_MODEL:[['tiny','tiny — najszybszy'],['base','base'],['small','small — zalecany'],['medium','medium — najdokładniejszy, wolny']],
+  AGENT_EFFORT:[['low','low — szybko i tanio'],['medium','medium — zalecane'],['high','high — dokładniej'],['xhigh','xhigh'],['max','max — najdokładniej, najdrożej']] };
 const DATALIST = { AGENT_MODEL:['claude-opus-5-5','claude-sonnet-5-5','claude-haiku-5-5','claude-fable-5-2'] };
 let settingsOrig = {};
 LOADERS.settings = async function(){
@@ -517,14 +535,18 @@ LOADERS.settings = async function(){
   const pending = s.telegram_pending ? `<div class="banner"><div class="t">Bot dostał <b>/start</b> od <b>${esc(s.telegram_pending.name||'')}</b> (chat_id ${esc(s.telegram_pending.chat_id)}).</div><button type="button" class="btn" id="tg-pair">Dodaj ten czat</button></div>` : '';
   $('#settings-groups').innerHTML = GROUPS.map(g=>`<div class="card set-group"><h2>${g.title}</h2>
     ${g.id==='claude'?`<div class="status-line"><span class="dot ${st.claude?'on':'off'}"></span>${st.claude?'Klucz zapisany':'Brak klucza — <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">pobierz klucz</a>'}<span style="flex:1"></span>${st.claude?'<button type="button" class="btn ghost sq" id="test-claude">Sprawdź połączenie</button>':''}</div>`:''}
+    ${g.id==='voice'?`<div class="status-line"><span class="dot ${st.voice.tts_engine==='edge'?'on':''}"></span>Synteza: ${st.voice.tts_engine==='edge'?'naturalny głos':'głos przeglądarki'} · Whisper: ${st.voice.whisper_installed?(st.voice.whisper_loaded?'załadowany':'zainstalowany'):'niezainstalowany'}<span style="flex:1"></span><button type="button" class="btn ghost sq" id="voice-test">Posłuchaj</button></div>`:''}
     ${g.id==='telegram'?`<div class="status-line">${tgLine}</div>${pending}<p class="hint" style="margin:0 0 12px">1) W Telegramie: @BotFather → /newbot → skopiuj token. 2) Zapisz token tutaj. 3) Napisz do bota /start i kliknij „Dodaj ten czat”.</p>`:''}
     ${g.keys.map(field).join('')}</div>`).join('');
+  $('#voice-test')?.addEventListener('click', async ()=>{ VOICE_STATUS=null; await speakText(`Cześć${st.user?', '+st.user:''}! Tak brzmi mój głos. W czym mogę pomóc?`); });
   $('#tg-pair')?.addEventListener('click', async()=>{ await api('/api/settings/telegram/pair',{method:'POST'}); toast('Telegram połączony ✓ — sprawdź telefon'); LOADERS.settings(); poll(); });
   $('#test-claude')?.addEventListener('click', async e=>{ e.target.disabled=true; const r = await api('/api/settings/test-claude',{method:'POST'}); e.target.disabled=false; toast(r.ok?'✓ Połączenie z Claude działa':'⚠️ '+r.error); });
   $('#jobs').innerHTML = st.jobs.map(j=>`<div class="row"><span class="dot ${j.enabled?'on':''}"></span><div class="t"><b>${esc(j.label)}</b><div class="m">${j.enabled?'następnie: '+esc(j.next_run||'—'):'wyłączone'}</div></div><button class="btn ghost sq" data-run="${j.id}">Uruchom teraz</button></div>`).join('');
   $$('[data-run]').forEach(b=>b.onclick=async()=>{ await api(`/api/jobs/${b.dataset.run}/run`,{method:'POST'}); toast('Uruchomiono: '+b.closest('.row').querySelector('b').textContent); setTimeout(poll, 4000); });
   $('#disk').textContent = st.disk ? `Wolne miejsce na dysku z danymi: ${fmtSize(st.disk.free)} z ${fmtSize(st.disk.total)}` : '';
   const mem = await api('/api/memory');
+  const ms = await api('/api/memory/summary');
+  $('#mem-summary').innerHTML = `<div class="banner" style="display:block"><b>Notatnik rozmów</b> <span class="m">· ${ms.messages} zapisanych wiadomości (czat, Telegram, rozmowy głosowe)${ms.summary?' · aktualizacja '+fmtDT(ms.summary.created):''}</span>${ms.summary?`<div class="md" style="margin-top:8px">${md(ms.summary.text)}</div>`:'<div class="m">Agent zacznie streszczać starsze rozmowy, gdy uzbiera się ich więcej. Wszystko, co powiesz, zostaje w historii i agent może do tego wrócić.</div>'}</div>`;
   $('#memory').innerHTML = mem.length ? mem.map(m=>`<div class="row"><div class="t">${esc(m.fact)}</div><span class="m">${fmtDate(m.created)}</span><button class="icon-btn del" data-del-mem="${m.id}">${ICON.trash}</button></div>`).join('') : '<div class="empty">Agent jeszcze nic o Tobie nie wie. Opowiedz mu o sobie w czacie.</div>';
   $$('[data-del-mem]').forEach(b=>b.onclick=async()=>{ await api('/api/crud/memory/'+b.dataset.delMem,{method:'DELETE'}); LOADERS.settings(); });
 };
@@ -561,10 +583,12 @@ async function globalSearch(){
     + grp('Zadania', r.tasks, t=>`<button data-task="${t.id}">${esc(t.title)} <span class="m">${esc(t.status)}</span></button>`)
     + grp('Projekty', r.projects, p=>`<button data-proj="${p.id}">${esc(p.name)} <span class="m">${esc(p.client||'')}</span></button>`)
     + grp('Pomysły', r.ideas, i=>`<button data-idea="${i.id}">${esc(i.title)}</button>`)
+    + grp('Dokumenty', r.documents||[], d=>`<button data-doc="${d.id}">${esc(d.title)} <span class="m">${esc(d.kind)}</span></button>`)
+    + grp('Z rozmów', r.conversations||[], c=>`<button data-ask="${esc(q)}"><span class="m">${fmtDT(c.created)} · ${c.role==='user'?'Ty':'Agent'}:</span> ${esc(c.fragment)}</button>`)
     + grp('Foldery', r.folders, f=>`<button data-open="${esc(f.folder)}">${esc(f.folder.split(/[\\/]/).slice(-2).join('/'))} <span class="m">${f.files} plików</span></button>`);
   box.innerHTML = html || `<div class="grp">Brak wyników</div><button data-ask="${esc(q)}">Zapytaj agenta: „${esc(q)}”</button>`;
   box.hidden = false;
-  box.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{ box.hidden=true; if (b.dataset.ask) { show('chat'); sendChat(b.dataset.ask); } }));
+  box.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{ box.hidden=true; if (b.dataset.ask) { show('chat'); sendChat('Przypomnij mi, co ustaliliśmy w sprawie: '+b.dataset.ask); } }));
 }
 
 /* ---------- status + powiadomienia przeglądarki ---------- */
@@ -582,6 +606,7 @@ async function poll(){
       if (current==='home') LOADERS.home();
     }
     lastNoteId = s.last_notification || 0;
+    window.USER_NAME = s.user;
   }catch(e){}
 }
 if ('Notification' in window && Notification.permission==='default') document.addEventListener('click',()=>Notification.requestPermission(),{once:true});
@@ -589,3 +614,73 @@ setInterval(poll, 20000); poll();
 
 loadProjectsCache().finally(()=> show((location.hash||'').slice(1) || store.get('view','home')));
 window.addEventListener('hashchange', ()=>{ const v=location.hash.slice(1); if (v && v!==current) show(v); });
+
+
+/* ---------- DOKUMENTY ---------- */
+const DOC_KINDS = [['','Wszystkie'],['shotlista','Shot-listy'],['wycena','Wyceny'],['brief','Briefy'],['callsheet','Call sheety'],['scenariusz','Scenariusze'],['notatka','Notatki']];
+let docKind = '';
+LOADERS.documents = async function(){
+  const q = $('#doc-q').value.trim();
+  const docs = await api('/api/documents?q='+encodeURIComponent(q)+'&kind='+docKind);
+  $('#doc-kinds').innerHTML = DOC_KINDS.map(([k,l])=>`<button class="chip ${docKind===k?'active':''}" data-dk="${k}">${l}</button>`).join('');
+  $$('[data-dk]').forEach(b=>b.onclick=()=>{ docKind=b.dataset.dk; LOADERS.documents(); });
+  $('#docs').innerHTML = docs.length ? docs.map(d=>`<div class="doc" data-doc="${d.id}"><div class="meta"><span class="pill accent">${esc(d.kind)}</span>${d.project_id?`<span class="pill">${esc(projectName(d.project_id))}</span>`:''}</div><h3>${esc(d.title)}</h3><div class="pv">${esc((d.preview||'').replace(/[|*#_-]{2,}/g,' '))}</div><div class="m">${fmtDT(d.updated||d.created)}</div></div>`).join('')
+    : '<div class="empty">Brak dokumentów. Poproś agenta np. „przygotuj shot-listę do teledysku Nocne Miasto” albo „zrób wycenę sesji ślubnej”.</div>';
+};
+let docT; $('#doc-q').oninput=()=>{clearTimeout(docT); docT=setTimeout(LOADERS.documents,250)};
+$('#doc-new').onclick=()=>openModal('documents',{kind:'notatka'},{onSaved:LOADERS.documents});
+let docOpen = null;
+async function openDoc(id){
+  const d = await api('/api/crud/documents/'+id); docOpen = d;
+  $('#dv-title').textContent = d.title;
+  $('#dv-meta').textContent = `${d.kind}${d.project_id?' · '+projectName(d.project_id):''} · ${fmtDT(d.updated||d.created)}`;
+  $('#dv-body').innerHTML = md(d.content||'');
+  $('#dv-dl').href = `/api/documents/${d.id}/download`;
+  $('#docview').hidden = false;
+}
+$('#dv-x').onclick = () => $('#docview').hidden = true;
+$('#docview').addEventListener('mousedown', e => { if (e.target.id==='docview') $('#docview').hidden = true; });
+$('#dv-print').onclick = () => window.print();
+$('#dv-edit').onclick = () => { $('#docview').hidden = true; openModal('documents', docOpen, {onSaved: () => { if (current==='documents') LOADERS.documents(); openDoc(docOpen.id); }}); };
+
+/* ---------- UMIEJĘTNOŚCI ---------- */
+LOADERS.skills = async function(){
+  const d = await api('/api/skills');
+  $('#skills').innerHTML = d.skills.map(s=>`<div class="skill ${s.enabled?'':'off'}"><div class="hd"><h3>${esc(s.name)}</h3><button class="switch ${s.enabled?'on':''}" data-sk-toggle="${esc(s.id)}" title="${s.enabled?'Wyłącz':'Włącz'}"></button></div>
+    <div class="m">${esc(s.description)}</div><div class="meta"><span class="pill ${s.builtin?'':'accent'}">${s.builtin?'wbudowana':'własna'}</span><span style="flex:1"></span>
+    <button class="btn ghost sq" data-sk-try="${esc(s.name)}">Użyj</button><button class="btn ghost sq" data-sk-edit="${esc(s.id)}">Edytuj</button></div></div>`).join('') || '<div class="empty">Brak umiejętności.</div>';
+  $$('[data-sk-toggle]').forEach(b=>b.onclick=async()=>{ await api('/api/skills/'+b.dataset.skToggle,{method:'PATCH',body:{enabled:!b.classList.contains('on')}}); LOADERS.skills(); });
+  $$('[data-sk-edit]').forEach(b=>b.onclick=()=>skillModal(d.skills.find(s=>s.id===b.dataset.skEdit)));
+  $$('[data-sk-try]').forEach(b=>b.onclick=()=>{ show('chat'); $('#chat-input').value = `Użyj umiejętności „${b.dataset.skTry}”: `; $('#chat-input').focus(); });
+  $('#tools-count').textContent = `${d.tools.length} wbudowanych + ${d.mcp.reduce((a,m)=>a+m.tools.length,0)} z MCP`;
+  $('#tools-grid').innerHTML = d.tools.map(t=>`<div class="tool-item"><b>${esc(t.label)}</b><span class="m">${esc(t.description.split('.')[0])}</span></div>`).join('');
+  $('#mcp-status').innerHTML = !d.mcp_available ? '<div class="m">Biblioteka mcp nie jest zainstalowana (pip install mcp).</div>' : d.mcp.length ? d.mcp.map(m=>`<div class="mcp-row"><span class="dot ${m.status==='działa'?'on':m.status==='wyłączony'?'':'off'}"></span><div class="t"><b>${esc(m.name)}</b> <span class="m">${esc(m.status)}${m.tools.length?' · '+m.tools.length+' narzędzi: '+m.tools.slice(0,6).map(t=>esc(t.name)).join(', ')+(m.tools.length>6?'…':''):''}</span>${m.error?`<div class="m down">${esc(m.error)}</div>`:''}</div></div>`).join('') : '<div class="m">Brak podłączonych serwerów MCP.</div>';
+  const cfg = await api('/api/mcp/config'); $('#mcp-config').value = cfg.text; $('#mcp-config').dataset.example = cfg.example;
+};
+function skillModal(s){
+  const sk = s || {name:'', description:'', body:'1. \n2. \n3. '};
+  modalState = {table:'_skill', id:sk.id};
+  $('#modal-title').textContent = s ? 'Edytuj umiejętność' : 'Nowa umiejętność';
+  $('#modal-body').innerHTML = `<div class="field full"><label>Nazwa</label><input name="name" required value="${esc(sk.name)}"></div>
+    <div class="field full"><label>Kiedy jej użyć (jedno zdanie – agent czyta to, żeby zdecydować)</label><input name="description" value="${esc(sk.description)}"></div>
+    <div class="field full"><label>Instrukcje krok po kroku dla agenta</label><textarea name="body" rows="14">${esc(sk.body)}</textarea></div>`;
+  $('#modal-del').hidden = !s; $('#modal-extra').hidden = true;
+  $('#modal').hidden = false;
+}
+$('#skill-new').onclick = () => skillModal(null);
+// zapis/usuwanie umiejętności przez wspólne okno
+const _origSubmit = $('#modal-form').onsubmit, _origDel = $('#modal-del').onclick;
+$('#modal-form').onsubmit = async e => {
+  if (modalState?.table !== '_skill') return _origSubmit(e);
+  e.preventDefault(); const d = formData(e.target);
+  await api('/api/skills',{method:'POST',body:{...d, id: modalState.id}}); closeModal(); toast('Umiejętność zapisana ✓'); LOADERS.skills();
+};
+$('#modal-del').onclick = async () => {
+  if (modalState?.table !== '_skill') return _origDel();
+  if (!confirm('Usunąć tę umiejętność?')) return;
+  await api('/api/skills/'+modalState.id,{method:'DELETE'}); closeModal(); LOADERS.skills();
+};
+$('#mcp-save').onclick = async () => { const r = await api('/api/mcp/config',{method:'POST',body:{text:$('#mcp-config').value}}); toast('Zapisano — połączono serwery: '+r.servers.filter(s=>s.status==='działa').length); LOADERS.skills(); };
+$('#mcp-reload').onclick = async () => { await api('/api/mcp/reload',{method:'POST'}); LOADERS.skills(); };
+$('#mcp-example').onclick = () => { const ex = $('#mcp-config').dataset.example; if (ex) { $('#mcp-config').value = ex; toast('Wstawiono przykłady (wyłączone). Włącz wybrane: "enabled": true'); } };
+function chatGreetingName(){ return window.USER_NAME ? ', ' + window.USER_NAME : ''; }

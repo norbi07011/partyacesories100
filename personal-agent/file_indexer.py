@@ -17,6 +17,7 @@ import config
 import db
 
 log = logging.getLogger("files")
+logging.getLogger("exifread").setLevel(logging.ERROR)
 
 try:
     import exifread

@@ -250,3 +250,95 @@ th{color:var(--muted);font-weight:500;font-size:12px;text-transform:uppercase;le
   .gallery{grid-template-columns:repeat(2,minmax(0,1fr))}
   .ask{padding-left:12px}
 }
+
+/* ---------- przycisk rozmowy ---------- */
+.call-cta{display:flex;align-items:center;gap:10px;margin:0 0 12px;padding:10px 12px;border-radius:12px;border:1px solid rgba(217,165,91,.35);background:linear-gradient(135deg,rgba(217,165,91,.22),rgba(217,165,91,.06));color:var(--text);cursor:pointer;font-weight:500}
+.call-cta svg{width:18px;height:18px;color:var(--accent)}
+.call-cta:hover{border-color:var(--accent)}
+.composer .mic{padding:11px}
+.composer .mic.rec{color:#fff;background:var(--warn);border-radius:10px;animation:pulse 1.2s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(224,122,95,.5)}50%{box-shadow:0 0 0 8px rgba(224,122,95,0)}}
+.msg .speak{float:right;margin:-6px -8px 0 6px;opacity:.5}
+.msg .speak:hover{opacity:1}
+
+/* ---------- markdown w dokumentach ---------- */
+.md table,.msg table{border-collapse:collapse;width:100%;margin:8px 0;font-size:13px;display:block;overflow-x:auto}
+.md th,.md td,.msg th,.msg td{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+.md th,.msg th{background:var(--panel2);text-transform:none;letter-spacing:0;font-size:12.5px;color:var(--text)}
+.md h4{font-family:var(--serif);font-weight:600;font-size:17px;margin:16px 0 6px}
+.md p{margin:0 0 10px} .md ul,.md ol{padding-left:22px}
+
+/* ---------- dokumenty ---------- */
+.docs{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.doc{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px;cursor:pointer;display:flex;flex-direction:column;gap:8px}
+.doc:hover{border-color:var(--muted)}
+.doc h3{font-family:var(--serif);font-weight:400;font-size:17px;margin:0}
+.doc .pv{color:var(--muted);font-size:12.5px;max-height:72px;overflow:hidden;white-space:pre-wrap}
+.docview{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:35;display:flex;justify-content:center;padding:24px 16px;overflow:auto}
+.docview-inner{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:24px;width:min(900px,100%);height:max-content}
+@media print{
+  body *{visibility:hidden} .docview,.docview *{visibility:visible}
+  .docview{position:absolute;inset:0;background:#fff;padding:0} .docview-inner{border:0;color:#000;background:#fff}
+  .docview .actions{display:none}
+}
+
+/* ---------- umiejętności ---------- */
+.skills{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.skill{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px;display:flex;flex-direction:column;gap:8px}
+.skill.off{opacity:.55}
+.skill h3{font-family:var(--serif);font-weight:400;font-size:17px;margin:0;flex:1}
+.skill .hd{display:flex;align-items:center;gap:8px}
+.switch{position:relative;width:36px;height:20px;border-radius:99px;background:var(--line);border:0;cursor:pointer;flex:none;padding:0}
+.switch::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:.2s}
+.switch.on{background:var(--accent)} .switch.on::after{left:18px}
+.tools-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px}
+.tool-item{background:var(--panel2);border-radius:10px;padding:9px 11px;font-size:12.5px}
+.tool-item b{display:block;font-weight:500;font-size:13px}
+.mcp-row{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--line)}
+.mcp-row:last-child{border-bottom:0}
+
+/* ---------- ROZMOWA (FaceTime) ---------- */
+.call{position:fixed;inset:0;z-index:60;color:#f4efe6;display:flex;flex-direction:column;align-items:center;overflow:hidden;background:#07070a}
+.call-bg{position:absolute;inset:-20%;background:radial-gradient(40% 40% at 30% 30%,rgba(217,165,91,.30),transparent 70%),radial-gradient(45% 45% at 75% 65%,rgba(122,90,214,.28),transparent 70%),radial-gradient(35% 35% at 50% 100%,rgba(70,140,200,.22),transparent 70%);filter:blur(40px);animation:drift 18s ease-in-out infinite alternate}
+@keyframes drift{from{transform:translate(-3%,-2%) rotate(0deg)}to{transform:translate(3%,2%) rotate(8deg)}}
+.call>*:not(.call-bg):not(.call-self):not(.call-transcript){position:relative}
+.call-top{text-align:center;margin-top:min(7vh,64px)}
+.call-name{font-family:var(--serif);font-size:30px;letter-spacing:.2px}
+.call-status{color:rgba(244,239,230,.75);margin-top:4px;min-height:21px}
+.call-timer{color:rgba(244,239,230,.5);font-size:12.5px;font-variant-numeric:tabular-nums;margin-top:2px}
+.call-stage{flex:1;display:flex;align-items:center;justify-content:center;width:100%;min-height:0;cursor:pointer}
+#call-orb{width:min(62vh,78vw);height:min(62vh,78vw);max-width:520px;max-height:520px}
+.call-captions{width:min(760px,92vw);text-align:center;min-height:86px;margin-bottom:18px;display:flex;flex-direction:column;gap:6px;justify-content:flex-end}
+.cap-user{color:rgba(244,239,230,.6);font-size:15px;font-style:italic}
+.cap-agent{font-size:19px;line-height:1.45;max-height:30vh;overflow:auto;text-shadow:0 1px 12px rgba(0,0,0,.6)}
+.call-controls{display:flex;gap:14px;margin-bottom:max(28px,env(safe-area-inset-bottom));padding:12px 18px;border-radius:999px;background:rgba(30,30,36,.55);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.08);flex-wrap:wrap;justify-content:center}
+.cbtn{width:58px;height:58px;border-radius:50%;border:0;background:rgba(255,255,255,.12);color:#fff;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;transition:.15s}
+.cbtn svg{width:24px;height:24px}
+.cbtn span{position:absolute;top:64px;font-size:11px;color:rgba(255,255,255,.65);white-space:nowrap}
+.cbtn:hover{background:rgba(255,255,255,.2)}
+.cbtn.active{background:#f4efe6;color:#111}
+.cbtn.off{background:rgba(224,122,95,.9)}
+.cbtn:disabled{opacity:.35;cursor:default}
+.cbtn.end{background:#e5484d}
+.cbtn.end:hover{background:#f05a5f}
+.call-controls{margin-bottom:46px}
+.call-self{position:absolute;right:22px;top:22px;width:min(220px,30vw);aspect-ratio:3/4;border-radius:18px;overflow:hidden;box-shadow:0 18px 40px rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.15);background:#000}
+.call-self video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+.call-self.flash::after{content:"";position:absolute;inset:0;background:#fff;animation:flash .35s ease-out forwards}
+@keyframes flash{from{opacity:.9}to{opacity:0}}
+.snap-badge{position:absolute;left:8px;bottom:8px;font-size:11px;background:rgba(0,0,0,.6);padding:3px 8px;border-radius:99px}
+.call-transcript{position:absolute;left:18px;top:18px;bottom:130px;width:min(340px,80vw);background:rgba(20,20,24,.72);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:14px;overflow:auto;font-size:13px}
+.ct-head{display:flex;flex-direction:column;margin-bottom:10px;font-weight:600}
+.ct-head .m{color:rgba(255,255,255,.5);font-weight:400}
+.ct-item{margin-bottom:10px}
+.ct-item b{display:block;font-size:11px;color:rgba(255,255,255,.5);font-weight:500;text-transform:uppercase;letter-spacing:.5px}
+@media (max-width:760px){
+  .call-cta{margin:0 6px 0 0;white-space:nowrap;padding:8px 10px}
+  .call-cta .lbl{display:none}
+  .cbtn{width:50px;height:50px} .cbtn span{display:none}
+  .call-controls{gap:10px;margin-bottom:24px}
+  .call-self{width:30vw;right:12px;top:12px;border-radius:12px}
+  .cap-agent{font-size:16px}
+  .call-name{font-size:24px}
+}
+@media (min-width:900px){ .call.with-transcript .call-captions{padding-left:340px} }

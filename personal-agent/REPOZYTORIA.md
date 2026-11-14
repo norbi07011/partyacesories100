@@ -96,9 +96,22 @@ MCP (Model Context Protocol) to standard podłączania narzędzi do agentów AI.
 
 Zasada bezpieczeństwa: agent AI dostaje klucze giełdowe **tylko do odczytu**. Żadnych uprawnień do wypłat.
 
-## 6. Plan rozbudowy Studio Agent
+## 6. Co już jest wbudowane w Studio Agent
 
-1. **EXIF w indeksie plików:** wyszukiwanie po aparacie, obiektywie i dacie zdjęcia (exiftool).
+| Z ekosystemu | Jak użyte |
+|---|---|
+| `rany2/edge-tts` | Naturalny polski głos agenta (Zofia/Marek) w rozmowie i na Telegramie |
+| `SYSTRAN/faster-whisper` | Rozpoznawanie mowy offline (głosówki Telegram, Firefox) |
+| Web Speech API | Rozpoznawanie mowy w Chrome/Edge w rozmowie głosowej i dyktowaniu |
+| `modelcontextprotocol/python-sdk` | Podłączanie dowolnych serwerów MCP (zakładka Umiejętności) |
+| `ianare/exif-py`, Pillow, FFmpeg | EXIF, miniatury zdjęć, RAW i wideo, informacje o plikach wideo |
+| `py-pdf/pypdf`, `python-docx` | Czytanie scenariuszy, briefów i umów |
+| Open-Meteo, NBP, CoinGecko | Pogoda, kursy walut, krypto (bez kluczy) |
+| SQLite FTS5 | Wyszukiwanie w całej historii rozmów (pamięć) |
+
+## 7. Plan rozbudowy Studio Agent
+
+1. ~~EXIF w indeksie plików~~ ✅  ~~Wiadomości głosowe~~ ✅  ~~Zdjęcia na Telegramie~~ ✅  ~~Moduł klientów~~ ✅
 2. **Synchronizacja z Google Calendar:** kalendarz w telefonie (Google Calendar API albo MCP).
 3. **Wiadomości głosowe na Telegramie:** transkrypcja przez Whisper, potem agent.
 4. **Zdjęcia na Telegramie:** wysyłasz kadr, agent ocenia kompozycję i światło (Claude vision).

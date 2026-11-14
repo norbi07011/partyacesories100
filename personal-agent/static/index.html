@@ -13,6 +13,7 @@
 <div class="app">
   <aside>
     <div class="brand">Studio <span>Agent</span></div>
+    <button class="call-cta" id="call-open-side" title="Rozmowa głosowa z agentem"><svg viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg><span class="lbl">Porozmawiaj</span></button>
     <button class="nav active" data-view="home"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span class="lbl">Pulpit</span></button>
     <button class="nav" data-view="chat"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg><span class="lbl">Czat z agentem</span></button>
     <button class="nav" data-view="calendar"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span class="lbl">Kalendarz</span></button>
@@ -22,6 +23,8 @@
     <button class="nav" data-view="files"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/></svg><span class="lbl">Pliki i zdjęcia</span></button>
     <button class="nav" data-view="crypto"><svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg><span class="lbl">Krypto</span></button>
     <button class="nav" data-view="notifications"><svg viewBox="0 0 24 24"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10 21h4"/></svg><span class="lbl">Powiadomienia</span><span class="badge" id="unread" hidden></span></button>
+    <button class="nav" data-view="documents"><svg viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg><span class="lbl">Dokumenty</span></button>
+    <button class="nav" data-view="skills"><svg viewBox="0 0 24 24"><path d="M12 3l2.5 5.5L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.5-.5z"/></svg><span class="lbl">Umiejętności</span></button>
     <button class="nav" data-view="settings"><svg viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg><span class="lbl">Ustawienia</span></button>
     <div class="side-foot">
       <div><span class="dot" id="dot-claude"></span>Claude</div>
@@ -63,7 +66,7 @@
 
     <!-- CZAT -->
     <section class="view" id="view-chat">
-      <div class="card-h"><h1>Czat z agentem</h1><button class="link" id="chat-clear">Nowa rozmowa</button></div>
+      <div class="card-h"><h1>Czat z agentem</h1><div class="actions"><button class="btn ghost" id="chat-clear">Nowa rozmowa</button><button class="btn" id="call-open-chat"><svg viewBox="0 0 24 24" width="16" height="16"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>Rozmowa głosowa</button></div></div>
       <div class="chat" id="chat-box">
         <div class="msgs" id="msgs"></div>
         <div class="chips" id="chips">
@@ -77,6 +80,7 @@
         <form class="composer" id="chat-form">
           <label class="icon-btn attach" title="Dołącz zdjęcie (ocena kadru)"><svg viewBox="0 0 24 24"><path d="M21 12.5l-8.5 8.5a5 5 0 0 1-7-7L14 5.5a3.5 3.5 0 0 1 5 5L10.5 19a2 2 0 0 1-3-3L15 8.5"/></svg><input type="file" id="chat-file" accept="image/*" multiple hidden></label>
           <textarea id="chat-input" rows="1" placeholder="Napisz wiadomość… (Enter – wyślij, Shift+Enter – nowa linia, możesz wkleić zdjęcie)"></textarea>
+          <button type="button" class="icon-btn mic" id="dictate" title="Dyktuj (mów zamiast pisać)"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
           <button class="btn" id="chat-send">Wyślij</button>
         </form>
       </div>
@@ -178,6 +182,29 @@
       <div class="card"><div id="notes"></div></div>
     </section>
 
+    <!-- DOKUMENTY -->
+    <section class="view" id="view-documents">
+      <div class="card-h"><h1>Dokumenty</h1><button class="btn" id="doc-new">+ Dokument</button></div>
+      <p class="sub">Shot-listy, wyceny, briefy, call sheety i scenariusze, które przygotował agent albo Ty. Możesz je edytować, pobrać i wydrukować do PDF.</p>
+      <div class="filters"><input id="doc-q" placeholder="Szukaj w dokumentach…"><div id="doc-kinds"></div></div>
+      <div class="docs" id="docs"></div>
+    </section>
+
+    <!-- UMIEJĘTNOŚCI -->
+    <section class="view" id="view-skills">
+      <div class="card-h"><h1>Umiejętności</h1><button class="btn" id="skill-new">+ Nowa umiejętność</button></div>
+      <p class="sub">Instrukcje eksperckie, z których agent korzysta przy pasujących zadaniach. Możesz je włączać, edytować i dopisywać własne. Niżej: wbudowane narzędzia i zewnętrzne serwery MCP.</p>
+      <div class="skills" id="skills"></div>
+      <div class="card" style="margin-top:18px"><div class="card-h"><h2>Narzędzia agenta</h2><span class="m" id="tools-count"></span></div><div class="tools-grid" id="tools-grid"></div></div>
+      <div class="card" style="margin-top:18px">
+        <div class="card-h"><h2>Serwery MCP — dodatkowe umiejętności</h2><div class="actions"><button class="btn ghost sq" id="mcp-example">Wstaw przykłady</button><button class="btn ghost sq" id="mcp-reload">Połącz ponownie</button></div></div>
+        <p class="m">MCP to standard gotowych wtyczek dla agentów AI: pliki, przeglądarka, Notion, Google, GitHub, bazy danych i setki innych (lista: <a href="https://github.com/modelcontextprotocol/servers" target="_blank" rel="noopener">modelcontextprotocol/servers</a>). Wklej konfigurację serwera i zapisz – jego narzędzia od razu trafią do agenta. Serwery z <code>npx</code> wymagają Node.js.</p>
+        <div id="mcp-status" style="margin:12px 0"></div>
+        <textarea id="mcp-config" rows="10" spellcheck="false" style="width:100%;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px"></textarea>
+        <div class="actions" style="margin-top:10px;justify-content:flex-end"><button class="btn" id="mcp-save">Zapisz i połącz</button></div>
+      </div>
+    </section>
+
     <!-- USTAWIENIA -->
     <section class="view" id="view-settings">
       <h1>Ustawienia</h1><p class="sub">Tu podłączasz agenta do Claude i Telegrama, ustawiasz foldery i harmonogram. Zmiany działają od razu, bez restartu.</p>
@@ -195,6 +222,7 @@
       </div>
       <div class="card" style="margin-top:18px"><h2>Pamięć agenta</h2>
         <p class="m" style="margin-bottom:12px">Fakty, które agent zna o Tobie. Dodaje je sam w rozmowie; tu możesz je dopisać lub usunąć.</p>
+        <div id="mem-summary"></div>
         <form class="form" id="mem-form"><input name="fact" placeholder="np. Mój główny aparat to Sony A7 IV, obiektywy 24-70 i 85 1.4" required style="flex:1"><button class="btn">Zapamiętaj</button></form>
         <div id="memory"></div>
       </div>
@@ -209,8 +237,44 @@
     <div class="modal-foot"><button type="button" class="btn danger" id="modal-del">Usuń</button><span style="flex:1"></span><button type="button" class="btn ghost" id="modal-extra" hidden></button><button type="button" class="btn ghost" id="modal-cancel">Anuluj</button><button class="btn">Zapisz</button></div>
   </form>
 </div>
+<div class="docview" id="docview" hidden>
+  <div class="docview-inner">
+    <div class="card-h"><h2 id="dv-title"></h2><div class="actions"><button class="btn ghost sq" id="dv-edit">Edytuj</button><a class="btn ghost sq" id="dv-dl">Pobierz .md</a><button class="btn ghost sq" id="dv-print">Drukuj / PDF</button><button class="icon-btn" id="dv-x"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div></div>
+    <div class="m" id="dv-meta"></div>
+    <article class="md" id="dv-body"></article>
+  </div>
+</div>
+
+<!-- ROZMOWA GŁOSOWA (FaceTime) -->
+<div class="call" id="call" hidden>
+  <div class="call-bg"></div>
+  <div class="call-top">
+    <div class="call-name">Studio Agent</div>
+    <div class="call-status" id="call-status">Łączenie…</div>
+    <div class="call-timer" id="call-timer">00:00</div>
+  </div>
+  <div class="call-stage" id="call-stage" title="Dotknij, aby przerwać agentowi">
+    <canvas id="call-orb"></canvas>
+  </div>
+  <div class="call-captions">
+    <div class="cap-user" id="cap-user"></div>
+    <div class="cap-agent" id="cap-agent"></div>
+  </div>
+  <div class="call-self" id="call-self-wrap" hidden><video id="call-self" autoplay muted playsinline></video><span class="snap-badge" id="snap-badge" hidden>📸 klatka dołączona</span></div>
+  <aside class="call-transcript" id="call-transcript" hidden><div class="ct-head">Transkrypcja<span class="m">zapisywana w historii czatu</span></div><div id="ct-list"></div></aside>
+  <div class="call-controls">
+    <button class="cbtn" id="c-mute" title="Wycisz mikrofon"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span>Mikrofon</span></button>
+    <button class="cbtn" id="c-cam" title="Kamera"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></svg><span>Kamera</span></button>
+    <button class="cbtn" id="c-snap" title="Pokaż agentowi kadr z kamery" disabled><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><span>Pokaż kadr</span></button>
+    <button class="cbtn" id="c-captions" title="Transkrypcja"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 11h4M13 11h4M7 15h7"/></svg><span>Tekst</span></button>
+    <button class="cbtn" id="c-speaker" title="Głos agenta"><svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/></svg><span>Głośnik</span></button>
+    <button class="cbtn end" id="c-end" title="Zakończ rozmowę"><svg viewBox="0 0 24 24"><path d="M3 15c5-5 13-5 18 0l-2.5 2.5-3-1.5v-2.5a10 10 0 0 0-7 0V16l-3 1.5z"/></svg><span>Zakończ</span></button>
+  </div>
+</div>
+
 <div class="lightbox" id="lightbox" hidden><img alt=""><div class="lb-info"></div></div>
 <div class="toast" id="toast"></div>
 <script src="/static/app.js"></script>
+<script src="/static/voice.js"></script>
 </body>
 </html>
