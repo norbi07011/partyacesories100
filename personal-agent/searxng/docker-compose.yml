@@ -1,0 +1,13 @@
+# Własna wyszukiwarka SearXNG – bez limitów, bez śledzenia, działa na Twoim komputerze.
+# Wymaga Docker Desktop: https://www.docker.com/products/docker-desktop/
+# Start:  docker compose up -d      (w tym folderze)
+# Potem w dashboardzie: Ustawienia → SEARXNG_URL = http://127.0.0.1:8888
+services:
+  searxng:
+    image: searxng/searxng:latest
+    container_name: studio-agent-searxng
+    ports:
+      - "127.0.0.1:8888:8080"
+    volumes:
+      - ./settings.yml:/etc/searxng/settings.yml:ro
+    restart: unless-stopped

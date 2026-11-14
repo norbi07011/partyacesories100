@@ -1,0 +1,35 @@
+{
+  "servers": {
+    "pliki": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "D:/Zdjecia", "D:/Teledyski"],
+      "enabled": false,
+      "_opis": "Pełny dostęp do plików w podanych folderach (czytanie, zapis, przenoszenie). Wymaga Node.js."
+    },
+    "przegladarka": {
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@latest"],
+      "enabled": false,
+      "_opis": "Agent steruje przeglądarką: otwiera strony, klika, wypełnia formularze. Wymaga Node.js."
+    },
+    "pamiec-graf": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"],
+      "enabled": false,
+      "_opis": "Dodatkowa pamięć w postaci grafu wiedzy (osoby, firmy, relacje)."
+    },
+    "notion": {
+      "command": "npx",
+      "args": ["-y", "@notionhq/notion-mcp-server"],
+      "env": {"NOTION_TOKEN": "wklej-token-integracji-notion"},
+      "enabled": false,
+      "_opis": "Notatki i bazy w Notion."
+    },
+    "zdalny-serwer": {
+      "url": "https://twoj-serwer-mcp.example.com/mcp",
+      "headers": {"Authorization": "Bearer wklej-token"},
+      "enabled": false,
+      "_opis": "Dowolny zdalny serwer MCP po HTTP."
+    }
+  }
+}

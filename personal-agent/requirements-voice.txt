@@ -1,0 +1,5 @@
+# Opcjonalnie: rozpoznawanie mowy lokalnie/offline (głosówki z Telegrama, rozmowa w Firefoksie).
+# Przy pierwszym użyciu pobiera model Whisper (small ≈ 460 MB).
+faster-whisper>=1.0
+# Głos agenta offline (bez internetu) – głosy pobierasz w Ustawieniach → Głos
+piper-tts>=1.2

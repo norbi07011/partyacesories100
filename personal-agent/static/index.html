@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Studio Agent</title>
+<meta name="theme-color" content="#0c0c0d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/static/icons/icon-180.png">
+<link rel="icon" href="/static/icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/app.css">
+<link rel="stylesheet" href="/static/system.css">
+<link rel="stylesheet" href="/static/trading.css">
+<link rel="stylesheet" href="/static/brand.css">
+</head>
+<body>
+<div class="app">
+  <aside>
+    <div class="brand">Studio <span>Agent</span></div>
+    <button class="call-cta" id="call-open-side" title="Rozmowa głosowa z agentem"><svg viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg><span class="lbl">Porozmawiaj</span></button>
+    <button class="nav active" data-view="home"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span class="lbl">Pulpit</span></button>
+    <button class="nav" data-view="chat"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg><span class="lbl">Czat z agentem</span></button>
+    <button class="nav" data-view="calendar"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span class="lbl">Kalendarz</span></button>
+    <button class="nav" data-view="tasks"><svg viewBox="0 0 24 24"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg><span class="lbl">Zadania</span></button>
+    <button class="nav" data-view="advisor"><svg viewBox="0 0 24 24"><path d="M12 3a7 7 0 0 1 4 12.7V18H8v-2.3A7 7 0 0 1 12 3zM9 21h6"/></svg><span class="lbl">Doradca</span><span class="badge" id="advisor-badge" hidden></span></button>
+    <div class="nav-group">Biznes</div>
+    <button class="nav" data-view="stratfanat"><svg viewBox="0 0 24 24"><path d="M8 3l-5 3 2 5 2-1v11h10V10l2 1 2-5-5-3a4 4 0 0 1-8 0z"/></svg><span class="lbl">Stratfanat</span></button>
+    <button class="nav" data-view="websites"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg><span class="lbl">Strony WWW</span></button>
+    <button class="nav" data-view="projects"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg><span class="lbl">Projekty i klienci</span></button>
+    <div class="nav-group">Twórczość</div>
+    <button class="nav" data-view="ideas"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg><span class="lbl">Pomysły</span></button>
+    <button class="nav" data-view="files"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/></svg><span class="lbl">Pliki i zdjęcia</span></button>
+    <button class="nav" data-view="finance"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span class="lbl">Finanse</span></button>
+    <button class="nav" data-view="trading"><svg viewBox="0 0 24 24"><path d="M6 4v16M6 8h-2v6h2M12 6v14M12 9h-2v5h2M18 3v15M18 6h-2v8h2"/></svg><span class="lbl">Trading demo</span></button>
+    <button class="nav" data-view="crypto"><svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg><span class="lbl">Krypto</span></button>
+    <div class="nav-group">System</div>
+    <button class="nav" data-view="computer"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg><span class="lbl">Komputer</span><span class="badge" id="approvals-badge" hidden></span></button>
+    <button class="nav" data-view="memory"><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="7" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="M8 7l7.5 0M7.5 8l3.5 8M16.8 9l-3.5 7"/></svg><span class="lbl">Pamięć</span></button>
+    <button class="nav" data-view="notifications"><svg viewBox="0 0 24 24"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10 21h4"/></svg><span class="lbl">Powiadomienia</span><span class="badge" id="unread" hidden></span></button>
+    <button class="nav" data-view="documents"><svg viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg><span class="lbl">Dokumenty</span></button>
+    <button class="nav" data-view="skills"><svg viewBox="0 0 24 24"><path d="M12 3l2.5 5.5L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.5-.5z"/></svg><span class="lbl">Umiejętności</span></button>
+    <button class="nav" data-view="settings"><svg viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg><span class="lbl">Ustawienia</span></button>
+    <div class="side-foot">
+      <div><span class="dot" id="dot-claude"></span><span id="brain-label">Model AI</span></div>
+      <div><span class="dot" id="dot-tg"></span>Telegram</div>
+      <button class="theme-toggle" id="theme">Jasny / ciemny</button>
+    </div>
+  </aside>
+
+  <main>
+    <div class="topbar">
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+        <input id="gsearch" placeholder="Szukaj wszędzie… (Ctrl+K)" autocomplete="off">
+        <div class="search-res" id="gsearch-res" hidden></div>
+      </div>
+    </div>
+
+    <!-- PULPIT -->
+    <section class="view active" id="view-home">
+      <h1 id="greet">Dzień dobry</h1>
+      <p class="sub" id="today-date"></p>
+      <div id="onboarding"></div>
+      <form class="ask" id="ask-form">
+        <input id="ask-input" placeholder="Powiedz agentowi… np. „w sobotę 14:00 plener z Martą, Kazimierz Dolny”" autocomplete="off">
+        <button class="btn">Wyślij</button>
+      </form>
+      <div class="stats" id="home-stats"></div>
+      <div class="card advisor-home" id="home-advisor" hidden></div>
+      <div class="grid g3">
+        <div class="card"><div class="card-h"><h2>Dziś i jutro</h2><button class="link" data-goto="calendar">Kalendarz →</button></div><div id="home-events"></div></div>
+        <div class="card"><div class="card-h"><h2>Do zrobienia</h2><button class="link" data-goto="tasks">Wszystkie →</button></div><div id="home-tasks"></div></div>
+        <div class="card"><div class="card-h"><h2>Projekty</h2><button class="link" data-goto="projects">Wszystkie →</button></div><div id="home-projects"></div></div>
+      </div>
+      <div class="grid g3" style="margin-top:18px">
+        <div class="card"><div class="card-h"><h2>Ostatnie pomysły</h2><button class="link" data-goto="ideas">Wszystkie →</button></div><div id="home-ideas"></div></div>
+        <div class="card"><div class="card-h"><h2>Powiadomienia</h2><button class="link" data-goto="notifications">Wszystkie →</button></div><div id="home-notes"></div></div>
+        <div class="card"><div class="card-h"><h2>Rynek</h2><button class="link" data-goto="crypto">Krypto →</button></div><div id="home-crypto"></div></div>
+      </div>
+    </section>
+
+    <!-- CZAT -->
+    <section class="view" id="view-chat">
+      <div class="card-h"><h1>Czat z agentem</h1><div class="actions"><button class="btn ghost" id="chat-clear">Nowa rozmowa</button><button class="btn" id="call-open-chat"><svg viewBox="0 0 24 24" width="16" height="16"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>Rozmowa głosowa</button></div></div>
+      <div class="chat" id="chat-box">
+        <div class="msgs" id="msgs"></div>
+        <div class="chips" id="chips">
+          <button class="chip">Co mam dziś w planie?</button>
+          <button class="chip">Rozpisz mi preprodukcję teledysku na 2 tygodnie</button>
+          <button class="chip">Pomysł na sesję portretową w deszczu</button>
+          <button class="chip">Gdzie są moje zdjęcia zrobione obiektywem 85 mm?</button>
+          <button class="chip">Znajdź w sieci trendy w teledyskach 2026</button>
+        </div>
+        <div class="attach-preview" id="attach-preview" hidden></div>
+        <form class="composer" id="chat-form">
+          <label class="icon-btn attach" title="Dołącz zdjęcie (ocena kadru)"><svg viewBox="0 0 24 24"><path d="M21 12.5l-8.5 8.5a5 5 0 0 1-7-7L14 5.5a3.5 3.5 0 0 1 5 5L10.5 19a2 2 0 0 1-3-3L15 8.5"/></svg><input type="file" id="chat-file" accept="image/*" multiple hidden></label>
+          <textarea id="chat-input" rows="1" placeholder="Napisz wiadomość… (Enter – wyślij, Shift+Enter – nowa linia, możesz wkleić zdjęcie)"></textarea>
+          <button type="button" class="icon-btn mic" id="dictate" title="Dyktuj (mów zamiast pisać)"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+          <button class="btn" id="chat-send">Wyślij</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- KALENDARZ -->
+    <section class="view" id="view-calendar">
+      <div class="card-h"><h1>Kalendarz</h1>
+        <div class="actions"><label class="btn ghost">Importuj .ics<input type="file" id="ics-file" accept=".ics,text/calendar" hidden></label><a class="btn ghost" href="/api/calendar.ics">Eksportuj .ics</a><button class="btn" id="ev-new">+ Wydarzenie</button></div>
+      </div>
+      <p class="sub">Kliknij dzień, żeby dodać wydarzenie, albo wydarzenie, żeby je edytować. Przypomnienia przychodzą na Telegram.</p>
+      <div class="grid cal-wrap">
+        <div class="card">
+          <div class="cal-head"><button class="btn ghost sq" id="cal-prev">‹</button><h2 id="cal-title"></h2><button class="btn ghost sq" id="cal-next">›</button><button class="link" id="cal-today">dziś</button></div>
+          <div class="cal" id="cal"></div>
+        </div>
+        <div class="card"><h2>Nadchodzące</h2><div id="upcoming"></div></div>
+      </div>
+    </section>
+
+    <!-- ZADANIA -->
+    <section class="view" id="view-tasks">
+      <h1>Zadania</h1><p class="sub">Kliknij kółko, aby przesunąć zadanie dalej, albo zadanie, żeby je edytować.</p>
+      <form class="form" id="task-form">
+        <input name="title" placeholder="Nowe zadanie…" required style="flex:2 1 240px">
+        <select name="project_id" class="project-select"><option value="">— bez projektu —</option></select>
+        <input name="due" type="datetime-local">
+        <select name="priority"><option value="normal">Normalny</option><option value="high">Pilne</option><option value="low">Niski</option></select>
+        <button class="btn">Dodaj</button>
+      </form>
+      <div class="filters" id="task-filter"></div>
+      <div class="kanban">
+        <div class="col" data-status="todo"><h3>Do zrobienia <span class="cnt"></span></h3><div></div></div>
+        <div class="col" data-status="doing"><h3>W trakcie <span class="cnt"></span></h3><div></div></div>
+        <div class="col done" data-status="done"><h3>Zrobione <span class="cnt"></span></h3><div></div></div>
+      </div>
+    </section>
+
+    <!-- PROJEKTY -->
+    <section class="view" id="view-projects">
+      <div class="card-h"><h1>Projekty i klienci</h1><button class="btn" id="proj-new">+ Projekt</button></div>
+      <p class="sub">Zlecenia od zapytania do zapłaty. Agent łączy z nimi zadania i terminy.</p>
+      <div class="stats" id="proj-stats"></div>
+      <div class="filters" id="proj-filter">
+        <button class="chip active" data-f="active">Aktywne</button><button class="chip" data-f="all">Wszystkie</button><button class="chip" data-f="unpaid">Do zapłaty</button>
+      </div>
+      <div class="projects" id="projects"></div>
+    </section>
+
+    <!-- POMYSŁY -->
+    <section class="view" id="view-ideas">
+      <div class="card-h"><h1>Pomysły</h1><button class="btn" id="idea-new">+ Pomysł</button></div>
+      <p class="sub">Wszystko, co wpadnie Ci do głowy. Agent zapisuje tu też pomysły z rozmów i pomaga je rozwinąć.</p>
+      <div class="filters">
+        <input id="idea-q" placeholder="Szukaj w pomysłach…">
+        <div id="idea-cats"></div>
+      </div>
+      <div class="ideas" id="ideas"></div>
+    </section>
+
+    <!-- PLIKI -->
+    <section class="view" id="view-files">
+      <div class="card-h"><h1>Pliki i zdjęcia</h1><div class="actions"><span class="m" id="scan-status"></span><button class="btn ghost" id="reindex">Przeskanuj foldery</button></div></div>
+      <p class="sub" id="files-sub"></p>
+      <div class="stats" id="file-stats"></div>
+      <div class="grid g2" style="margin-bottom:18px"><div class="card" id="media-import"></div><div class="card" id="media-archive"></div></div>
+      <form class="form" id="file-form">
+        <input id="file-q" placeholder="np. nowak ślub, teledysk final, 85mm…" style="flex:2 1 220px">
+        <select id="file-kind"><option value="">Wszystkie typy</option><option value="zdjecie">Zdjęcia</option><option value="raw">RAW</option><option value="wideo">Wideo</option><option value="audio">Audio</option><option value="projekt">Projekty</option><option value="dokument">Dokumenty</option></select>
+        <select id="file-camera"><option value="">Każdy aparat</option></select>
+        <select id="file-lens"><option value="">Każdy obiektyw</option></select>
+        <input type="date" id="file-after" title="Od">
+        <input type="date" id="file-before" title="Do">
+        <select id="file-mode"><option value="grid">Galeria</option><option value="list">Lista plików</option><option value="folders">Foldery</option></select>
+        <button class="btn">Szukaj</button>
+      </form>
+      <div id="file-results"></div>
+    </section>
+
+    <!-- FINANSE -->
+    <section class="view" id="view-finance">
+      <div class="card-h"><h1>Finanse</h1>
+        <div class="fin-period">
+          <select id="fin-mode"><option value="month">Miesiąc</option><option value="year">Rok</option></select>
+          <input type="month" id="fin-month">
+          <select id="fin-year" hidden></select>
+          <button class="btn ghost" id="fin-ask">📊 Raport od agenta</button>
+          <a class="btn ghost" href="/api/finance/export.csv">Eksport CSV</a>
+        </div>
+      </div>
+      <p class="sub">Przychody, koszty, straty i inwestycje w podziale na Stratfanat, strony WWW, teledyski, fotografię i krypto. Możesz też po prostu powiedzieć agentowi: „zapłaciłem 120 zł za hosting”.</p>
+      <div class="stats" id="fin-kpi"></div>
+      <div class="grid g2">
+        <div class="card" id="fin-c1"></div>
+        <div class="card" id="fin-c2"></div>
+        <div class="card" id="fin-c3"></div>
+        <div class="card" id="fin-c4"></div>
+      </div>
+      <div class="grid g2" style="margin-top:18px">
+        <div class="card"><h2>Obszary działalności</h2><div id="fin-areas"></div></div>
+        <div class="card"><div class="card-h"><h2>Portfel inwestycji</h2><button class="btn ghost sq" id="hold-new">+ Pozycja</button></div><div id="fin-portfolio"></div></div>
+      </div>
+      <div class="card" style="margin-top:18px">
+        <h2>Transakcje</h2>
+        <form class="form" id="tx-form">
+          <input type="date" name="date" required>
+          <select name="type"><option value="przychod">Przychód</option><option value="koszt">Koszt</option><option value="strata">Strata</option><option value="inwestycja">Inwestycja</option></select>
+          <input name="amount" type="number" step="0.01" min="0" placeholder="kwota zł" required style="width:120px">
+          <select name="area" id="tx-area"></select>
+          <input name="category" placeholder="kategoria" list="tx-cats" style="flex:1 1 140px"><datalist id="tx-cats"></datalist>
+          <input name="description" placeholder="opis (np. bluzy – partia 20 szt.)" style="flex:2 1 200px">
+          <button class="btn">Dodaj</button>
+        </form>
+        <div id="fin-tx"></div>
+      </div>
+    </section>
+
+    <!-- KRYPTO -->
+    <section class="view" id="view-crypto">
+      <h1>Krypto</h1><p class="sub">Dane z CoinGecko, odświeżane co minutę. Alerty i duże ruchy (powyżej 8% w 24h) przychodzą na Telegram. Listę monet zmienisz w Ustawieniach.</p>
+      <div class="coins" id="coins"></div>
+      <div class="card" style="margin-top:18px"><h2>Alerty cenowe</h2>
+        <form class="form" id="alert-form">
+          <input name="coin" placeholder="bitcoin" required list="coin-list" style="flex:1 1 120px"><datalist id="coin-list"></datalist>
+          <select name="direction"><option value="above">powyżej</option><option value="below">poniżej</option></select>
+          <input name="price" type="number" step="any" placeholder="cena" required style="width:120px">
+          <select name="currency"><option value="usd">USD</option><option value="pln">PLN</option></select>
+          <button class="btn">Dodaj alert</button>
+        </form>
+        <div id="alerts"></div>
+      </div>
+    </section>
+
+    <!-- POWIADOMIENIA -->
+    <section class="view" id="view-notifications">
+      <div class="card-h"><h1>Powiadomienia</h1><div class="actions"><button class="btn ghost" id="notes-clear">Wyczyść</button><button class="btn ghost" id="test-notify">Wyślij testowe</button></div></div>
+      <p class="sub">Przypomnienia, poranne briefy, alerty. Te same trafiają na Telegram.</p>
+      <div class="card"><div id="notes"></div></div>
+    </section>
+
+    <!-- DOKUMENTY -->
+    <section class="view" id="view-documents">
+      <div class="card-h"><h1>Dokumenty</h1><button class="btn" id="doc-new">+ Dokument</button></div>
+      <p class="sub">Shot-listy, wyceny, briefy, call sheety i scenariusze, które przygotował agent albo Ty. Możesz je edytować, pobrać i wydrukować do PDF.</p>
+      <div class="filters"><input id="doc-q" placeholder="Szukaj w dokumentach…"><div id="doc-kinds"></div></div>
+      <div class="docs" id="docs"></div>
+    </section>
+
+    <!-- UMIEJĘTNOŚCI -->
+    <section class="view" id="view-skills">
+      <div class="card-h"><h1>Umiejętności</h1><button class="btn" id="skill-new">+ Nowa umiejętność</button></div>
+      <p class="sub">Instrukcje eksperckie, z których agent korzysta przy pasujących zadaniach. Możesz je włączać, edytować i dopisywać własne. Niżej: wbudowane narzędzia i zewnętrzne serwery MCP.</p>
+      <div class="skills" id="skills"></div>
+      <div class="card" style="margin-top:18px"><div class="card-h"><h2>Narzędzia agenta</h2><span class="m" id="tools-count"></span></div><div class="tools-grid" id="tools-grid"></div></div>
+      <div class="card" style="margin-top:18px">
+        <div class="card-h"><h2>Serwery MCP — dodatkowe umiejętności</h2><div class="actions"><button class="btn ghost sq" id="mcp-example">Wstaw przykłady</button><button class="btn ghost sq" id="mcp-reload">Połącz ponownie</button></div></div>
+        <p class="m">MCP to standard gotowych wtyczek dla agentów AI: pliki, przeglądarka, Notion, Google, GitHub, bazy danych i setki innych (lista: <a href="https://github.com/modelcontextprotocol/servers" target="_blank" rel="noopener">modelcontextprotocol/servers</a>). Wklej konfigurację serwera i zapisz – jego narzędzia od razu trafią do agenta. Serwery z <code>npx</code> wymagają Node.js.</p>
+        <div id="mcp-status" style="margin:12px 0"></div>
+        <textarea id="mcp-config" rows="10" spellcheck="false" style="width:100%;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px"></textarea>
+        <div class="actions" style="margin-top:10px;justify-content:flex-end"><button class="btn" id="mcp-save">Zapisz i połącz</button></div>
+      </div>
+    </section>
+
+    <section class="view" id="view-advisor"></section>
+    <section class="view" id="view-stratfanat"></section>
+    <section class="view" id="view-websites"></section>
+    <section class="view" id="view-trading"></section>
+    <section class="view" id="view-computer"></section>
+    <section class="view" id="view-memory"></section>
+
+    <!-- USTAWIENIA -->
+    <section class="view" id="view-settings">
+      <h1>Ustawienia</h1><p class="sub">Tu podłączasz agenta do Claude i Telegrama, ustawiasz foldery i harmonogram. Zmiany działają od razu, bez restartu.</p>
+      <div class="card" style="margin-bottom:18px">
+        <div class="card-h"><h2>Profil i firma — co agent wie o Tobie od startu</h2><button class="btn ghost sq" id="profile-save">Zapisz profil</button></div>
+        <p class="m" style="margin-bottom:10px">Agent czyta ten tekst przy każdej rozmowie. Dopisz imię, miasto, sprzęt, stawki, cele — im więcej, tym lepiej Cię zna.</p>
+        <textarea id="profile-text" class="profile-editor" rows="14" spellcheck="false"></textarea>
+      </div>
+      <form id="settings-form">
+        <div class="grid g2" id="settings-groups"></div>
+        <div class="save-bar"><span class="m" id="settings-msg">Wprowadź zmiany i zapisz.</span><button class="btn">Zapisz ustawienia</button></div>
+      </form>
+      <div class="grid g2" style="margin-top:18px">
+        <div class="card"><h2>Zadania w tle</h2><div id="jobs"></div></div>
+        <div class="card"><h2>Dane i kopia zapasowa</h2>
+          <p class="m">Wszystko jest w jednym pliku bazy <code>data/agent.db</code> na Twoim komputerze. Kopia robi się co noc (ostatnie 7 dni).</p>
+          <div class="actions" style="margin-top:12px"><a class="btn ghost" href="/api/backup">Pobierz kopię bazy</a><a class="btn ghost" href="/api/calendar.ics">Eksport kalendarza</a></div>
+          <div id="disk" class="m" style="margin-top:12px"></div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:18px" id="evals-card"></div>
+      <div class="card" style="margin-top:18px"><h2>Pamięć agenta</h2>
+        <p class="m" style="margin-bottom:12px">Fakty, które agent zna o Tobie. Dodaje je sam w rozmowie; tu możesz je dopisać lub usunąć.</p>
+        <div id="mem-summary"></div>
+        <form class="form" id="mem-form"><input name="fact" placeholder="np. Mój główny aparat to Sony A7 IV, obiektywy 24-70 i 85 1.4" required style="flex:1"><button class="btn">Zapamiętaj</button></form>
+        <div id="memory"></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="modal-bg" id="modal" hidden>
+  <form class="modal" id="modal-form">
+    <div class="card-h"><h2 id="modal-title"></h2><button type="button" class="icon-btn" id="modal-x" title="Zamknij"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-foot"><button type="button" class="btn danger" id="modal-del">Usuń</button><span style="flex:1"></span><button type="button" class="btn ghost" id="modal-extra" hidden></button><button type="button" class="btn ghost" id="modal-cancel">Anuluj</button><button class="btn">Zapisz</button></div>
+  </form>
+</div>
+<div class="docview" id="docview" hidden>
+  <div class="docview-inner">
+    <div class="card-h"><h2 id="dv-title"></h2><div class="actions"><button class="btn ghost sq" id="dv-edit">Edytuj</button><a class="btn ghost sq" id="dv-dl">Pobierz .md</a><button class="btn ghost sq" id="dv-print">Drukuj / PDF</button><button class="icon-btn" id="dv-x"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div></div>
+    <div class="m" id="dv-meta"></div>
+    <article class="md" id="dv-body"></article>
+  </div>
+</div>
+
+<!-- ROZMOWA GŁOSOWA (FaceTime) -->
+<div class="call" id="call" hidden>
+  <div class="call-bg"></div>
+  <div class="call-top">
+    <div class="call-name">Studio Agent</div>
+    <div class="call-status" id="call-status">Łączenie…</div>
+    <div class="call-timer" id="call-timer">00:00</div>
+  </div>
+  <div class="call-stage" id="call-stage" title="Dotknij, aby przerwać agentowi">
+    <canvas id="call-orb"></canvas>
+  </div>
+  <div class="call-captions">
+    <div class="cap-user" id="cap-user"></div>
+    <div class="cap-agent" id="cap-agent"></div>
+  </div>
+  <div class="call-self" id="call-self-wrap" hidden><video id="call-self" autoplay muted playsinline></video><span class="snap-badge" id="snap-badge" hidden>📸 klatka dołączona</span></div>
+  <aside class="call-transcript" id="call-transcript" hidden><div class="ct-head">Transkrypcja<span class="m">zapisywana w historii czatu</span></div><div id="ct-list"></div></aside>
+  <div class="call-controls">
+    <button class="cbtn ptt" id="c-ptt" title="Dyktafon: naciśnij i mów (spacja)"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span>Dyktafon</span></button>
+    <button class="cbtn" id="c-mute" title="Wycisz mikrofon"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span>Mikrofon</span></button>
+    <button class="cbtn" id="c-cam" title="Kamera"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></svg><span>Kamera</span></button>
+    <button class="cbtn" id="c-snap" title="Pokaż agentowi kadr z kamery" disabled><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><span>Pokaż kadr</span></button>
+    <button class="cbtn" id="c-captions" title="Transkrypcja"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 11h4M13 11h4M7 15h7"/></svg><span>Tekst</span></button>
+    <button class="cbtn" id="c-speaker" title="Głos agenta"><svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/></svg><span>Głośnik</span></button>
+    <button class="cbtn end" id="c-end" title="Zakończ rozmowę"><svg viewBox="0 0 24 24"><path d="M3 15c5-5 13-5 18 0l-2.5 2.5-3-1.5v-2.5a10 10 0 0 0-7 0V16l-3 1.5z"/></svg><span>Zakończ</span></button>
+  </div>
+</div>
+
+<div class="lightbox" id="lightbox" hidden><img alt=""><div class="lb-info"></div></div>
+<div class="toast" id="toast"></div>
+<script src="/static/charts.js"></script>
+<script src="/static/app.js"></script>
+<script src="/static/voice.js"></script>
+<script src="/static/system.js"></script>
+<script src="/static/trading.js"></script>
+<script src="/static/stratfanat.js"></script>
+<script src="/static/websites.js"></script>
+</body>
+</html>
