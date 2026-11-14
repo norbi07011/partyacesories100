@@ -24,7 +24,7 @@ wyszukiwarka plików na dysku, wyszukiwarka w internecie, powiadomienia na Teleg
 | 📱 Sterowanie z telefonu | Aplikacja na telefon (PWA) + logowanie hasłem i 2FA. Zakładka **Komputer**: CPU/RAM/dyski, procesy, zrzut ekranu, otwieranie programów, blokada/uśpienie/restart/wyłączenie. Ryzykowne akcje czekają na Twoją zgodę (dashboard albo przycisk na Telegramie). Komendy Telegram `/komputer`, `/zrzut` |
 | 🧭 Doradca | Co godzinę sam szuka problemów i okazji: zaległe zadania, nieopłacone projekty, skoki kosztów, brak sprzedaży, mało miejsca, strony klientów, magazyn. Ważne zgłasza na Telegram. Automatyzacje „jeśli… to…” i przegląd tygodnia w poniedziałek |
 | 🧠 Pamięć lokalna | Wyszukiwanie po znaczeniu w dokumentach, pomysłach, rozmowach i plikach z Twoich folderów (lokalnie przez Ollamę), graf osób i firm, dziennik decyzji. Nic nie wychodzi do sieci |
-| 👕 Stratfanat | Produkty i magazyn wg rozmiarów, sprzedaż i dostawy (od razu w finansach), kolekcje i dropy, trendy, projekty z makietami ubrań (SVG) i wizualizacjami AI (lokalny ComfyUI). Umiejętności: projektant mody, trendy streetwear, rozwój marki, kampania dropu |
+| 👕 Stratfanat | Produkty i magazyn wg rozmiarów, sprzedaż i dostawy (od razu w finansach), kolekcje i dropy, trendy, **inspiracje z Pinteresta** (moodboard z Twoich linków, miniatury i paleta kolorów lokalnie, odświeżane codziennie), projekty z makietami ubrań (SVG) i wizualizacjami AI (lokalny ComfyUI). Umiejętności: projektant mody, trendy streetwear, rozwój marki, kampania dropu |
 | 🌐 Strony WWW klientów | Monitoring działania co 10 min, SSL, domeny, odnowienia hostingu, audyt SEO/wydajności, abonamenty |
 | 📈 Trading demo | Z Twojego projektu MESSUAI: wykres świecowy ze wskaźnikami, analizy agentek AI, konto demo (wirtualne pieniądze), boty demo, backtest, baza wiedzy tradingowej. Żadnych prawdziwych zleceń |
 | 📥 Foto/wideo | Import z karty pamięci do uporządkowanych folderów + kopia zapasowa, foldery do archiwizacji, napisy .srt do filmów (lokalnie) |
@@ -178,6 +178,7 @@ Naciśnij `Win + R`, wpisz `shell:startup` i wklej tam skrót do `start.bat`.
 | `media.py` | Import z karty, archiwizacja, napisy |
 | `evals.py` | Testy jakości modelu |
 | `stratfanat.py`, `brand/` | Marka Stratfanat: magazyn, sprzedaż, kolekcje, projekty, trendy |
+| `inspiration.py` | Inspiracje Stratfanat: piny z Pinteresta (wyszukiwanie, tablice, profile) i innych stron, moodboard, paleta |
 | `websites.py` | Strony klientów: monitoring i audyt |
 | `trading/`, `knowledge/trading/` | Trading demo (z projektu MESSUAI) |
 | `modules.py` | Rejestr modułów z narzędziami |
