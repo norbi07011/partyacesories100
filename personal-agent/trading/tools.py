@@ -179,9 +179,10 @@ async def execute(name: str, args: dict):
                                                   a.get("interval") or "60", a.get("days") or 30, a.get("params"),
                                                   a.get("risk_pct") or 1, a.get("leverage") or 3,
                                                   allow_synthetic=market.demo_mode())
-                res["chart"] = {"type": "line", "title": f"Krzywa kapitału – {res['strategy_label']} {res['symbol']}",
+                start = res["metrics"]["start_balance"]
+                res["chart"] = {"type": "line", "title": f"Wynik od startu – {res['strategy_label']} {res['symbol']} (USDT)",
                                 "labels": res["equity_curve"]["labels"], "unit": "USDT",
-                                "series": [{"name": "Kapitał (USDT)", "data": res["equity_curve"]["values"]}]}
+                                "series": [{"name": "Zysk/strata", "data": [round(v - start, 2) for v in res["equity_curve"]["values"]]}]}
                 res.pop("equity_curve")
                 res["trades"] = res["trades"][-10:]
                 return res

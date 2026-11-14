@@ -93,7 +93,8 @@ async def run_backtest(strategy: str, symbol: str = "BTCUSDT", interval: str = "
     pts = curve[::step]
     if pts[-1] != curve[-1]:
         pts.append(curve[-1])
-    fmt = "%d.%m %H:%M" if market.INTERVAL_MIN[interval] < 1440 else "%d.%m.%y"
+    span_days = (curve[-1][0] - curve[0][0]) / 86_400_000
+    fmt = "%H:%M" if span_days <= 2 else "%d.%m" if span_days <= 300 else "%m.%y"
     first_c, last_c = candles[start]["c"], candles[-1]["c"]
     return {
         "demo": True, "source": data["source"], "strategy": strategy, "strategy_label": bots.STRATEGIES[strategy]["label"],

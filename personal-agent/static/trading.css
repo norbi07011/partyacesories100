@@ -1,0 +1,138 @@
+/* Studio Agent – moduł Trading (DEMO) */
+#view-trading{--tr-up:var(--ok);--tr-down:var(--warn)}
+#view-trading .card{margin-bottom:18px}
+.tr-up{color:var(--tr-up)} .tr-down{color:var(--tr-down)}
+.tr-head{align-items:flex-start}
+.tr-demo{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:13px;letter-spacing:.3px;padding:7px 14px;border-radius:99px;
+  background:repeating-linear-gradient(135deg,rgba(217,165,91,.18) 0 10px,rgba(217,165,91,.08) 10px 20px);color:var(--accent);border:1.5px solid var(--accent);text-transform:uppercase}
+.tr-synth{font-weight:700;font-size:12.5px;padding:6px 12px;border-radius:99px;background:rgba(224,122,95,.16);color:var(--warn);border:1.5px solid var(--warn)}
+.tr-warnbox{background:rgba(224,122,95,.1);border:1px solid rgba(224,122,95,.4);color:var(--warn);border-radius:10px;padding:8px 12px;margin-bottom:12px;font-size:13px}
+
+/* pasek symboli */
+.tr-bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;padding:12px 16px}
+.tr-syms,.tr-ivs{display:flex;flex-wrap:wrap;gap:6px}
+.tr-symform{display:flex;gap:6px}
+.tr-symform input{width:150px;padding:6px 10px}
+.tr-price{margin-left:auto;display:flex;align-items:baseline;gap:8px;white-space:nowrap}
+.tr-big{font-family:var(--serif);font-size:24px;font-variant-numeric:tabular-nums}
+
+/* układ główny */
+.tr-main{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:18px;align-items:start}
+.tr-main .card{margin-bottom:0}
+.tr-side{display:flex;flex-direction:column;gap:18px}
+.tr-chartcard{padding:12px 12px 8px}
+.tr-layers{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px}
+.tr-layers .chip{padding:4px 10px;font-size:12px}
+.tr-legend{margin-left:auto;font-size:11.5px;color:var(--muted);display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.tr-legend i{display:inline-block;width:12px;height:3px;border-radius:2px;margin-left:6px}
+.tr-chartwrap{position:relative;user-select:none;-webkit-user-select:none;cursor:crosshair;touch-action:pan-y}
+.tr-chartwrap.drag{cursor:grabbing}
+.tr-chartwrap canvas{display:block;width:100%}
+.tr-chartwrap canvas+canvas{border-top:1px solid var(--line)}
+.tr-tip{position:absolute;pointer-events:none;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:7px 10px;font-size:12px;line-height:1.45;
+  box-shadow:0 10px 24px rgba(0,0,0,.25);font-variant-numeric:tabular-nums;min-width:150px;z-index:2}
+.tr-hint{margin-top:6px;font-size:11.5px}
+
+/* zlecenie */
+.tr-sides{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px}
+.tr-sides button{border:1px solid var(--line);background:var(--panel2);color:var(--muted);border-radius:10px;padding:9px;font-weight:600;cursor:pointer}
+.tr-sides .tr-buy.on{background:var(--tr-up);border-color:var(--tr-up);color:#0d1a10}
+.tr-sides .tr-sell.on{background:var(--tr-down);border-color:var(--tr-down);color:#1d0d08}
+.tr-of{display:flex;flex-direction:column;gap:10px}
+.tr-of label,.tr-set label,.tr-pf,#tr-reset label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}
+.tr-of label b{color:var(--text)}
+.tr-of input[type=range]{padding:0;accent-color:var(--accent)}
+.tr-2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tr-2 input{width:100%}
+.tr-seg{display:grid;grid-template-columns:1fr 1fr;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:3px}
+.tr-seg button{border:0;background:none;border-radius:8px;padding:6px;cursor:pointer;color:var(--muted);font-size:12.5px}
+.tr-seg button.on{background:var(--panel);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.tr-hints{line-height:1.6}
+.tr-submit{justify-content:center;padding:11px}
+.tr-submit.long{background:var(--tr-up);color:#0d1a10}
+.tr-submit.short{background:var(--tr-down);color:#1d0d08}
+
+/* konto */
+.tr-kpis{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px}
+.tr-kpis>div{display:flex;flex-direction:column;min-width:0}
+.tr-kpis b{font-family:var(--serif);font-weight:400;font-size:18px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tr-kpis span{font-size:11.5px}
+
+/* analiza */
+.tr-agents{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.tr-agent{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.tr-agent.luna{border-top:3px solid var(--series-1)}
+.tr-agent.nova{border-top:3px solid var(--series-2)}
+.tr-agent.cons{border-top:3px solid var(--accent)}
+.tr-agent-h{display:flex;align-items:center;gap:10px}
+.tr-agent-h>div{flex:1;min-width:0}
+.tr-avatar{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-size:20px;background:var(--panel);border:1px solid var(--line);flex:none}
+.pill.tr-dir{font-weight:700}
+.pill.tr-dir.long{background:rgba(127,180,138,.16);color:var(--tr-up)}
+.pill.tr-dir.short{background:rgba(224,122,95,.16);color:var(--tr-down)}
+.tr-score-bar{display:flex;height:10px;border-radius:99px;overflow:hidden;background:var(--line)}
+.tr-score-bar .l{background:var(--tr-up)} .tr-score-bar .s{background:var(--tr-down)}
+.tr-score-lbl{display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-top:4px}
+.tr-thesis{margin:0;font-size:13px}
+.tr-reasons{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px}
+.tr-reasons>div{display:flex;flex-direction:column;gap:2px;min-width:0}
+.tr-plan,.tr-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;font-variant-numeric:tabular-nums}
+.tr-plan>div,.tr-facts>div{display:flex;flex-direction:column;background:var(--panel);border-radius:8px;padding:6px 8px;min-width:0}
+.tr-plan b,.tr-facts b{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tr-plan .m,.tr-facts .m{font-size:11px}
+.tr-use{align-self:flex-start}
+.tr-levels{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:12px}
+.tr-ai{margin-top:14px;background:var(--accent-soft);border-radius:12px;padding:12px 14px}
+.tr-ai p{margin:6px 0}
+.tr-disc{margin-top:10px;font-size:11.5px}
+
+/* tabele pozycji / dziennika */
+.tr-table{display:flex;flex-direction:column;font-variant-numeric:tabular-nums}
+.tr-tr{display:grid;grid-template-columns:1.4fr 1.1fr 1.3fr 1.3fr 1.2fr 150px;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px}
+.tr-tr>span{min-width:0;display:flex;flex-wrap:wrap;gap:0 6px;align-items:baseline}
+.tr-tr:last-child{border-bottom:0}
+.tr-th{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding-top:0}
+.tr-acts{display:flex;gap:6px;justify-content:flex-end}
+.tr-mini{margin-bottom:8px;font-size:13px}
+.tr-set,#tr-reset{align-items:flex-end}
+
+/* boty */
+.tr-botform,.tr-btform{align-items:flex-end}
+.tr-pf input{width:110px}
+.tr-params{display:flex;flex-wrap:wrap;gap:8px;width:100%}
+.tr-sdesc{width:100%}
+.tr-bots{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.tr-bot{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.tr-bot.running{border-left:3px solid var(--ok)}
+.tr-bot-h{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.tr-bot-stats{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12.5px}
+.tr-bot-pos{font-size:12.5px}
+.tr-bot details{font-size:12px}
+.tr-btstats{margin:12px 0}
+.tr-btstats .v{font-size:21px}
+
+/* wiedza */
+.tr-kbq{display:flex;gap:6px}
+.tr-kb{margin-top:12px;max-height:560px;overflow:auto;padding-right:6px;font-size:13.5px}
+.tr-kb h4{margin:14px 0 4px;font-family:var(--serif);font-weight:400;font-size:17px}
+.tr-kb ul{margin:4px 0;padding-left:20px}
+
+@media (max-width:1100px){
+  .tr-main{grid-template-columns:1fr}
+  .tr-side{display:grid;grid-template-columns:1fr 1fr}
+  .tr-agents{grid-template-columns:1fr 1fr}
+  .tr-agent.cons{grid-column:1/-1}
+}
+@media (max-width:760px){
+  .tr-side{grid-template-columns:1fr}
+  .tr-agents{grid-template-columns:1fr}
+  .tr-price{margin-left:0;width:100%}
+  .tr-symform input{width:120px}
+  .tr-tr{grid-template-columns:1fr 1fr;gap:4px 10px}
+  .tr-th{display:none}
+  .tr-acts{grid-column:1/-1;justify-content:flex-start}
+  .tr-legend{display:none}
+  .tr-pf input{width:96px}
+  .tr-demo{font-size:11.5px;padding:6px 10px}
+  .tr-kbq input{width:140px}
+}

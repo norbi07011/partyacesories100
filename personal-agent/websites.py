@@ -17,7 +17,7 @@ import ssl
 import time
 from datetime import date, datetime, timedelta, timezone
 from html.parser import HTMLParser
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urlparse
 
 import httpx
 from fastapi import APIRouter, Body, HTTPException

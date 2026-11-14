@@ -155,6 +155,18 @@ def _levels_plan(direction: str, price: float, atr_v: float, sl_atr: float, tp_a
     return {"entry": _r(price), "sl": _r(sl), "tp": _r(tp), "rr": round(abs(tp - price) / risk, 2) if risk else None}
 
 
+def _filtered(raw: float, htf: dict, rl: list, rs: list) -> tuple[int, bool]:
+    """Trend filter HTF. Zwraca (wynik, konflikt) – konflikt = sygnały wskazują przeciw trendowi HTF."""
+    capped = _cap(raw, htf["trend"], htf["trend_strength"])
+    conflict = (raw > 50 >= capped) or (raw < 50 <= capped)
+    if capped != raw:
+        if htf["trend"] == "DOWNTREND":
+            rs.append(f"trend filter: HTF w spadkach – LONG max {TREND_CAP}")
+        else:
+            rl.append(f"trend filter: HTF we wzrostach – SHORT max {TREND_CAP}")
+    return int(round(max(3, min(97, capped)))), conflict
+
+
 def _direction(long_s: int) -> str:
     return "LONG" if long_s >= MIN_CONFIDENCE else "SHORT" if 100 - long_s >= MIN_CONFIDENCE else "WAIT"
 
@@ -190,8 +202,8 @@ def luna(ltf: dict, htf: dict, levels: list[dict] | None = None) -> dict:
     elif htf["rsi"] is not None and htf["rsi"] < 25:
         score += 5
         rl.append(f"HTF RSI {htf['rsi']:.0f} – wyprzedanie")
-    score = int(round(max(3, min(97, _cap(score, htf["trend"], htf["trend_strength"])))))
-    d = _direction(score)
+    score, conflict = _filtered(score, htf, rl, rs)
+    d = "WAIT" if conflict else _direction(score)
     plan = _levels_plan(d, price, a, cfg["sl_atr"], cfg["tp_atr"], levels)
     trend_pl = {"UPTREND": "trend wzrostowy", "DOWNTREND": "trend spadkowy", "NEUTRAL": "brak wyraźnego trendu"}
     thesis = (f"Na wyższym interwale widzę {trend_pl[htf['trend']]} ({htf['structure_label']}). "
@@ -238,13 +250,15 @@ def nova(ltf: dict, htf: dict, levels: list[dict] | None = None) -> dict:
     if s["adx"] is not None and s["adx"] > 25:
         score = 50 + (score - 50) * 1.2
         (rl if net > 0 else rs).append(f"ADX {s['adx']:.0f} – rynek w trendzie")
-    score = int(round(max(3, min(97, _cap(score, htf["trend"], htf["trend_strength"])))))
-    d = _direction(score)
+    raw = score
+    score, conflict = _filtered(score, htf, rl, rs)
+    d = "WAIT" if conflict else _direction(score)
     plan = _levels_plan(d, s["price"], s["atr"] or 0, cfg["sl_atr"], cfg["tp_atr"], levels)
-    thesis = ("Impet jest po stronie " + ("kupujących" if score >= 50 else "sprzedających")
+    thesis = ("Impet jest po stronie " + ("kupujących" if raw >= 50 else "sprzedających")
               + (f" – wchodzę szybko, ciasny SL ({cfg['sl_atr']}×ATR)." if d != "WAIT"
+                 else ", ale to gra pod prąd trendu z wyższego interwału – odpuszczam." if conflict
                  else ", ale za słaby, żeby grać. Czekam na przecięcie MACD albo skok wolumenu.")
-              + (" Trend HTF ogranicza grę pod prąd." if htf["trend"] != "NEUTRAL" and htf["trend_strength"] != "WEAK" else ""))
+              + (" Trend HTF ogranicza grę pod prąd." if not conflict and htf["trend"] != "NEUTRAL" and htf["trend_strength"] != "WEAK" else ""))
     return {"id": "nova", **{k: cfg[k] for k in ("name", "emoji", "style", "desc")}, "long_score": score,
             "short_score": 100 - score, "direction": d, "confidence": max(score, 100 - score),
             "long_reasons": rl[:6], "short_reasons": rs[:6], "thesis": thesis, **plan}

@@ -90,7 +90,7 @@ function show(view){
 $$('.nav').forEach(n=>n.onclick=()=>show(n.dataset.view));
 document.addEventListener('click', e => { const g = e.target.closest('[data-goto]'); if (g) show(g.dataset.goto); });
 function refresh(what){ // po zmianach z czatu
-  const map = {tasks:['tasks','home','projects'], events:['calendar','home'], ideas:['ideas','home'], projects:['projects','home'], memory:['settings'], alerts:['crypto'], notifications:['notifications','home'], files:['files'], documents:['documents'], finance:['finance','home']};
+  const map = {tasks:['tasks','home','projects'], events:['calendar','home'], ideas:['ideas','home'], projects:['projects','home'], memory:['settings'], alerts:['crypto'], notifications:['notifications','home'], files:['files'], documents:['documents'], finance:['finance','home'], trading:['trading'], stratfanat:['stratfanat'], websites:['websites'], advisor:['advisor','home'], computer:['computer']};
   const views = new Set((what||[]).flatMap(w=>map[w]||[]));
   if (what?.includes('projects')) loadProjectsCache();
   if (views.has(current) && current!=='chat') LOADERS[current]();
