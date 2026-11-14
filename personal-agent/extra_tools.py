@@ -16,6 +16,7 @@ import httpx
 import config
 import db
 import file_indexer
+import finance
 import memory
 import skills
 
@@ -96,15 +97,78 @@ TOOLS: list[dict] = [
         "input_schema": {"type": "object", "properties": {"name": _S}, "required": ["name"]},
     },
 ]
-NAMES = {t["name"] for t in TOOLS}
+TOOLS += [
+    {
+        "name": "add_transaction",
+        "description": "Zapisuje transakcję w finansach: przychód, koszt, stratę albo inwestycję. Używaj ZAWSZE, gdy użytkownik "
+                       "wspomina, że coś zarobił, kupił, zapłacił, stracił albo zainwestował. Kwota dodatnia w PLN "
+                       "(inne waluty przelicz exchange_rate i zapisz w opisie oryginał).",
+        "input_schema": {"type": "object", "properties": {
+            "type": {"type": "string", "enum": finance.TYPES},
+            "amount": {"type": "number"},
+            "date": {"type": "string", "description": "YYYY-MM-DD (domyślnie dziś)"},
+            "area": {"type": "string", "enum": finance.AREAS},
+            "category": {"type": "string", "description": "np. sprzedaż ubrań, zlecenie, sprzęt, reklama, hosting/domeny, krypto"},
+            "description": _S,
+            "project_id": {"type": "integer"},
+        }, "required": ["type", "amount", "area"]},
+    },
+    {
+        "name": "list_transactions",
+        "description": "Lista transakcji (filtr: miesiąc YYYY-MM, typ, obszar, tekst).",
+        "input_schema": {"type": "object", "properties": {"month": _S, "type": _S, "area": _S, "query": _S}},
+    },
+    {
+        "name": "delete_transaction",
+        "description": "Usuwa błędnie zapisaną transakcję (id z list_transactions).",
+        "input_schema": {"type": "object", "properties": {"id": {"type": "integer"}}, "required": ["id"]},
+    },
+    {
+        "name": "finance_report",
+        "description": "Statystyki finansowe za miesiąc (YYYY-MM) albo rok (YYYY): przychody, koszty, straty, inwestycje, zysk, "
+                       "marża, zmiana do poprzedniego okresu, podział na obszary i kategorie, trend 12 miesięcy oraz gotowe "
+                       "wykresy (pole 'wykresy') do wklejenia jako bloki ```chart.",
+        "input_schema": {"type": "object", "properties": {"month": _S, "year": _S}},
+    },
+    {
+        "name": "add_holding",
+        "description": "Dodaje lub aktualizuje pozycję w portfelu inwestycji (krypto, akcje/ETF, sprzęt, inne). Dla krypto "
+                       "podaj coin_id z CoinGecko (np. bitcoin), żeby wycena była automatyczna. cost = ile łącznie zapłacono (PLN).",
+        "input_schema": {"type": "object", "properties": {
+            "id": {"type": "integer", "description": "podaj, aby zaktualizować"}, "name": _S,
+            "kind": {"type": "string", "enum": ["krypto", "akcje/ETF", "sprzęt", "inne"]},
+            "coin_id": _S, "quantity": {"type": "number"}, "cost": {"type": "number"},
+            "current_value": {"type": "number", "description": "bieżąca wartość PLN (dla pozycji bez automatycznej wyceny)"},
+            "notes": _S,
+        }, "required": ["name"]},
+    },
+    {
+        "name": "portfolio_status",
+        "description": "Stan portfela inwestycji: wartość bieżąca (krypto z CoinGecko w PLN), zainwestowano, zysk/strata.",
+        "input_schema": {"type": "object", "properties": {}},
+    },
+]
+
+# Wyszukiwanie w sieci dla modelu lokalnego (Claude ma własne narzędzia serwerowe)
+LOCAL_WEB_TOOLS = [
+    {"name": "web_search", "description": "Wyszukuje w internecie (DuckDuckGo) i zwraca tytuły, linki i fragmenty.",
+     "input_schema": {"type": "object", "properties": {"query": _S, "max_results": {"type": "integer"}}, "required": ["query"]}},
+    {"name": "web_fetch", "description": "Pobiera stronę internetową i zwraca jej tekst (do przeczytania szczegółów).",
+     "input_schema": {"type": "object", "properties": {"url": _S}, "required": ["url"]}},
+]
+
+NAMES = {t["name"] for t in TOOLS} | {t["name"] for t in LOCAL_WEB_TOOLS}
 
 LABELS = {
     "weather_forecast": "Sprawdzam pogodę i światło", "view_photos": "Oglądam zdjęcia", "read_document": "Czytam dokument",
     "media_info": "Sprawdzam plik wideo", "save_document": "Zapisuję dokument", "list_documents": "Przeglądam dokumenty",
     "get_document": "Otwieram dokument", "exchange_rate": "Sprawdzam kurs NBP", "crypto_analysis": "Analizuję wykres",
     "recall": "Przypominam sobie", "load_skill": "Wczytuję umiejętność",
+    "add_transaction": "Zapisuję w finansach", "list_transactions": "Przeglądam finanse",
+    "delete_transaction": "Usuwam transakcję", "finance_report": "Liczę statystyki",
+    "add_holding": "Aktualizuję portfel", "portfolio_status": "Wyceniam portfel",
 }
-CHANGES = {"save_document": "documents"}
+CHANGES = {"save_document": "documents", "add_transaction": "finance", "delete_transaction": "finance", "add_holding": "finance"}
 
 # Podstawowe współrzędne (działa bez internetu dla najpopularniejszych miejsc)
 PLACES = {
@@ -409,6 +473,33 @@ def list_documents(a: dict) -> list[dict]:
                     f"WHERE {' AND '.join(where)} ORDER BY COALESCE(updated, created) DESC LIMIT 50", p)
 
 
+# ------------------------------------------------------------------ sieć (model lokalny)
+async def web_search(query: str, max_results: int = 6) -> list[dict]:
+    import asyncio
+    try:
+        from ddgs import DDGS
+    except ImportError:
+        return [{"error": "Brak biblioteki ddgs (pip install ddgs)"}]
+    def run():
+        return list(DDGS().text(query, region="pl-pl", max_results=max(1, min(int(max_results or 6), 10))))
+    rows = await asyncio.to_thread(run)
+    return [{"title": r.get("title"), "url": r.get("href"), "snippet": r.get("body")} for r in rows]
+
+
+async def web_fetch(url: str) -> dict:
+    import html as htmlmod
+    import re
+    if not url.startswith(("http://", "https://")):
+        return {"error": "Podaj pełny adres http(s)://"}
+    async with httpx.AsyncClient(timeout=20, follow_redirects=True,
+                                 headers={"User-Agent": "Mozilla/5.0 (StudioAgent)"}) as client:
+        r = await client.get(url)
+    text = re.sub(r"(?is)<(script|style|noscript|svg).*?</\1>", " ", r.text)
+    text = re.sub(r"(?s)<[^>]+>", " ", text)
+    text = re.sub(r"\s+", " ", htmlmod.unescape(text)).strip()
+    return {"url": str(r.url), "status": r.status_code, "text": text[:20000]}
+
+
 # ------------------------------------------------------------------ wykonanie
 async def execute(name: str, a: dict):
     import asyncio
@@ -433,6 +524,39 @@ async def execute(name: str, a: dict):
             return await crypto_analysis(a["coin"], a.get("days", 120))
         case "recall":
             return memory.recall(a["query"])
+        case "add_transaction":
+            data = {k: a[k] for k in ("type", "amount", "area", "category", "description", "project_id") if a.get(k) is not None}
+            data["amount"] = abs(float(data["amount"]))
+            data["date"] = a.get("date") or db.now().strftime("%Y-%m-%d")
+            tid = db.insert("transactions", {"currency": "PLN", **data, "created": db.now_str()})
+            return {"ok": True, "id": tid, "zapisano": data}
+        case "list_transactions":
+            where, p = ["1=1"], []
+            if a.get("month"):
+                where.append("substr(date,1,7) = ?"); p.append(a["month"])
+            for k in ("type", "area"):
+                if a.get(k):
+                    where.append(f"{k} = ?"); p.append(a[k])
+            if a.get("query"):
+                where.append("(description LIKE ? OR category LIKE ?)"); p += [f"%{a['query']}%"] * 2
+            return db.query(f"SELECT * FROM transactions WHERE {' AND '.join(where)} ORDER BY date DESC, id DESC LIMIT 100", p)
+        case "delete_transaction":
+            db.execute("DELETE FROM transactions WHERE id = ?", (a["id"],))
+            return {"ok": True}
+        case "finance_report":
+            return finance.report(a.get("month"), a.get("year"))
+        case "add_holding":
+            data = {k: a[k] for k in ("name", "kind", "coin_id", "quantity", "cost", "current_value", "notes") if a.get(k) is not None}
+            if a.get("id"):
+                db.update("holdings", int(a["id"]), data)
+                return {"ok": True, "id": a["id"]}
+            return {"ok": True, "id": db.insert("holdings", {"kind": "inne", **data, "created": db.now_str()})}
+        case "portfolio_status":
+            return await finance.portfolio()
+        case "web_search":
+            return await web_search(a["query"], a.get("max_results", 6))
+        case "web_fetch":
+            return await web_fetch(a["url"])
         case "load_skill":
             s = skills.get(a["name"])
             if not s:

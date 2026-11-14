@@ -14,7 +14,9 @@ import config
 import crypto
 import db
 import file_indexer
+import finance
 import ics
+import local_llm
 import mcp_client
 import memory
 import notifier
@@ -32,6 +34,7 @@ MAX_IMAGES = 4
 async def lifespan(app: FastAPI):
     db.init()
     memory.init()
+    finance.init()
     scheduler.start()
     await telegram_bot.start()
     await mcp_client.manager.start()
@@ -199,8 +202,11 @@ FIELDS = {
     "memory": {"fact"},
     "projects": {"name", "client", "contact", "kind", "status", "deadline", "fee", "paid", "folder", "notes"},
     "documents": {"title", "kind", "content", "project_id"},
+    "transactions": {"date", "type", "amount", "currency", "category", "area", "description", "project_id"},
+    "holdings": {"name", "kind", "coin_id", "quantity", "cost", "current_value", "notes"},
 }
-REQUIRED = {"tasks": "title", "events": "title", "ideas": "title", "memory": "fact", "projects": "name", "documents": "title"}
+REQUIRED = {"tasks": "title", "events": "title", "ideas": "title", "memory": "fact", "projects": "name", "documents": "title",
+            "transactions": "type", "holdings": "name"}
 
 
 def _check(table: str) -> set[str]:
@@ -214,7 +220,7 @@ def _norm(data: dict) -> dict:
     for k, v in data.items():
         if v == "":
             v = None
-        if k in ("fee",) and v is not None:
+        if k in ("fee", "amount", "quantity", "cost", "current_value") and v is not None:
             try:
                 v = float(str(v).replace(",", ".").replace(" ", ""))
             except ValueError:
@@ -249,6 +255,11 @@ def create(table: str, payload: dict = Body(...)):
         data.setdefault("status", "todo")
     if table == "projects":
         data.setdefault("status", "zapytanie")
+    if table == "transactions":
+        if data.get("type") not in finance.TYPES or not data.get("amount"):
+            raise HTTPException(400, "Podaj typ i kwotę")
+        data["amount"] = abs(data["amount"])
+        data.setdefault("date", db.now().strftime("%Y-%m-%d"))
     return {"id": db.insert(table, {**data, "created": db.now_str()})}
 
 
@@ -272,6 +283,82 @@ def delete(table: str, row_id: int):
         raise HTTPException(404)
     db.execute(f"DELETE FROM {table} WHERE id = ?", (row_id,))
     return {"ok": True}
+
+
+# ================================================================ finanse
+@app.get("/api/finance/report")
+def finance_report(month: str = "", year: str = ""):
+    return finance.report(month or None, year or None)
+
+
+@app.get("/api/finance/transactions")
+def finance_transactions(month: str = "", area: str = "", type: str = "", q: str = ""):
+    where, params = ["1=1"], []
+    if month:
+        where.append("substr(date,1,len(?)) = ?".replace("len(?)", str(len(month))))
+        params.append(month)
+    for k, v in (("area", area), ("type", type)):
+        if v:
+            where.append(f"{k} = ?")
+            params.append(v)
+    if q:
+        where.append("(description LIKE ? OR category LIKE ?)")
+        params += [f"%{q}%"] * 2
+    return db.query(f"SELECT * FROM transactions WHERE {' AND '.join(where)} ORDER BY date DESC, id DESC LIMIT 500", params)
+
+
+@app.get("/api/finance/meta")
+def finance_meta():
+    return {"types": finance.TYPES, "areas": finance.AREAS, "categories": finance.CATEGORIES}
+
+
+@app.get("/api/finance/portfolio")
+async def finance_portfolio():
+    return await finance.portfolio()
+
+
+@app.get("/api/finance/export.csv")
+def finance_export():
+    import csv
+    import io
+    rows = db.query("SELECT date, type, amount, currency, area, category, description FROM transactions ORDER BY date")
+    buf = io.StringIO()
+    w = csv.writer(buf, delimiter=";")
+    w.writerow(["data", "typ", "kwota", "waluta", "obszar", "kategoria", "opis"])
+    for r in rows:
+        w.writerow([r["date"], r["type"], str(r["amount"]).replace(".", ","), r["currency"], r["area"], r["category"], r["description"]])
+    return Response("\ufeff" + buf.getvalue(), media_type="text/csv; charset=utf-8",
+                    headers={"Content-Disposition": 'attachment; filename="finanse.csv"'})
+
+
+# ================================================================ profil i model AI
+@app.get("/api/profile")
+def profile_get():
+    return {"text": agent.profile_text()}
+
+
+@app.post("/api/profile")
+def profile_save(payload: dict = Body(...)):
+    text = (payload.get("text") or "").strip()
+    if len(text) > 50000:
+        raise HTTPException(400, "Profil jest za długi")
+    config.PROFILE_PATH.write_text(text + "\n", encoding="utf-8")
+    return {"ok": True}
+
+
+@app.get("/api/llm/status")
+async def llm_status():
+    return {"provider": config.PROVIDER, "model": config.OLLAMA_MODEL if config.PROVIDER == "ollama" else config.MODEL,
+            "ollama": await local_llm.status()}
+
+
+@app.post("/api/llm/pull")
+async def llm_pull(payload: dict = Body(...)):
+    model = (payload.get("model") or config.OLLAMA_MODEL).strip()
+    if local_llm.PULL["running"]:
+        return {"running": True}
+    asyncio.create_task(local_llm.pull(model))
+    return {"started": True, "model": model}
 
 
 # ================================================================ dokumenty
@@ -535,6 +622,17 @@ async def telegram_pair():
 
 @app.post("/api/settings/test-claude")
 async def test_claude():
+    if config.PROVIDER == "ollama":
+        st = await local_llm.status()
+        if not st["running"]:
+            return {"ok": False, "error": "Ollama nie działa — zainstaluj ją z ollama.com"}
+        if not st["model_ready"]:
+            return {"ok": False, "error": f"Model {config.OLLAMA_MODEL} nie jest pobrany"}
+        try:
+            reply = await local_llm.complete("Odpowiedz jednym słowem: działa?", 20)
+            return {"ok": True, "reply": reply}
+        except Exception as e:  # noqa: BLE001
+            return {"ok": False, "error": str(e)[:300]}
     if not config.ANTHROPIC_API_KEY:
         return {"ok": False, "error": "Brak klucza"}
     try:
@@ -564,8 +662,10 @@ def status():
     return {
         "user": config.USER_NAME,
         "now": db.now_str(),
-        "model": config.MODEL,
-        "claude": bool(config.ANTHROPIC_API_KEY),
+        "model": config.OLLAMA_MODEL if config.PROVIDER == "ollama" else config.MODEL,
+        "provider": config.PROVIDER,
+        "claude": bool(config.ANTHROPIC_API_KEY) or config.PROVIDER == "ollama",
+        "anthropic_key": bool(config.ANTHROPIC_API_KEY),
         "telegram": telegram_bot.STATE["running"],
         "telegram_bot": telegram_bot.STATE["username"],
         "telegram_error": telegram_bot.STATE["error"],

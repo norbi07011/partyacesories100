@@ -73,7 +73,7 @@ def current_summary() -> str:
     return row["text"] if row else ""
 
 
-async def maybe_summarize(client) -> None:
+async def maybe_summarize(complete) -> None:
     """Gdy poza oknem rozmowy uzbiera się dużo wiadomości – dopisz je do streszczenia (w tle)."""
     last = db.one("SELECT MAX(upto_id) AS u FROM summaries")
     upto = (last or {}).get("u") or 0
@@ -96,11 +96,7 @@ async def maybe_summarize(client) -> None:
         f"DOTYCHCZASOWY NOTATNIK:\n{prev or '(pusto)'}\n\nNOWE ROZMOWY:\n{convo}"
     )
     try:
-        resp = await client.messages.create(
-            model=config.MODEL, max_tokens=4000, output_config={"effort": "low"},
-            messages=[{"role": "user", "content": prompt}],
-        )
-        text = "\n".join(b.text for b in resp.content if b.type == "text").strip()
+        text = await complete(prompt)
     except Exception as e:  # noqa: BLE001
         log.warning("Streszczenie nieudane: %s", e)
         return

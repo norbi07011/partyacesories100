@@ -21,13 +21,14 @@
     <button class="nav" data-view="projects"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg><span class="lbl">Projekty i klienci</span></button>
     <button class="nav" data-view="ideas"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg><span class="lbl">Pomysły</span></button>
     <button class="nav" data-view="files"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/></svg><span class="lbl">Pliki i zdjęcia</span></button>
+    <button class="nav" data-view="finance"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span class="lbl">Finanse</span></button>
     <button class="nav" data-view="crypto"><svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg><span class="lbl">Krypto</span></button>
     <button class="nav" data-view="notifications"><svg viewBox="0 0 24 24"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10 21h4"/></svg><span class="lbl">Powiadomienia</span><span class="badge" id="unread" hidden></span></button>
     <button class="nav" data-view="documents"><svg viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg><span class="lbl">Dokumenty</span></button>
     <button class="nav" data-view="skills"><svg viewBox="0 0 24 24"><path d="M12 3l2.5 5.5L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.5-.5z"/></svg><span class="lbl">Umiejętności</span></button>
     <button class="nav" data-view="settings"><svg viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg><span class="lbl">Ustawienia</span></button>
     <div class="side-foot">
-      <div><span class="dot" id="dot-claude"></span>Claude</div>
+      <div><span class="dot" id="dot-claude"></span><span id="brain-label">Model AI</span></div>
       <div><span class="dot" id="dot-tg"></span>Telegram</div>
       <button class="theme-toggle" id="theme">Jasny / ciemny</button>
     </div>
@@ -159,6 +160,44 @@
       <div id="file-results"></div>
     </section>
 
+    <!-- FINANSE -->
+    <section class="view" id="view-finance">
+      <div class="card-h"><h1>Finanse</h1>
+        <div class="fin-period">
+          <select id="fin-mode"><option value="month">Miesiąc</option><option value="year">Rok</option></select>
+          <input type="month" id="fin-month">
+          <select id="fin-year" hidden></select>
+          <button class="btn ghost" id="fin-ask">📊 Raport od agenta</button>
+          <a class="btn ghost" href="/api/finance/export.csv">Eksport CSV</a>
+        </div>
+      </div>
+      <p class="sub">Przychody, koszty, straty i inwestycje w podziale na Stratfanat, strony WWW, teledyski, fotografię i krypto. Możesz też po prostu powiedzieć agentowi: „zapłaciłem 120 zł za hosting”.</p>
+      <div class="stats" id="fin-kpi"></div>
+      <div class="grid g2">
+        <div class="card" id="fin-c1"></div>
+        <div class="card" id="fin-c2"></div>
+        <div class="card" id="fin-c3"></div>
+        <div class="card" id="fin-c4"></div>
+      </div>
+      <div class="grid g2" style="margin-top:18px">
+        <div class="card"><h2>Obszary działalności</h2><div id="fin-areas"></div></div>
+        <div class="card"><div class="card-h"><h2>Portfel inwestycji</h2><button class="btn ghost sq" id="hold-new">+ Pozycja</button></div><div id="fin-portfolio"></div></div>
+      </div>
+      <div class="card" style="margin-top:18px">
+        <h2>Transakcje</h2>
+        <form class="form" id="tx-form">
+          <input type="date" name="date" required>
+          <select name="type"><option value="przychod">Przychód</option><option value="koszt">Koszt</option><option value="strata">Strata</option><option value="inwestycja">Inwestycja</option></select>
+          <input name="amount" type="number" step="0.01" min="0" placeholder="kwota zł" required style="width:120px">
+          <select name="area" id="tx-area"></select>
+          <input name="category" placeholder="kategoria" list="tx-cats" style="flex:1 1 140px"><datalist id="tx-cats"></datalist>
+          <input name="description" placeholder="opis (np. bluzy – partia 20 szt.)" style="flex:2 1 200px">
+          <button class="btn">Dodaj</button>
+        </form>
+        <div id="fin-tx"></div>
+      </div>
+    </section>
+
     <!-- KRYPTO -->
     <section class="view" id="view-crypto">
       <h1>Krypto</h1><p class="sub">Dane z CoinGecko, odświeżane co minutę. Alerty i duże ruchy (powyżej 8% w 24h) przychodzą na Telegram. Listę monet zmienisz w Ustawieniach.</p>
@@ -208,6 +247,11 @@
     <!-- USTAWIENIA -->
     <section class="view" id="view-settings">
       <h1>Ustawienia</h1><p class="sub">Tu podłączasz agenta do Claude i Telegrama, ustawiasz foldery i harmonogram. Zmiany działają od razu, bez restartu.</p>
+      <div class="card" style="margin-bottom:18px">
+        <div class="card-h"><h2>Profil i firma — co agent wie o Tobie od startu</h2><button class="btn ghost sq" id="profile-save">Zapisz profil</button></div>
+        <p class="m" style="margin-bottom:10px">Agent czyta ten tekst przy każdej rozmowie. Dopisz imię, miasto, sprzęt, stawki, cele — im więcej, tym lepiej Cię zna.</p>
+        <textarea id="profile-text" class="profile-editor" rows="14" spellcheck="false"></textarea>
+      </div>
       <form id="settings-form">
         <div class="grid g2" id="settings-groups"></div>
         <div class="save-bar"><span class="m" id="settings-msg">Wprowadź zmiany i zapisz.</span><button class="btn">Zapisz ustawienia</button></div>
@@ -274,6 +318,7 @@
 
 <div class="lightbox" id="lightbox" hidden><img alt=""><div class="lb-info"></div></div>
 <div class="toast" id="toast"></div>
+<script src="/static/charts.js"></script>
 <script src="/static/app.js"></script>
 <script src="/static/voice.js"></script>
 </body>

@@ -64,6 +64,9 @@ Twoje role:
 - Oglądasz zdjęcia z dysku (view_photos), czytasz dokumenty (read_document), sprawdzasz pliki wideo (media_info).
 - Dłuższe materiały (shot-listy, wyceny, briefy, call sheety) zapisujesz w bibliotece dokumentów (save_document).
 - Pamiętasz wszystko: gdy użytkownik nawiązuje do wcześniejszych rozmów lub ustaleń, użyj recall.
+- Prowadzisz finanse: każdy przychód, koszt, stratę i inwestycję, o której wspomni użytkownik, zapisujesz od razu
+  (add_transaction) z właściwym obszarem (Stratfanat, Strony WWW, Teledyski, Fotografia, Krypto, Prywatne).
+  Gdy prosi o statystyki / raport / „jak mi idzie” – użyj umiejętności Raport finansowy i pokaż wykresy jako bloki ```chart.
 
 Zasady:
 - Odpowiadaj po polsku, zwięźle i konkretnie. Formatuj krótkim markdownem (listy, pogrubienia).
@@ -92,8 +95,16 @@ Liczby i godziny zapisuj tak, by dobrze brzmiały. Jeśli wynik jest długi (np.
 save_document i powiedz krótko, co zapisałeś. Gdy coś jest niejasne, dopytaj jednym krótkim pytaniem."""
 
 
-def tool_list() -> list[dict]:
-    return [*TOOLS, *extra_tools.TOOLS, *mcp_client.manager.tool_defs(), *SERVER_TOOLS]
+def tool_list(local: bool = False) -> list[dict]:
+    web = extra_tools.LOCAL_WEB_TOOLS if local else SERVER_TOOLS
+    return [*TOOLS, *extra_tools.TOOLS, *mcp_client.manager.tool_defs(), *web]
+
+
+def profile_text() -> str:
+    try:
+        return config.PROFILE_PATH.read_text(encoding="utf-8").strip()
+    except OSError:
+        return ""
 
 
 def _system_prompt(voice: bool = False) -> list[dict]:
@@ -101,6 +112,9 @@ def _system_prompt(voice: bool = False) -> list[dict]:
     mem = "\n".join(f"[{f['id']}] {f['fact']}" for f in facts) or "(pusto)"
     who = f"Użytkownik: {config.USER_NAME or 'nieznane imię'}. {config.USER_PROFILE}".strip()
     blocks = [{"type": "text", "text": BASE_PROMPT}]
+    prof = profile_text()
+    if prof:
+        blocks.append({"type": "text", "text": f"PROFIL UŻYTKOWNIKA (to wiesz o nim od początku):\n{prof}"})
     catalog = skills.catalog_text()
     if catalog:
         blocks.append({"type": "text", "text": catalog})
@@ -143,92 +157,111 @@ async def run(user_text: str, session: str = "web", save: bool = True,
     emit: opcjonalny callback dostający zdarzenia {"type": "text"|"tool"|"changed", ...} do podglądu na żywo.
     """
     emit = emit or _noop
-    if not config.ANTHROPIC_API_KEY:
-        return ("⚠️ Agent nie ma jeszcze klucza do Claude. Wejdź w **Ustawienia** w dashboardzie i wklej "
-                "klucz API z console.anthropic.com — pozostałe funkcje dashboardu działają bez niego.")
+    local = config.PROVIDER == "ollama"
+    if not local and not config.ANTHROPIC_API_KEY:
+        return ("⚠️ Agent nie ma jeszcze klucza do Claude. Wejdź w **Ustawienia** i wklej klucz API "
+                "albo wybierz darmowy model lokalny (Ollama).")
 
     lock = _locks.setdefault(session, asyncio.Lock())
     async with lock:
         n = db.now()
         stamp = f"[Teraz: {n:%Y-%m-%d %H:%M}, {WEEKDAYS[n.weekday()]}]"
-        messages = _history(session) if save else []
-        content: list[dict] = [
-            {"type": "image", "source": {"type": "base64", "media_type": im["media_type"], "data": im["data"]}}
-            for im in (images or [])
-        ]
-        content.append({"type": "text", "text": f"{stamp}\n{user_text or 'Co sądzisz o tym zdjęciu?'}"})
-        messages.append({"role": "user", "content": content})
-
-        extra = {"betas": ["server-side-fallback-2026-07-01"], "fallbacks": "default"} if config.FALLBACKS else {}
-        client = get_client()
-        parts: list[str] = []
-        changed: set[str] = set()
-
-        for _ in range(MAX_STEPS):
-            try:
-                async with client.beta.messages.stream(
-                    model=config.MODEL,
-                    max_tokens=32000,
-                    system=_system_prompt(voice),
-                    tools=tool_list(),
-                    messages=messages,
-                    output_config={"effort": config.EFFORT},
-                    cache_control={"type": "ephemeral"},
-                    **extra,
-                ) as stream:
-                    async for event in stream:
-                        etype = getattr(event, "type", "")
-                        if etype == "text":
-                            await emit({"type": "text", "text": event.text})
-                        elif etype == "content_block_start":
-                            block = event.content_block
-                            if getattr(block, "type", "") in ("tool_use", "server_tool_use"):
-                                await emit({"type": "tool", "name": block.name,
-                                            "label": TOOL_LABELS.get(block.name, block.name)})
-                    response = await stream.get_final_message()
-            except anthropic.AuthenticationError:
-                return "⚠️ Nieprawidłowy klucz API Claude — popraw go w **Ustawieniach**."
-            except anthropic.PermissionDeniedError as e:
-                return f"⚠️ Brak dostępu do modelu {config.MODEL}: {e.message}"
-            except anthropic.RateLimitError:
-                return "⚠️ Limit zapytań API — spróbuj za chwilę."
-            except anthropic.APIStatusError as e:
-                log.exception("Błąd API")
-                return f"⚠️ Błąd API Claude ({e.status_code}): {e.message}"
-            except anthropic.APIConnectionError:
-                return "⚠️ Brak połączenia z API Claude — sprawdź internet."
-
-            messages.append({"role": "assistant", "content": response.content})
-            step_text = _text(response.content)
-            if step_text:
-                parts.append(step_text)
-
-            if response.stop_reason == "refusal":
-                if not step_text:
-                    parts.append("Nie mogę pomóc w tej sprawie.")
-                break
-            if response.stop_reason == "pause_turn":
-                continue  # długie wyszukiwanie w sieci - kontynuuj
-            if response.stop_reason != "tool_use":
-                break
-
-            calls = [b for b in response.content if b.type == "tool_use"]
-            results = await asyncio.gather(*(execute(c.name, c.input) for c in calls))
-            messages.append({"role": "user", "content": [
-                {"type": "tool_result", "tool_use_id": c.id, "content": r} for c, r in zip(calls, results)
-            ]})
-            now_changed = {TOOL_CHANGES[c.name] for c in calls if c.name in TOOL_CHANGES}
-            if now_changed:
-                changed |= now_changed
-                await emit({"type": "changed", "what": sorted(now_changed)})
-            await emit({"type": "text", "text": "\n\n"})
+        history = _history(session) if save else []
+        text = f"{stamp}\n{user_text or 'Co sądzisz o tym zdjęciu?'}"
+        if local:
+            import local_llm
+            system = "\n\n".join(b["text"] for b in _system_prompt(voice))
+            parts, changed, error = await local_llm.run_loop(system, history, text, images, tool_list(local=True),
+                                                             execute, emit, MAX_STEPS)
         else:
-            parts.append("_Zadanie wymagało zbyt wielu kroków — doprecyzuj proszę polecenie._")
-
+            content: list[dict] = [
+                {"type": "image", "source": {"type": "base64", "media_type": im["media_type"], "data": im["data"]}}
+                for im in (images or [])
+            ]
+            content.append({"type": "text", "text": text})
+            parts, changed, error = await _run_claude([*history, {"role": "user", "content": content}], voice, emit)
+        if error:
+            return "⚠️ " + error
         reply = "\n\n".join(parts).strip() or "✅ Gotowe."
         if save:
             saved_user = ("🎙 " if voice else "") + ("[📷 zdjęcie] " if images else "") + (user_text or "")
             db.insert("chat", {"session": session, "role": "user", "content": saved_user, "created": db.now_str()})
             db.insert("chat", {"session": session, "role": "assistant", "content": reply, "created": db.now_str()})
-            asyncio.create_task(memory.maybe_summarize(client))
+            asyncio.create_task(memory.maybe_summarize(complete))
         return reply
+
+
+async def complete(prompt: str, max_tokens: int = 4000) -> str:
+    """Jedno proste zapytanie do aktualnego modelu (np. streszczenia pamięci)."""
+    if config.PROVIDER == "ollama":
+        import local_llm
+        return await local_llm.complete(prompt, max_tokens)
+    resp = await get_client().messages.create(model=config.MODEL, max_tokens=max_tokens, output_config={"effort": "low"},
+                                              messages=[{"role": "user", "content": prompt}])
+    return "\n".join(b.text for b in resp.content if b.type == "text").strip()
+
+
+async def _run_claude(messages: list[dict], voice: bool, emit: Emit) -> tuple[list[str], set[str], str | None]:
+    extra = {"betas": ["server-side-fallback-2026-07-01"], "fallbacks": "default"} if config.FALLBACKS else {}
+    client = get_client()
+    parts: list[str] = []
+    changed: set[str] = set()
+    for _ in range(MAX_STEPS):
+        try:
+            async with client.beta.messages.stream(
+                model=config.MODEL,
+                max_tokens=32000,
+                system=_system_prompt(voice),
+                tools=tool_list(),
+                messages=messages,
+                output_config={"effort": config.EFFORT},
+                cache_control={"type": "ephemeral"},
+                **extra,
+            ) as stream:
+                async for event in stream:
+                    etype = getattr(event, "type", "")
+                    if etype == "text":
+                        await emit({"type": "text", "text": event.text})
+                    elif etype == "content_block_start":
+                        block = event.content_block
+                        if getattr(block, "type", "") in ("tool_use", "server_tool_use"):
+                            await emit({"type": "tool", "name": block.name,
+                                        "label": TOOL_LABELS.get(block.name, block.name)})
+                response = await stream.get_final_message()
+        except anthropic.AuthenticationError:
+            return parts, changed, "Nieprawidłowy klucz API Claude — popraw go w **Ustawieniach**."
+        except anthropic.PermissionDeniedError as e:
+            return parts, changed, f"Brak dostępu do modelu {config.MODEL}: {e.message}"
+        except anthropic.RateLimitError:
+            return parts, changed, "Limit zapytań API — spróbuj za chwilę."
+        except anthropic.APIStatusError as e:
+            log.exception("Błąd API")
+            return parts, changed, f"Błąd API Claude ({e.status_code}): {e.message}"
+        except anthropic.APIConnectionError:
+            return parts, changed, "Brak połączenia z API Claude — sprawdź internet."
+
+        messages.append({"role": "assistant", "content": response.content})
+        step_text = _text(response.content)
+        if step_text:
+            parts.append(step_text)
+        if response.stop_reason == "refusal":
+            if not step_text:
+                parts.append("Nie mogę pomóc w tej sprawie.")
+            break
+        if response.stop_reason == "pause_turn":
+            continue  # długie wyszukiwanie w sieci - kontynuuj
+        if response.stop_reason != "tool_use":
+            break
+        calls = [b for b in response.content if b.type == "tool_use"]
+        results = await asyncio.gather(*(execute(c.name, c.input) for c in calls))
+        messages.append({"role": "user", "content": [
+            {"type": "tool_result", "tool_use_id": c.id, "content": r} for c, r in zip(calls, results)
+        ]})
+        now_changed = {TOOL_CHANGES[c.name] for c in calls if c.name in TOOL_CHANGES}
+        if now_changed:
+            changed |= now_changed
+            await emit({"type": "changed", "what": sorted(now_changed)})
+        await emit({"type": "text", "text": "\n\n"})
+    else:
+        parts.append("_Zadanie wymagało zbyt wielu kroków — doprecyzuj proszę polecenie._")
+    return parts, changed, None

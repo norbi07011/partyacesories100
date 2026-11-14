@@ -22,9 +22,15 @@ THUMB_DIR.mkdir(exist_ok=True)
 SKILLS_DIR = BASE_DIR / "skills"
 SKILLS_DIR.mkdir(exist_ok=True)
 MCP_CONFIG = BASE_DIR / "mcp_servers.json"
+PROFILE_PATH = BASE_DIR / "profil.md"
 
 # Ustawienia edytowalne z dashboardu: klucz -> (opis, domyślna wartość, czy sekret)
 SETTINGS: dict[str, tuple[str, str, bool]] = {
+    "LLM_PROVIDER": ("Mózg agenta: ollama (lokalny, darmowy) albo claude (chmura, płatny)", "ollama", False),
+    "OLLAMA_URL": ("Adres Ollamy", "http://127.0.0.1:11434", False),
+    "OLLAMA_MODEL": ("Model lokalny (z narzędziami), np. qwen3:8b, qwen3:4b, qwen3:14b", "qwen3:8b", False),
+    "OLLAMA_VISION_MODEL": ("Model lokalny do zdjęć, np. qwen2.5vl:7b", "qwen2.5vl:7b", False),
+    "OLLAMA_CTX": ("Długość kontekstu modelu lokalnego (tokeny)", "16384", False),
     "ANTHROPIC_API_KEY": ("Klucz API Claude (console.anthropic.com)", "", True),
     "AGENT_MODEL": ("Model", "claude-opus-5-5", False),
     "AGENT_EFFORT": ("Poziom myślenia: low / medium / high / xhigh / max", "medium", False),
@@ -81,6 +87,11 @@ def raw_values() -> dict[str, str]:
 def reload() -> None:
     v = raw_values()
     g = globals()
+    g["PROVIDER"] = (v["LLM_PROVIDER"] or "ollama").lower()
+    g["OLLAMA_URL"] = (v["OLLAMA_URL"] or "http://127.0.0.1:11434").rstrip("/")
+    g["OLLAMA_MODEL"] = v["OLLAMA_MODEL"] or "qwen3:8b"
+    g["OLLAMA_VISION_MODEL"] = v["OLLAMA_VISION_MODEL"] or "qwen2.5vl:7b"
+    g["OLLAMA_CTX"] = _int(v["OLLAMA_CTX"], 16384)
     g["ANTHROPIC_API_KEY"] = v["ANTHROPIC_API_KEY"] or ""
     g["MODEL"] = v["AGENT_MODEL"] or "claude-opus-5-5"
     g["EFFORT"] = v["AGENT_EFFORT"] or "medium"

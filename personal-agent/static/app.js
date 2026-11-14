@@ -34,6 +34,8 @@ const formData = f => Object.fromEntries(new FormData(f).entries());
 
 /* ---------- markdown (najpierw escape = bezpiecznie) ---------- */
 function md(src){
+  const charts = [];
+  src = String(src ?? '').replace(/```chart\s*\n([\s\S]*?)```/g, (m, j) => { charts.push(j); return `\n@@CHART${charts.length-1}@@\n`; });
   const lines = esc(src).split('\n'); let html='', list=null;
   const inline = s => s
     .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>')
@@ -48,6 +50,8 @@ function md(src){
   for (const l of lines){
     if (/^\s*\|.*\|\s*$/.test(l)) { if (list){ html+=`</${list}>`; list=null; } (table ||= []).push(l); continue; }
     flushTable();
+    const cm = l.match(/^@@CHART(\d+)@@$/);
+    if (cm) { if (list){ html+=`</${list}>`; list=null; } try { html += renderChart(JSON.parse(charts[+cm[1]])); } catch(e) { html += '<div class="m">(nieczytelny wykres)</div>'; } continue; }
     const ul = l.match(/^\s*[-*•]\s+(.*)/), ol = l.match(/^\s*\d+[.)]\s+(.*)/);
     if (ul||ol){ const tag = ul?'ul':'ol'; if(list!==tag){ if(list) html+=`</${list}>`; html+=`<${tag}>`; list=tag; } html+='<li>'+inline((ul||ol)[1])+'</li>'; continue; }
     if (list){ html+=`</${list}>`; list=null; }
@@ -86,7 +90,7 @@ function show(view){
 $$('.nav').forEach(n=>n.onclick=()=>show(n.dataset.view));
 document.addEventListener('click', e => { const g = e.target.closest('[data-goto]'); if (g) show(g.dataset.goto); });
 function refresh(what){ // po zmianach z czatu
-  const map = {tasks:['tasks','home','projects'], events:['calendar','home'], ideas:['ideas','home'], projects:['projects','home'], memory:['settings'], alerts:['crypto'], notifications:['notifications','home'], files:['files'], documents:['documents']};
+  const map = {tasks:['tasks','home','projects'], events:['calendar','home'], ideas:['ideas','home'], projects:['projects','home'], memory:['settings'], alerts:['crypto'], notifications:['notifications','home'], files:['files'], documents:['documents'], finance:['finance','home']};
   const views = new Set((what||[]).flatMap(w=>map[w]||[]));
   if (what?.includes('projects')) loadProjectsCache();
   if (views.has(current) && current!=='chat') LOADERS[current]();
@@ -132,6 +136,22 @@ SCHEMAS.documents = { title:'Dokument', fields:[
   {name:'kind',label:'Rodzaj',type:'select',opts:[['shotlista','Shot-lista'],['wycena','Wycena'],['brief','Brief'],['callsheet','Call sheet'],['scenariusz','Scenariusz'],['umowa','Umowa'],['notatka','Notatka'],['inne','Inne']]},
   {name:'project_id',label:'Projekt',type:'select',opts:projOpts},
   {name:'content',label:'Treść (markdown: **pogrubienie**, - listy, | tabele |)',type:'textarea',full:1,rows:16}]};
+SCHEMAS.transactions = { title:'Transakcja', fields:[
+  {name:'date',label:'Data',type:'date',req:1},
+  {name:'type',label:'Typ',type:'select',opts:[['przychod','Przychód'],['koszt','Koszt'],['strata','Strata'],['inwestycja','Inwestycja']]},
+  {name:'amount',label:'Kwota (zł)',type:'number',req:1},
+  {name:'area',label:'Obszar',type:'select',opts:()=>FIN_META.areas.map(a=>[a,a])},
+  {name:'category',label:'Kategoria'},
+  {name:'description',label:'Opis',type:'textarea',full:1}]};
+SCHEMAS.holdings = { title:'Pozycja w portfelu', fields:[
+  {name:'name',label:'Nazwa (np. Bitcoin, aparat Sony)',full:1,req:1},
+  {name:'kind',label:'Rodzaj',type:'select',opts:[['krypto','Krypto'],['akcje/ETF','Akcje / ETF'],['sprzęt','Sprzęt'],['inne','Inne']]},
+  {name:'coin_id',label:'ID z CoinGecko (dla krypto, np. bitcoin)'},
+  {name:'quantity',label:'Ilość',type:'number'},
+  {name:'cost',label:'Ile zapłaciłeś łącznie (zł)',type:'number'},
+  {name:'current_value',label:'Bieżąca wartość (zł) – gdy nie krypto',type:'number'},
+  {name:'notes',label:'Notatki',type:'textarea',full:1}]};
+let FIN_META = {areas:['Stratfanat','Strony WWW','Teledyski','Fotografia','Krypto','Prywatne','Inne'], categories:{}};
 let modalState = null;
 function openModal(table, row={}, opts={}){
   const sc = SCHEMAS[table]; modalState = {table, id: row.id, extra: opts.extra};
@@ -184,7 +204,11 @@ LOADERS.home = async function(){
   $('#greet').textContent = (h<5?'Dobranoc':h<12?'Dzień dobry':h<18?'Cześć':'Dobry wieczór') + (st.user ? ', '+st.user : '');
   $('#today-date').textContent = now.toLocaleDateString('pl-PL',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
   const steps = [];
-  if (!st.claude) steps.push(['Podłącz mózg agenta','Wklej klucz API Claude, żeby czat i poranne briefy działały.']);
+  if (st.provider === 'ollama') {
+    const llm = await api('/api/llm/status').catch(()=>null);
+    if (llm && !llm.ollama.running) steps.push(['Zainstaluj darmowy model AI','Pobierz Ollamę z <a href="https://ollama.com/download" target="_blank" rel="noopener">ollama.com</a> (albo uruchom start.bat) — agent będzie działał lokalnie, bez opłat.']);
+    else if (llm && !llm.ollama.model_ready) steps.push(['Pobierz model AI',`W Ustawieniach kliknij „Pobierz model” (${esc(llm.model)}).`]);
+  } else if (!st.claude) steps.push(['Podłącz mózg agenta','Wklej klucz API Claude albo wybierz darmowy model lokalny.']);
   if (!st.telegram_token) steps.push(['Połącz Telegram','Wklej token bota od @BotFather — przypomnienia przyjdą na telefon.']);
   else if (!st.telegram_chats) steps.push(['Dokończ Telegram', settings.telegram_pending ? `Bot dostał wiadomość od ${esc(settings.telegram_pending.name||settings.telegram_pending.chat_id)} — kliknij „Dodaj ten czat”.` : 'Napisz /start do swojego bota, a potem dodaj czat w Ustawieniach.']);
   if (!st.watch_folders.length) steps.push(['Wskaż foldery ze zdjęciami','Agent będzie wiedział, gdzie są Twoje sesje i teledyski.']);
@@ -498,7 +522,8 @@ $('#notes-clear').onclick = async()=>{ if(!confirm('Usunąć wszystkie powiadomi
 
 /* ---------- USTAWIENIA ---------- */
 const GROUPS = [
-  {title:'Claude — mózg agenta', keys:['ANTHROPIC_API_KEY','AGENT_MODEL','AGENT_EFFORT','AGENT_FALLBACKS'], id:'claude'},
+  {title:'Mózg agenta — model AI', keys:['LLM_PROVIDER','OLLAMA_MODEL','OLLAMA_VISION_MODEL','OLLAMA_URL','OLLAMA_CTX'], id:'llm'},
+  {title:'Claude — opcjonalnie (chmura, płatny)', keys:['ANTHROPIC_API_KEY','AGENT_MODEL','AGENT_EFFORT','AGENT_FALLBACKS'], id:'claude'},
   {title:'Telegram', keys:['TELEGRAM_BOT_TOKEN','TELEGRAM_ALLOWED_CHAT_IDS'], id:'telegram'},
   {title:'Ty', keys:['USER_NAME','USER_PROFILE','LOCATION','TIMEZONE']},
   {title:'Głos i rozmowa', keys:['VOICE_NAME','VOICE_TTS','VOICE_STT','WHISPER_MODEL','TELEGRAM_VOICE_REPLY'], id:'voice'},
@@ -509,12 +534,13 @@ const GROUPS = [
 ];
 const BOOL = new Set(['AGENT_FALLBACKS','INDEX_EXIF','MORNING_BRIEF_ENABLED','TELEGRAM_VOICE_REPLY']);
 const SELECTS = {
+  LLM_PROVIDER:[['ollama','Lokalny model (Ollama) — darmowy, prywatny'],['claude','Claude (chmura) — najmądrzejszy, płatny']],
   VOICE_NAME:[['pl-PL-ZofiaNeural','Zofia — kobiecy'],['pl-PL-MarekNeural','Marek — męski']],
   VOICE_TTS:[['edge','Naturalny głos (edge-tts, internet)'],['browser','Głos systemu (przeglądarka)']],
   VOICE_STT:[['browser','Przeglądarka (Chrome/Edge) — zalecane'],['whisper','Whisper — lokalnie, działa offline i w Firefoksie']],
   WHISPER_MODEL:[['tiny','tiny — najszybszy'],['base','base'],['small','small — zalecany'],['medium','medium — najdokładniejszy, wolny']],
   AGENT_EFFORT:[['low','low — szybko i tanio'],['medium','medium — zalecane'],['high','high — dokładniej'],['xhigh','xhigh'],['max','max — najdokładniej, najdrożej']] };
-const DATALIST = { AGENT_MODEL:['claude-opus-5-5','claude-sonnet-5-5','claude-haiku-5-5','claude-fable-5-2'] };
+const DATALIST = { OLLAMA_MODEL:['qwen3:8b','qwen3:4b','qwen3:14b','llama3.1:8b'], OLLAMA_VISION_MODEL:['qwen2.5vl:7b','qwen2.5vl:3b','gemma3:12b'], AGENT_MODEL:['claude-opus-5-5','claude-sonnet-5-5','claude-haiku-5-5','claude-fable-5-2'] };
 let settingsOrig = {};
 LOADERS.settings = async function(){
   const [s, st] = await Promise.all([api('/api/settings'), api('/api/status')]);
@@ -534,13 +560,16 @@ LOADERS.settings = async function(){
     : st.telegram_error ? `<span class="dot off"></span>Błąd: ${esc(st.telegram_error)}` : st.telegram_token ? '<span class="dot off"></span>Token zapisany, bot nie działa' : '<span class="dot off"></span>Niepołączony';
   const pending = s.telegram_pending ? `<div class="banner"><div class="t">Bot dostał <b>/start</b> od <b>${esc(s.telegram_pending.name||'')}</b> (chat_id ${esc(s.telegram_pending.chat_id)}).</div><button type="button" class="btn" id="tg-pair">Dodaj ten czat</button></div>` : '';
   $('#settings-groups').innerHTML = GROUPS.map(g=>`<div class="card set-group"><h2>${g.title}</h2>
-    ${g.id==='claude'?`<div class="status-line"><span class="dot ${st.claude?'on':'off'}"></span>${st.claude?'Klucz zapisany':'Brak klucza — <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">pobierz klucz</a>'}<span style="flex:1"></span>${st.claude?'<button type="button" class="btn ghost sq" id="test-claude">Sprawdź połączenie</button>':''}</div>`:''}
+    ${g.id==='llm'?`<div id="llm-status" class="status-line"><span class="m">Sprawdzam Ollamę…</span></div><div id="llm-pull"></div>`:''}
+    ${g.id==='claude'?`<div class="status-line"><span class="dot ${st.anthropic_key?'on':'off'}"></span>${st.anthropic_key?'Klucz zapisany':'Brak klucza — <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">pobierz klucz</a>'}<span style="flex:1"></span></div>`:''}
     ${g.id==='voice'?`<div class="status-line"><span class="dot ${st.voice.tts_engine==='edge'?'on':''}"></span>Synteza: ${st.voice.tts_engine==='edge'?'naturalny głos':'głos przeglądarki'} · Whisper: ${st.voice.whisper_installed?(st.voice.whisper_loaded?'załadowany':'zainstalowany'):'niezainstalowany'}<span style="flex:1"></span><button type="button" class="btn ghost sq" id="voice-test">Posłuchaj</button></div>`:''}
     ${g.id==='telegram'?`<div class="status-line">${tgLine}</div>${pending}<p class="hint" style="margin:0 0 12px">1) W Telegramie: @BotFather → /newbot → skopiuj token. 2) Zapisz token tutaj. 3) Napisz do bota /start i kliknij „Dodaj ten czat”.</p>`:''}
     ${g.keys.map(field).join('')}</div>`).join('');
   $('#voice-test')?.addEventListener('click', async ()=>{ VOICE_STATUS=null; await speakText(`Cześć${st.user?', '+st.user:''}! Tak brzmi mój głos. W czym mogę pomóc?`); });
   $('#tg-pair')?.addEventListener('click', async()=>{ await api('/api/settings/telegram/pair',{method:'POST'}); toast('Telegram połączony ✓ — sprawdź telefon'); LOADERS.settings(); poll(); });
   $('#test-claude')?.addEventListener('click', async e=>{ e.target.disabled=true; const r = await api('/api/settings/test-claude',{method:'POST'}); e.target.disabled=false; toast(r.ok?'✓ Połączenie z Claude działa':'⚠️ '+r.error); });
+  loadLlmStatus();
+  api('/api/profile').then(p => { $('#profile-text').value = p.text; });
   $('#jobs').innerHTML = st.jobs.map(j=>`<div class="row"><span class="dot ${j.enabled?'on':''}"></span><div class="t"><b>${esc(j.label)}</b><div class="m">${j.enabled?'następnie: '+esc(j.next_run||'—'):'wyłączone'}</div></div><button class="btn ghost sq" data-run="${j.id}">Uruchom teraz</button></div>`).join('');
   $$('[data-run]').forEach(b=>b.onclick=async()=>{ await api(`/api/jobs/${b.dataset.run}/run`,{method:'POST'}); toast('Uruchomiono: '+b.closest('.row').querySelector('b').textContent); setTimeout(poll, 4000); });
   $('#disk').textContent = st.disk ? `Wolne miejsce na dysku z danymi: ${fmtSize(st.disk.free)} z ${fmtSize(st.disk.total)}` : '';
@@ -597,6 +626,7 @@ async function poll(){
   try{
     const s = await api('/api/status');
     $('#dot-claude').className='dot '+(s.claude?'on':'off');
+    $('#brain-label').textContent = s.provider==='ollama' ? 'Model lokalny' : 'Claude';
     $('#dot-tg').className='dot '+(s.telegram&&s.telegram_chats?'on':'off');
     const u=$('#unread'); u.hidden=!s.unread; u.textContent=s.unread;
     if (lastNoteId!==null && s.last_notification > lastNoteId) {
@@ -684,3 +714,69 @@ $('#mcp-save').onclick = async () => { const r = await api('/api/mcp/config',{me
 $('#mcp-reload').onclick = async () => { await api('/api/mcp/reload',{method:'POST'}); LOADERS.skills(); };
 $('#mcp-example').onclick = () => { const ex = $('#mcp-config').dataset.example; if (ex) { $('#mcp-config').value = ex; toast('Wstawiono przykłady (wyłączone). Włącz wybrane: "enabled": true'); } };
 function chatGreetingName(){ return window.USER_NAME ? ', ' + window.USER_NAME : ''; }
+
+
+/* ---------- MODEL AI (Ollama) ---------- */
+let pullPoll = null;
+async function loadLlmStatus(){
+  const box = $('#llm-status'); if (!box) return;
+  const d = await api('/api/llm/status').catch(()=>null); if (!d) return;
+  const o = d.ollama;
+  if (d.provider !== 'ollama') { box.innerHTML = '<span class="dot"></span>Używasz Claude (chmura). Wybierz „Lokalny model”, żeby działać za darmo.'; return; }
+  if (!o.running) { box.innerHTML = `<span class="dot off"></span>Ollama nie działa — <a href="https://ollama.com/download" target="_blank" rel="noopener">pobierz i zainstaluj</a> (Windows/Mac/Linux), potem odśwież.`; return; }
+  box.innerHTML = `<span class="dot ${o.model_ready?'on':'off'}"></span>Ollama ${esc(o.version||'')} · ${o.model_ready?'model gotowy: <b>'+esc(d.model)+'</b>':'brak modelu '+esc(d.model)}
+    <span style="flex:1"></span>${o.model_ready?'<button type="button" class="btn ghost sq" id="test-claude">Sprawdź</button>':`<button type="button" class="btn sq" id="llm-pull-btn">Pobierz model</button>`}`;
+  const installed = o.models.map(m=>`<span class="pill">${esc(m.name)} · ${fmtSize(m.size)}</span>`).join(' ');
+  $('#llm-pull').innerHTML = (installed?`<div class="m" style="margin-bottom:10px">Zainstalowane: ${installed}</div>`:'') + (o.pull.running||o.pull.error ? pullHtml(o.pull) : '') +
+    (!o.vision_ready ? `<div class="m" style="margin-bottom:12px">Do oceniania zdjęć pobierz też model wizyjny: <button type="button" class="link" id="llm-pull-vision">pobierz ${esc(o.recommended.find(r=>r.name.includes('vl'))?.name||'qwen2.5vl:7b')}</button></div>` : '');
+  $('#llm-pull-btn')?.addEventListener('click', ()=>startPull());
+  $('#llm-pull-vision')?.addEventListener('click', ()=>startPull($('[name=OLLAMA_VISION_MODEL]').value));
+  $('#test-claude')?.addEventListener('click', testBrain);
+  if (o.pull.running) { clearTimeout(pullPoll); pullPoll = setTimeout(loadLlmStatus, 1500); }
+}
+function pullHtml(p){
+  const pct = p.total ? Math.round(p.completed/p.total*100) : 0;
+  return `<div class="m">Pobieranie ${esc(p.model||'')}: ${esc(p.status||'')} ${p.total?`${pct}% (${fmtSize(p.completed)} / ${fmtSize(p.total)})`:''}${p.error?' · <span class="down">błąd: '+esc(p.error)+'</span>':''}</div><div class="progress-bar"><i style="width:${pct}%"></i></div><div style="height:12px"></div>`;
+}
+async function startPull(model){ await api('/api/llm/pull',{method:'POST',body:{model}}); toast('Pobieram model — to może potrwać kilka minut'); setTimeout(loadLlmStatus, 800); }
+async function testBrain(e){ e.target.disabled=true; const r = await api('/api/settings/test-claude',{method:'POST'}); e.target.disabled=false; toast(r.ok?'✓ Model działa'+(r.reply?': „'+r.reply+'”':''):'⚠️ '+r.error); }
+document.addEventListener('click', e => { if (e.target.id==='test-claude' && !e.target.dataset.bound) { e.target.dataset.bound=1; } });
+$('#profile-save').onclick = async () => { await api('/api/profile',{method:'POST',body:{text:$('#profile-text').value}}); toast('Profil zapisany — agent wie już o tym ✓'); };
+
+/* ---------- FINANSE ---------- */
+const TX_LBL = {przychod:'przychód', koszt:'koszt', strata:'strata', inwestycja:'inwestycja'};
+(function initFinance(){
+  const now = new Date(); $('#fin-month').value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  $('#fin-year').innerHTML = [0,1,2,3].map(i=>`<option>${now.getFullYear()-i}</option>`).join('');
+  $('#tx-form').date.value = ymd(now);
+})();
+$('#fin-mode').onchange = () => { const y = $('#fin-mode').value==='year'; $('#fin-month').hidden = y; $('#fin-year').hidden = !y; LOADERS.finance(); };
+$('#fin-month').onchange = () => LOADERS.finance();
+$('#fin-year').onchange = () => LOADERS.finance();
+function finPeriod(){ return $('#fin-mode').value==='year' ? {year: $('#fin-year').value} : {month: $('#fin-month').value}; }
+LOADERS.finance = async function(){
+  FIN_META = await api('/api/finance/meta');
+  const area = $('#tx-area'); if (!area.options.length) area.innerHTML = FIN_META.areas.map(a=>`<option>${esc(a)}</option>`).join('');
+  $('#tx-cats').innerHTML = [...new Set(Object.values(FIN_META.categories).flat())].map(c=>`<option value="${esc(c)}">`).join('');
+  const p = finPeriod();
+  const [r, txs] = await Promise.all([api('/api/finance/report?'+new URLSearchParams(p)), api('/api/finance/transactions?month='+(p.month||p.year))]);
+  const s = r.podsumowanie, ch = r['zmiana_%'];
+  const dl = (v, invert) => v==null ? '' : `<span class="delta ${(v>=0)!==!!invert?'up':'down'}">${v>=0?'▲':'▼'} ${Math.abs(v)}%</span>`;
+  $('#fin-kpi').innerHTML = [
+    [fmtMoney(s.przychod)+dl(ch.przychod), 'przychody'], [fmtMoney(s.koszt)+dl(ch.koszt, true), 'koszty'], [fmtMoney(s.strata), 'straty'],
+    [`<span class="${s.zysk>=0?'':'down'}">${fmtMoney(s.zysk)}</span>`+dl(ch.zysk), 'zysk'], [s['marza_%']==null?'—':s['marza_%']+'%', 'marża'], [fmtMoney(s.inwestycja), 'inwestycje'],
+  ].map(([v,l])=>`<div class="stat"><div class="v">${v}</div><div class="l">${l} · ${esc(r.okres)}</div></div>`).join('');
+  const charts = r.wykresy;
+  ['#fin-c1','#fin-c2','#fin-c3','#fin-c4'].forEach((sel,i)=>{ $(sel).innerHTML = charts[i] ? renderChart(charts[i]) : `<div class="empty">${i===2?'Brak przychodów w tym okresie.':'Brak kosztów w tym okresie.'}</div>`; });
+  const areas = Object.entries(r.obszary);
+  $('#fin-areas').innerHTML = areas.length ? `<table class="fin-table"><thead><tr><th>Obszar</th><th class="num">Przychody</th><th class="num">Koszty</th><th class="num">Zysk</th></tr></thead><tbody>${areas.sort((a,b)=>b[1].zysk-a[1].zysk).map(([a,v])=>`<tr><td>${esc(a)}</td><td class="num">${fmtMoney(v.przychod)}</td><td class="num">${fmtMoney(v.koszt+v.strata)}</td><td class="num ${v.zysk<0?'down':''}">${fmtMoney(v.zysk)}</td></tr>`).join('')}</tbody></table>` : '<div class="empty">Brak transakcji w tym okresie.</div>';
+  $('#fin-tx').innerHTML = txs.length ? `<table class="fin-table"><tbody>${txs.map(t=>`<tr class="click" data-tx="${t.id}"><td class="m" style="white-space:nowrap">${esc(t.date)}</td><td><span class="tx-type">${TX_LBL[t.type]||esc(t.type)}</span></td><td>${esc(t.description||t.category||'')}<div class="m">${esc(t.area)}${t.category?' · '+esc(t.category):''}</div></td><td class="num amount ${t.type==='przychod'?'plus':'minus'}">${t.type==='przychod'?'+':'−'}${fmtMoney(t.amount)}</td></tr>`).join('')}</tbody></table>` : '<div class="empty">Brak transakcji. Dodaj powyżej albo powiedz agentowi, np. „sprzedałem 3 bluzy Stratfanat po 180 zł”.</div>';
+  $$('[data-tx]').forEach(row=>row.onclick=()=>edit('transactions', row.dataset.tx, {onSaved: LOADERS.finance}));
+  const pf = await api('/api/finance/portfolio');
+  $('#fin-portfolio').innerHTML = `<div class="stats" style="grid-template-columns:repeat(3,1fr);margin-bottom:10px"><div class="stat"><div class="v">${fmtMoney(pf.zainwestowano)}</div><div class="l">zainwestowano</div></div><div class="stat"><div class="v">${fmtMoney(pf.wartosc)}</div><div class="l">wartość</div></div><div class="stat"><div class="v ${pf.wynik<0?'down':'up'}">${fmtMoney(pf.wynik)}</div><div class="l">wynik${pf['wynik_%']!=null?' · '+pf['wynik_%']+'%':''}</div></div></div>`
+    + (pf.pozycje.length ? pf.pozycje.map(h=>`<div class="row click" data-hold="${h.id}"><div class="t"><b>${esc(h.name)}</b><div class="m">${esc(h.kind)}${h.quantity?' · '+h.quantity:''}${h.price_pln?' · kurs '+fmtMoney(h.price_pln):''}</div></div><div style="text-align:right"><div class="amount">${fmtMoney(h.value)}</div><div class="m ${h.pl<0?'down':'up'}">${h.pl==null?'':(h.pl>=0?'+':'')+fmtMoney(h.pl)}</div></div></div>`).join('') : '<div class="empty">Dodaj krypto, sprzęt albo inne inwestycje — krypto wyceni się samo.</div>');
+  $$('[data-hold]').forEach(row=>row.onclick=()=>edit('holdings', row.dataset.hold, {onSaved: LOADERS.finance}));
+};
+$('#tx-form').onsubmit = async e => { e.preventDefault(); const d = formData(e.target); await api('/api/crud/transactions',{method:'POST',body:d}); e.target.amount.value=''; e.target.description.value=''; toast('Zapisano ✓'); LOADERS.finance(); };
+$('#hold-new').onclick = () => openModal('holdings', {kind:'krypto'}, {onSaved: LOADERS.finance});
+$('#fin-ask').onclick = () => { const p = finPeriod(); show('chat'); sendChat(`Pokaż moje statystyki finansowe za ${p.month||'rok '+p.year}: wykresy, obszary, portfel i wnioski.`); };

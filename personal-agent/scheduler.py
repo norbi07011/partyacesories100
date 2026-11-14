@@ -60,6 +60,17 @@ async def morning_brief() -> None:
     await notify("☀️ Dzień dobry — Twój plan na dziś", text, level="brief")
 
 
+async def monthly_finance_report() -> None:
+    """1. dnia miesiąca: raport finansowy za poprzedni miesiąc → Dokumenty + powiadomienie."""
+    prev = (db.now().replace(day=1) - timedelta(days=1)).strftime("%Y-%m")
+    text = await agent.run(
+        f"Przygotuj mój raport finansowy za {prev} (umiejętność Raport finansowy): liczby, wykresy, obszary, portfel, "
+        "wnioski. Zapisz go w dokumentach. Na końcu podaj 3 najważniejsze wnioski w 3 krótkich punktach.",
+        session="system:finance", save=False,
+    )
+    await notify(f"📊 Raport finansowy za {prev}", text[-1500:], level="brief")
+
+
 async def reindex_files() -> None:
     if config.WATCH_FOLDERS:
         await asyncio.to_thread(file_indexer.reindex)
@@ -80,6 +91,7 @@ JOBS = {
     "brief": ("Poranny brief na Telegram", morning_brief),
     "crypto": ("Alerty cenowe krypto", crypto.check_alerts),
     "crypto_analysis": ("Analiza rynku krypto (duże ruchy)", crypto.analyze_market),
+    "finance_report": ("Miesięczny raport finansowy (1. dnia miesiąca)", monthly_finance_report),
     "reindex": ("Nocne skanowanie plików", reindex_files),
     "backup": ("Kopia zapasowa bazy", backup),
 }
@@ -95,6 +107,7 @@ def _plan() -> None:
     scheduler.add_job(crypto.check_alerts, "interval", minutes=config.CRYPTO_CHECK_MINUTES, id="crypto", max_instances=1)
     scheduler.add_job(crypto.analyze_market, "interval", minutes=30, id="crypto_analysis", max_instances=1)
     scheduler.add_job(reindex_files, "cron", hour=3, minute=30, id="reindex", max_instances=1, timezone=tz)
+    scheduler.add_job(monthly_finance_report, "cron", day=1, hour=9, minute=7, id="finance_report", timezone=tz)
     scheduler.add_job(backup, "cron", hour=3, minute=10, id="backup", timezone=tz)
 
 

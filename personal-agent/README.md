@@ -21,6 +21,10 @@ wyszukiwarka plików na dysku, wyszukiwarka w internecie, powiadomienia na Teleg
 
 | Funkcja | Jak |
 |---|---|
+| 🆓 Darmowy model lokalny | Domyślnie agent działa na Twoim komputerze przez Ollamę (Qwen3 8B): bez opłat i bez wysyłania danych do chmury. Claude można włączyć w Ustawieniach |
+| 👤 Zna Cię od startu | Plik `profil.md` (edycja w Ustawieniach → Profil i firma): Stratfanat, strony WWW, teledyski, fotografia, krypto, cele i stawki |
+| 💰 Finanse i portfel | Przychody, koszty, straty i inwestycje w podziale na obszary (Stratfanat, WWW, teledyski, foto, krypto). Wykresy, marża, porównanie z poprzednim miesiącem, portfel z wyceną krypto, eksport CSV. Mówisz „zapłaciłem 120 zł za hosting”, a agent sam to zapisuje |
+| 📊 Raport miesięczny | Co 1. dzień miesiąca agent przygotowuje raport z wykresami i wnioskami (Dokumenty i powiadomienie). Na żądanie: „pokaż statystyki” |
 | 📞 Rozmowa głosowa (jak FaceTime) | Przycisk „Porozmawiaj”: mówisz, a agent odpowiada głosem. Animowana kula reaguje na Twój i swój głos, są napisy na żywo i transkrypcja. Możesz włączyć kamerę i „pokazać kadr” agentowi. Dotknięcie kuli przerywa agentowi. Wszystko zapisuje się w historii czatu |
 | 🎙 Głos wszędzie | Dyktowanie w czacie (mikrofon), czytanie odpowiedzi na głos (głośnik przy wiadomości), głosówki na Telegramie z odpowiedzią tekstem i głosem |
 | 🧠 Pamięta wszystko | Każda rozmowa (czat, Telegram, głos) jest zapisana i przeszukiwalna. Starsze rozmowy agent streszcza w „notatnik pamięci”, a narzędziem `recall` wraca do dawnych ustaleń |
@@ -57,7 +61,11 @@ Opcjonalnie **FFmpeg** (https://ffmpeg.org), żeby widzieć miniatury filmów.
 Za pierwszym razem skrypt zainstaluje wszystko sam. Dashboard otworzy się pod **http://127.0.0.1:8765**.
 
 ### 3. Podłącz w dashboardzie (zakładka **Ustawienia**)
-1. **Claude:** na https://console.anthropic.com/settings/keys utwórz klucz i doładuj konto (Billing).
+0. **Model AI (darmowy, lokalny):** `start.bat` sam instaluje [Ollamę](https://ollama.com) (przez winget) i pobiera model `qwen3:8b`
+   (jednorazowo ok. 5 GB; najlepiej 16 GB RAM albo karta graficzna z 8 GB). Słabszy komputer: wybierz `qwen3:4b`.
+   W Ustawieniach → „Mózg agenta” widać stan i jest przycisk „Pobierz model”. Do oceniania zdjęć pobierz też `qwen2.5vl:7b`.
+   Uzupełnij **Profil i firma**, żeby agent znał Cię od pierwszej rozmowy.
+1. **Claude (opcjonalnie, płatny, mądrzejszy):** na https://console.anthropic.com/settings/keys utwórz klucz i doładuj konto (Billing).
    Wklej klucz i kliknij „Sprawdź połączenie”. Płacisz za użycie; koszt obniżysz, wybierając poziom myślenia `low`
    albo model `claude-sonnet-5-5`.
 2. **Telegram:** w Telegramie napisz do **@BotFather**, wyślij `/newbot` i skopiuj token. Wklej go w Ustawieniach i zapisz.
@@ -98,6 +106,9 @@ Naciśnij `Win + R`, wpisz `shell:startup` i wklej tam skrót do `start.bat`.
 - „Znajdź w sieci najlepsze lampy LED do 3000 zł i porównaj”
 - „Ile jest teraz bitcoin? Daj znać, jak spadnie poniżej 80 tys. USD”
 - „Zapamiętaj: moja stawka za dzień zdjęciowy to 2500 zł netto”
+- „Sprzedałem 4 bluzy Stratfanat po 180 zł” / „Zapłaciłem 89 zł za hosting” / „Kupiłem BTC za 1000 zł”
+- „Pokaż statystyki za październik” → wykresy, obszary, portfel, wnioski
+- „Ile zarobiłem w tym roku na teledyskach?”
 
 ## Rozbudowa – jak dodać nową umiejętność
 
@@ -136,8 +147,11 @@ Naciśnij `Win + R`, wpisz `shell:startup` i wklej tam skrót do `start.bat`.
 | `voice.py` | Głos: synteza (edge-tts) i rozpoznawanie mowy (faster-whisper) |
 | `memory.py` | Pamięć: wyszukiwanie w historii (FTS5) i streszczenia rozmów |
 | `skills.py`, `skills/` | Umiejętności (instrukcje w Markdown) |
+| `local_llm.py` | Darmowy model lokalny (Ollama): pętla agenta, pobieranie modeli |
+| `finance.py` | Finanse, raporty i portfel |
+| `profil.md` | Co agent wie o Tobie od startu |
 | `extra_tools.py` | Pogoda i złota godzina, oglądanie zdjęć, dokumenty, waluty, analiza krypto |
 | `mcp_client.py` | Podłączanie serwerów MCP |
 | `config.py` | Ustawienia (`.env`), edytowalne z dashboardu |
-| `static/` | Dashboard (`index.html`, `app.css`, `app.js`, `voice.js` – rozmowa głosowa) |
+| `static/` | Dashboard (`index.html`, `app.css`, `app.js`, `voice.js` – rozmowa głosowa, `charts.js` – wykresy) |
 | `data/` | Baza, kopie zapasowe, miniatury (tworzone automatycznie, nie trafiają do repozytorium) |
