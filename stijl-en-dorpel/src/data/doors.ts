@@ -29,7 +29,9 @@ export type DoorModel = {
   pull?: boolean; // lange greep i.p.v. kruk
   brand?: string; // fabrikant, als het model uit een fabriekscollectie komt
   glassDefault?: GlassId;
-  photo?: string; // productfoto in public/ (relatief pad); ontbreekt het bestand, dan toont de site de tekening
+  /** Fabrieksfoto's in public/fabriek/<dir>/: 1.jpg … n.jpg (varianten) en optioneel scene.jpg (sfeerbeeld).
+   *  Ontbreken de bestanden, dan toont de site de tekening. */
+  photos?: { dir: string; count: number; scene?: boolean };
   price: number;
   finish: string; // standaardkleur
   specs: L[];
@@ -64,30 +66,34 @@ const INV_FLAT: L[] = [
 ];
 const MOD: Part[] = [Gr(10, 0, 10, 240), Gr(90, 0, 90, 240)];
 const strips = (ys: number[], h = 8): Part[] => ys.map((y) => G(10, y, 80, h));
-const inv = (m: Omit<DoorModel, 'cat' | 'kind' | 'leaves' | 'brand' | 'glassDefault' | 'specs'> & { specs?: L[] }): DoorModel => ({
-  cat: 'binnen', kind: 'draai', leaves: 1, brand: 'Invado', glassDefault: 'mat', specs: INV, photo: `fabriek/invado/${m.id}.jpg`, ...m,
+const PHOTO_COUNT: Record<string, number> = {
+  corato: 5, artano: 2, aversa: 2, lago: 4, vinadio: 3, tamparo: 3, 'linea-forte': 5, bianco: 6, larina: 6, strada: 3, taurus: 1,
+};
+const inv = (m: Omit<DoorModel, 'cat' | 'kind' | 'leaves' | 'brand' | 'glassDefault' | 'specs' | 'photos'> & { specs?: L[] }): DoorModel => ({
+  cat: 'binnen', kind: 'draai', leaves: 1, brand: 'Invado', glassDefault: 'mat', specs: INV,
+  photos: { dir: `fabriek/invado/${m.id}`, count: PHOTO_COUNT[m.id] ?? 0, scene: m.id !== 'taurus' }, ...m,
 });
+
+/** Image paths (relative to the site root) for a model: variants and room scene. */
+export const modelImages = (m: DoorModel) => {
+  const p = m.photos;
+  if (!p || p.count < 1) return { variants: [] as string[], scene: undefined as string | undefined };
+  return {
+    variants: Array.from({ length: p.count }, (_, i) => `${p.dir}/${i + 1}.jpg`),
+    scene: p.scene ? `${p.dir}/scene.jpg` : undefined,
+  };
+};
 
 const INVADO: DoorModel[] = [
   inv({
     id: 'corato', name: 'Corato', price: 289, finish: 'naturo',
     style: ['Modulair · modern', 'Modular · modern', 'Modułowe · nowoczesne'],
     desc: [
-      'Liggende houtmodules met twee smalle glasstroken. Warm hout, strak lijnenspel — de blikvanger van de collectie.',
-      'Horizontal timber modules with two slim glass strips. Warm wood, crisp lines — the eye-catcher of the collection.',
-      'Poziome moduły z dwoma wąskimi przeszkleniami. Ciepłe drewno i czysta linia — ozdoba kolekcji.',
+      'Liggende houtmodules, leverbaar dicht of met één tot vier smalle glasstroken. Warm hout, strak lijnenspel — de blikvanger van de collectie.',
+      'Horizontal timber modules, solid or with one to four slim glass strips. Warm wood, crisp lines — the eye-catcher of the collection.',
+      'Poziome moduły, pełne lub z jednym do czterech wąskich przeszkleń. Ciepłe drewno i czysta linia — ozdoba kolekcji.',
     ],
     parts: [...MOD, ...strips([58, 104]), Gr(10, 150, 90, 150), Gr(10, 196, 90, 196)],
-  }),
-  inv({
-    id: 'corato-5', name: 'Corato 5', price: 309, finish: 'naturo',
-    style: ['Modulair · veel licht', 'Modular · more light', 'Modułowe · więcej światła'],
-    desc: [
-      'Dezelfde opbouw als Corato, met vier glasstroken verdeeld over de hele hoogte.',
-      'The same build as Corato, with four glass strips spread over the full height.',
-      'Ta sama konstrukcja co Corato, z czterema przeszkleniami na całej wysokości.',
-    ],
-    parts: [...MOD, ...strips([40, 86, 132, 178])],
   }),
   inv({
     id: 'artano', name: 'Artano', price: 299, finish: 'eiken',
@@ -483,29 +489,55 @@ export const priceOf = (c: DoorConfig) => {
 
 /* ───────────── Kozijnen & beslag (losse producten) ───────────── */
 
+export type ProductCat = 'kozijn' | 'beslag' | 'systeem';
 export type Product = {
   id: string;
-  cat: 'kozijn' | 'beslag';
+  cat: ProductCat;
   name: L;
   desc: L;
   price: number;
   unit: L;
-  art: 'frame-wood' | 'frame-steel' | 'frame-pvc' | 'frame-alu' | 'handle' | 'lock' | 'hinge' | 'seal';
+  art?: 'frame-wood' | 'frame-steel' | 'frame-pvc' | 'frame-alu' | 'handle' | 'lock' | 'hinge' | 'seal';
+  photos?: string[]; // fabrieksfoto's in public/ (relatief pad)
+  cover?: boolean; // foto's zijn sfeerbeelden: beeldvullend tonen
+  brand?: string;
 };
 
 const PER: L = ['per stuk', 'each', 'za sztukę'];
 const PERSET: L = ['per set', 'per set', 'za komplet'];
+const PERM: L = ['per meter', 'per metre', 'za metr'];
+const F = (dir: string, n = 1) => Array.from({ length: n }, (_, i) => `fabriek/invado/${dir}/${i + 1}.jpg`);
+const I = (p: Omit<Product, 'brand'>): Product => ({ brand: 'Invado', ...p });
 
 export const PRODUCTS: Product[] = [
-  {
-    id: 'kozijn-hout', cat: 'kozijn', art: 'frame-wood', price: 245, unit: PER,
-    name: ['Houten binnenkozijn', 'Timber interior frame', 'Drewniana futryna wewnętrzna'],
+  /* ───────────── Kozijnen ───────────── */
+  I({
+    id: 'ors', cat: 'kozijn', price: 119, unit: PER, photos: F('ors'),
+    name: ['Verstelbaar kozijn', 'Adjustable frame', 'Ościeżnica regulowana'],
     desc: [
-      'Massief houten kozijn, stomp of opdek, gegrond of in kleur afgelakt. Op elke wanddikte te maken.',
-      'Solid timber frame, flush or rebated, primed or finished in colour. Made for any wall thickness.',
-      'Lita drewniana futryna, przylgowa lub bezprzylgowa, gruntowana lub lakierowana. Na każdą grubość ściany.',
+      'Kozijn met verstelbare omlijsting dat zich aanpast aan de wanddikte. Dezelfde decorfolie als de deur, dus één geheel.',
+      'A frame with adjustable architrave that adapts to the wall thickness. Same decor foil as the door, so it reads as one piece.',
+      'Ościeżnica z regulowaną opaską, dopasowuje się do grubości muru. Ta sama okleina co skrzydło — spójna całość.',
     ],
-  },
+  }),
+  I({
+    id: 'ob3', cat: 'kozijn', price: 69, unit: PER, photos: F('ob3'),
+    name: ['Blokkozijn', 'Block frame', 'Ościeżnica blokowa'],
+    desc: [
+      'Vaste kozijnbalk voor opdekdeuren. De voordelige keuze, uit te breiden met een afdeklijst.',
+      'A fixed frame section for rebated doors. The economical choice, extendable with a cover trim.',
+      'Stała ościeżnica do drzwi przylgowych. Ekonomiczny wybór, z możliwością dodania opaski.',
+    ],
+  }),
+  I({
+    id: 'sara', cover: true, cat: 'kozijn', price: 349, unit: PER, photos: F('sara', 2),
+    name: ['Onzichtbaar kozijn', 'Concealed frame', 'Ościeżnica niewidoczna'],
+    desc: [
+      'Kozijn dat in de wand verdwijnt. De deur ligt vlak in de muur en kan mee behangen of geschilderd worden.',
+      'A frame that disappears into the wall. The door sits flush and can be papered or painted along with the wall.',
+      'Ościeżnica ukryta w ścianie. Skrzydło licuje z murem i można je pomalować lub wytapetować razem ze ścianą.',
+    ],
+  }),
   {
     id: 'kozijn-staal', cat: 'kozijn', art: 'frame-steel', price: 165, unit: PER,
     name: ['Stalen montagekozijn', 'Steel fitting frame', 'Stalowa futryna montażowa'],
@@ -533,15 +565,73 @@ export const PRODUCTS: Product[] = [
       'Futryna z twardego drewna z progiem kompozytowym lub kamiennym. Trwały wybór do drzwi wejściowych.',
     ],
   },
-  {
-    id: 'kruk', cat: 'beslag', art: 'handle', price: 39, unit: PERSET,
-    name: ['Deurkrukken op rozet', 'Lever handles on rose', 'Klamki na rozecie'],
+
+  /* ───────────── Systemen & afwerking ───────────── */
+  I({
+    id: 'pocket', cover: true, cat: 'systeem', price: 499, unit: PER, photos: F('pocket'),
+    name: ['Schuifdeur in de wand', 'Pocket sliding door', 'Drzwi przesuwne chowane w ścianę'],
     desc: [
-      'Krukkenset in RVS, mat zwart of messing. Inclusief rozetten en bevestiging.',
-      'Handle set in brushed steel, matt black or brass. Roses and fixings included.',
-      'Komplet klamek: stal, czarny mat lub mosiądz. Z rozetami i mocowaniem.',
+      'Cassettesysteem voor gipswanden: de deur schuift volledig in de muur. Geen draairuimte, geen rail in zicht.',
+      'A cassette system for stud walls: the door slides fully into the wall. No swing space, no visible rail.',
+      'System kasetowy do ścian g-k: skrzydło chowa się całkowicie w ścianie. Bez miejsca na otwieranie, bez widocznej szyny.',
     ],
-  },
+  }),
+  I({
+    id: 'wall', cover: true, cat: 'systeem', price: 189, unit: PER, photos: F('wall'),
+    name: ['Schuifdeur voor de wand', 'Surface sliding door', 'Drzwi przesuwne naścienne'],
+    desc: [
+      'Schuifsysteem met afdekkap dat vóór de wand loopt. Achteraf te plaatsen, zonder breekwerk.',
+      'A sliding system with cover that runs in front of the wall. Fitted afterwards, no demolition needed.',
+      'System przesuwny z maskownicą prowadzony po ścianie. Montaż bez kucia, także po remoncie.',
+    ],
+  }),
+  I({
+    id: 'amber', cover: true, cat: 'systeem', price: 249, unit: PER, photos: F('amber'),
+    name: ['Glazen deur', 'Glass door', 'Drzwi szklane'],
+    desc: [
+      'Volglazen deur van gehard matglas. Laat het licht door, houdt de inkijk tegen.',
+      'A full-glass door in toughened frosted glass. Lets the light through, keeps prying eyes out.',
+      'Całoszklane drzwi z hartowanego szkła matowego. Przepuszczają światło, chronią prywatność.',
+    ],
+  }),
+  I({
+    id: 'egida', cover: true, cat: 'systeem', price: 449, unit: PER, photos: F('egida'),
+    name: ['Appartementdeur RC2', 'Apartment entrance door RC2', 'Drzwi wejściowe do mieszkania RC2'],
+    desc: [
+      'Binnen-toegangsdeur voor appartementen met inbraakwerendheid RC2, in combinatie met het bijbehorende kozijn en beslag.',
+      'An internal entrance door for apartments with RC2 burglar resistance, in combination with the matching frame and hardware.',
+      'Drzwi wejściowe wewnętrzne do mieszkań o odporności na włamanie RC2, w komplecie z dedykowaną ościeżnicą i okuciami.',
+    ],
+  }),
+  I({
+    id: 'listwy', cover: true, cat: 'systeem', price: 9, unit: PERM, photos: F('listwy', 3),
+    name: ['Plinten', 'Skirting boards', 'Listwy przypodłogowe'],
+    desc: [
+      'Hoge witte plinten in drie profielen. Maken de overgang van vloer naar wand af en passen bij de deuren.',
+      'Tall white skirting boards in three profiles. They finish the junction of floor and wall and match the doors.',
+      'Wysokie białe listwy w trzech profilach. Wykańczają styk podłogi ze ścianą i pasują do drzwi.',
+    ],
+  }),
+
+  /* ───────────── Beslag & toebehoren ───────────── */
+  I({
+    id: 'klamki', cat: 'beslag', price: 29, unit: PERSET, photos: F('klamki'),
+    name: ['Deurkrukken', 'Door handles', 'Klamki'],
+    desc: [
+      'Veertien krukmodellen op rond of vierkant rozet, in chroom, nikkel, antraciet en mat zwart.',
+      'Fourteen handle models on round or square roses, in chrome, nickel, anthracite and matt black.',
+      'Czternaście modeli klamek na rozecie okrągłej lub kwadratowej: chrom, nikiel, antracyt i czarny mat.',
+    ],
+  }),
+  I({
+    id: 'zawiasy', cat: 'beslag', price: 12, unit: PERSET, photos: F('zawiasy'),
+    name: ['Scharnieren', 'Hinges', 'Zawiasy'],
+    desc: [
+      'Inboorscharnieren met afdekkapjes in vier kleuren, of onzichtbare scharnieren voor stompe deuren.',
+      'Screw-in hinges with cover caps in four colours, or concealed hinges for flush doors.',
+      'Zawiasy czopowe z nasadkami w czterech kolorach albo zawiasy chowane do drzwi bezprzylgowych.',
+    ],
+  }),
   {
     id: 'slot', cat: 'beslag', art: 'lock', price: 189, unit: PER,
     name: ['Meerpuntssluiting SKG★★★', 'Multi-point lock SKG★★★', 'Zamek wielopunktowy SKG★★★'],
@@ -551,22 +641,49 @@ export const PRODUCTS: Product[] = [
       'Zamek trzypunktowy z wkładką antywłamaniową do drzwi zewnętrznych.',
     ],
   },
-  {
-    id: 'scharnier', cat: 'beslag', art: 'hinge', price: 24, unit: PERSET,
-    name: ['Kogellagerscharnieren', 'Ball-bearing hinges', 'Zawiasy łożyskowane'],
+  I({
+    id: 'wkladka', cat: 'beslag', price: 19, unit: PER, photos: F('wkladka'),
+    name: ['Profielcilinder', 'Euro cylinder', 'Wkładka patentowa'],
     desc: [
-      'Set van drie scharnieren. Lopen licht, zakken niet door en zijn er in dezelfde afwerking als je kruk.',
-      'A set of three hinges. Smooth running, no sagging, in the same finish as your handle.',
-      'Komplet trzech zawiasów. Lekko chodzą, nie opadają, w kolorze klamki.',
+      'Cilinder voor slaapkamer-, kantoor- of bergingdeur. Op verzoek gelijksluitend voor meerdere deuren.',
+      'A cylinder for bedroom, office or storage doors. Keyed alike for several doors on request.',
+      'Wkładka do drzwi sypialni, biura lub schowka. Na życzenie w systemie jednego klucza.',
     ],
-  },
-  {
-    id: 'tocht', cat: 'beslag', art: 'seal', price: 49, unit: PER,
-    name: ['Valdorpel & tochtprofielen', 'Drop seal & draught strips', 'Próg opadający i uszczelki'],
+  }),
+  I({
+    id: 'uszczelka', cat: 'beslag', price: 49, unit: PER, photos: F('uszczelka'),
+    name: ['Valdorpel', 'Drop seal', 'Uszczelka opadająca'],
     desc: [
-      'Onzichtbare valdorpel onder de deur plus profielen rondom. Scheelt tocht, geluid en stookkosten.',
-      'A concealed drop seal under the door plus seals all round. Cuts draughts, noise and heating bills.',
-      'Niewidoczny próg opadający i uszczelki dookoła. Mniej przeciągów, hałasu i rachunków.',
+      'Onzichtbare afdichting onder de deur die zakt zodra de deur sluit. Scheelt tocht, geluid en stookkosten.',
+      'A concealed seal under the door that drops when the door closes. Cuts draughts, noise and heating bills.',
+      'Niewidoczna uszczelka pod skrzydłem, opada przy zamknięciu. Mniej przeciągów, hałasu i rachunków.',
     ],
-  },
+  }),
+  I({
+    id: 'prog', cat: 'beslag', price: 29, unit: PER, photos: F('prog'),
+    name: ['Aluminium dorpel', 'Aluminium threshold', 'Próg aluminiowy'],
+    desc: [
+      'Lage aluminium dorpel als nette overgang tussen twee vloeren. Sluit aan op de valdorpel.',
+      'A low aluminium threshold for a neat transition between two floors. Works with the drop seal.',
+      'Niski próg aluminiowy jako estetyczne przejście między podłogami. Współpracuje z uszczelką opadającą.',
+    ],
+  }),
+  I({
+    id: 'wentylacja', cat: 'beslag', price: 9, unit: PERSET, photos: F('wentylacja'),
+    name: ['Ventilatie in de deur', 'Door ventilation', 'Wentylacja w drzwiach'],
+    desc: [
+      'Ronde of vierkante ventilatiehulzen of een rooster onderin de deur. Nodig voor badkamer en toilet.',
+      'Round or square ventilation sleeves or a grille in the bottom of the door. Required for bathroom and toilet.',
+      'Okrągłe lub kwadratowe tuleje albo kratka w dolnej części skrzydła. Potrzebne w łazience i toalecie.',
+    ],
+  }),
+  I({
+    id: 'kick', cat: 'beslag', price: 59, unit: PER, photos: F('kick'),
+    name: ['Schop- en duwplaten', 'Kick and push plates', 'Blachy ochronne kick i push'],
+    desc: [
+      'RVS-platen die de deur beschermen op drukke plekken. Leverbaar met ventilatieopeningen.',
+      'Stainless steel plates that protect the door in busy places. Available with ventilation openings.',
+      'Blachy ze stali nierdzewnej chroniące skrzydło w miejscach o dużym ruchu. Także z otworami wentylacyjnymi.',
+    ],
+  }),
 ];

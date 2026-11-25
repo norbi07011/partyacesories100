@@ -1,5 +1,5 @@
-import { useId, useState, type CSSProperties } from 'react';
-import { finishById, HANDLES, type DoorModel, type GlassId, type HandleId, type Part, type Product } from '../data/doors';
+import { useId, useState, type CSSProperties, type ReactNode } from 'react';
+import { finishById, HANDLES, modelImages, type DoorModel, type GlassId, type HandleId, type Part, type Product } from '../data/doors';
 
 /* Every door on the site is drawn from data (see data/doors.ts) — no photos.
  * A leaf is 100 × 240 units; frame, rail, threshold and hardware are added around it. */
@@ -208,8 +208,8 @@ export function Door({
 
 /* ───────────── Kozijnen & beslag: small technical illustrations ───────────── */
 
-export function ProductArt({ art, className = '' }: { art: Product['art']; className?: string }) {
-  const s = { fill: 'none', stroke: GOLD, strokeWidth: 1.4, strokeLinejoin: 'round' as const, strokeLinecap: 'round' as const };
+export function ProductArt({ art, className = '' }: { art: NonNullable<Product['art']>; className?: string }) {
+  const s = { fill: 'none', stroke: '#8a6f45', strokeWidth: 1.4, strokeLinejoin: 'round' as const, strokeLinecap: 'round' as const };
   const tone: Record<string, string> = { 'frame-wood': '#b58a57', 'frame-steel': '#8d9499', 'frame-pvc': '#efece4', 'frame-alu': '#6b4a32' };
   if (art.startsWith('frame')) {
     const c = tone[art];
@@ -274,20 +274,34 @@ export function ProductArt({ art, className = '' }: { art: Product['art']; class
   );
 }
 
-/* Product photo when the model has one and the file exists; otherwise the drawing. */
-export function DoorVisual({ model, finish, className = '' }: { model: DoorModel; finish?: string; className?: string }) {
+/* A light "passe-partout" panel: catalogue photos have white backgrounds, so they are
+ * blended (multiply) into a warm ivory ground and read as one framed object. */
+export function Plate({ children, className = '' }: { children: ReactNode; className?: string }) {
+  return (
+    <div className={`relative overflow-hidden rounded-[1.4rem] bg-[linear-gradient(180deg,#f6f1e8_0%,#ebe3d4_62%,#d9cfbc_62%,#cfc4b0_100%)] shadow-[inset_0_0_0_1px_rgba(255,255,255,.55),inset_0_-30px_50px_rgba(120,98,64,.12)] ${className}`}>
+      {children}
+    </div>
+  );
+}
+
+export const asset = (path: string) => `${import.meta.env.BASE_URL}${path}`;
+
+/* Factory photo when the model has one and the file exists; otherwise the drawing. */
+export function DoorVisual({ model, finish, index = 0, className = '' }: { model: DoorModel; finish?: string; index?: number; className?: string }) {
   const [failed, setFailed] = useState(false);
-  if (model.photo && !failed) {
+  const { variants } = modelImages(model);
+  const src = variants[Math.min(index, variants.length - 1)];
+  if (src && !failed) {
     return (
       <img
-        src={`${import.meta.env.BASE_URL}${model.photo}`}
+        src={asset(src)}
         alt={model.name}
         loading="lazy"
         draggable={false}
         onError={() => setFailed(true)}
-        className={`${className} object-contain rounded-sm`}
+        className={`${className} object-contain mix-blend-multiply`}
       />
     );
   }
-  return <Door model={model} finish={finish} className={className} />;
+  return <Door model={model} finish={finish} className={`${className} drop-shadow-[0_14px_18px_rgba(60,45,25,.45)]`} />;
 }

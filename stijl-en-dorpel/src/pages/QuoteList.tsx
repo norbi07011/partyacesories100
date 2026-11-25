@@ -4,7 +4,7 @@ import { useT, euro, type L } from '../i18n';
 import { UI, useDocumentTitle } from '../ui';
 import { PRODUCTS, modelById } from '../data/doors';
 import { useQuote, itemPrice, itemTitle, describeDoor } from '../quote';
-import { Door, ProductArt } from '../components/Door';
+import { Door, ProductArt, asset } from '../components/Door';
 import { QuoteForm } from '../components/QuoteForm';
 import { Kicker } from '../components/PageHero';
 
@@ -68,7 +68,9 @@ const QuoteList = () => {
                     <div className="h-28 md:h-32 flex items-center justify-center rounded-2xl bg-zinc-900/60 border border-white/10 p-2">
                       {it.type === 'door'
                         ? <Door model={modelById(it.config.model)} finish={it.config.finish} glass={it.config.glass} handle={it.config.handle} hinge={it.config.hinge} className="h-full w-auto max-w-full" />
-                        : product && <ProductArt art={product.art} className="h-full w-auto" />}
+                        : product?.photos?.[0]
+                          ? <img src={asset(product.photos[0])} alt="" className="max-h-full max-w-full object-contain rounded-md" />
+                          : product?.art && <ProductArt art={product.art} className="h-full w-auto" />}
                     </div>
                     <div className="min-w-0">
                       <h2 className="font-display text-2xl md:text-3xl text-white leading-tight">{itemTitle(it, t)}</h2>
