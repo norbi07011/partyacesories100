@@ -23,8 +23,8 @@ const TX = {
 } satisfies Record<string, L>;
 
 const RECOMMENDED = [
-  'invado-corato', 'porta-porta-inspire-48', 'invado-lago', 'porta-porta-classic-52', 'invado-larina', 'invado-vinadio',
-  'porta-natura-koncept-72', 'invado-d-artagnan', 'invado-bianco', 'porta-londyn-wieden-12', 'invado-destino-unico', 'porta-gdynia-wroclaw-116',
+  'eko-aio-verona', 'eko-ideal-7000-nl', 'eko-deur-laurencja', 'eko-panele-aluminiowe-despiro', 'eko-aio-modena', 'eko-deur-graf',
+  'eko-bluevolution-82-nl', 'eko-deur-turan', 'eko-aio-torino', 'eko-prime-nl', 'eko-deur-sorano-vlak', 'eko-aio-firenze',
 ];
 const SHOWCASE = ['invado-corato', 'porta-porta-inspire-48', 'invado-larina', 'invado-linea-forte'];
 
@@ -42,18 +42,18 @@ export const Recommended = () => {
   if (!items.length) return null;
   const move = (d: number) => track.current?.scrollBy({ left: d * (track.current.clientWidth * 0.8), behavior: 'smooth' });
   return (
-    <section className="relative py-24 md:py-32">
+    <section className="relative py-32 md:py-48 border-t border-white/10">
       <div className="max-w-7xl mx-auto px-6">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-16">
           <div className="max-w-2xl">
-            <p className="text-amber-500 text-xs font-bold uppercase tracking-[0.4em] mb-4">{t(TX.recKicker)}</p>
+            <p className="sd-label mb-6">{t(TX.recKicker)}</p>
             <SplitText key={`${lang}-rec`} as="h2" mode="words" text={t(TX.recTitle)} className="font-display text-5xl md:text-7xl text-white leading-[1] mb-5" />
-            <p className="text-zinc-400 text-lg">{t(TX.recSub)}</p>
+            <p className="text-white/55 font-light text-lg max-w-lg">{t(TX.recSub)}</p>
           </div>
           <div className="flex items-center gap-3">
             <button onClick={() => move(-1)} aria-label="Previous" className="w-12 h-12 rounded-full border border-white/20 hover:border-white text-white flex items-center justify-center transition-colors"><ChevronLeft className="w-5 h-5" /></button>
             <button onClick={() => move(1)} aria-label="Next" className="w-12 h-12 rounded-full border border-white/20 hover:border-white text-white flex items-center justify-center transition-colors"><ChevronRight className="w-5 h-5" /></button>
-            <Link to="/deuren" className="hidden md:inline-flex items-center gap-2 px-6 h-12 rounded-full bg-[#ece7dc] hover:bg-white text-black text-sm font-semibold transition-colors">{t(TX.all)} <ArrowRight className="w-4 h-4" /></Link>
+            <Link to="/producten" className="sd-link hidden md:inline-flex ml-4">{t(TX.all)} <ArrowRight className="w-4 h-4" /></Link>
           </div>
         </div>
       </div>
@@ -63,7 +63,7 @@ export const Recommended = () => {
         style={{ touchAction: 'pan-x pan-y' }}
       >
         {items.map((it) => (
-          <div key={it.id} className="shrink-0 snap-start w-[78vw] sm:w-[320px]">
+          <div key={it.id} className="shrink-0 snap-start w-[78vw] sm:w-[360px]">
             <CatCard item={it} open={(item, index) => setOpen({ item, index })} />
           </div>
         ))}

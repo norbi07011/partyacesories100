@@ -374,11 +374,12 @@ const Shop = () => {
     const inCat = (c: string) => c === id || (id === 'buiten' && c === 'entree');
     const list = catalog.filter((it) => inCat(it.cat));
     const sample = (list.find((it) => it.nl && (it.hero || it.strip)) ?? list.find((it) => it.hero || it.strip))?.id;
-    return { id, label, count: list.length + PRODUCTS.filter((p) => p.photos && inCat(p.cat)).length, sample };
+    const withScene = list.find((it) => it.brand === 'Eko-Okna' && it.scene && it.scene[0] >= 1200) ?? list.find((it) => it.scene && it.scene[0] >= 1200);
+    return { id, label, count: list.length + PRODUCTS.filter((p) => p.photos && inCat(p.cat)).length, sample, scene: withScene ? `${withScene.dir}/scene.jpg` : undefined };
   }).filter((x) => x.count > 0);
   const chip = (on: boolean) => `shrink-0 px-5 py-2.5 rounded-full text-sm font-medium border transition-all ${on ? 'bg-amber-500 text-black border-amber-500' : 'bg-zinc-900/60 text-zinc-400 border-zinc-800 hover:border-amber-500/50 hover:text-white'}`;
   const heading = (label: string, count: number, kicker?: string) => (
-    <div className="flex items-end justify-between gap-6 mt-24 mb-10 pb-5 border-b border-white/10">
+    <div className="flex items-end justify-between gap-6 mt-28 md:mt-36 mb-12 pb-6 border-b border-white/10">
       <div>
         {kicker && <p className="text-amber-300/80 text-[11px] font-medium uppercase tracking-[0.4em] mb-3">{kicker}</p>}
         <h2 className="font-display text-4xl md:text-5xl text-white leading-none">{label}</h2>
@@ -394,68 +395,57 @@ const Shop = () => {
         title={t(TX.title)}
         subtitle={t(TX.sub)}
         minH="min-h-[62svh]"
-        aside={catalog.length ? (
-          <div className="flex items-end gap-4 pr-6">
-            <CatPhoto id="invado-larina" className="h-[300px] w-[170px]" />
-            <CatPhoto id="porta-porta-inspire-48" className="h-[400px] w-[220px]" />
-            <CatPhoto id="invado-lago" className="h-[300px] w-[170px]" />
-          </div>
-        ) : undefined}
+        image="interior"
+        imagePosition="34% 50%"
       />
 
       <section className="relative pb-28">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="-mx-6 px-6 py-4 border-y border-white/10 space-y-3">
-            <div className="flex gap-2 overflow-x-auto no-scrollbar" role="tablist">
+          <div className="sticky top-0 z-40 -mx-6 px-6 bg-[#0b0a09]/95 backdrop-blur border-y border-white/10">
+            <div className="flex gap-7 overflow-x-auto no-scrollbar" role="tablist">
               {tabs.map(([id, label]) => (
-                <button key={id} role="tab" aria-selected={tab === id} onClick={() => go({ cat: id })} className={chip(tab === id)}>{t(label)}</button>
+                <button key={id} role="tab" aria-selected={tab === id} onClick={() => go({ cat: id })} className={`shrink-0 py-4 text-[11px] font-medium uppercase tracking-[0.22em] border-b transition-colors ${tab === id ? 'text-white border-amber-200' : 'text-white/45 border-transparent hover:text-white'}`}>{t(label)}</button>
               ))}
             </div>
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex gap-2 overflow-x-auto no-scrollbar">
-                {brands.map(([id, label]) => (
-                  <button key={id} aria-pressed={brand === id} onClick={() => go({ merk: id })} className={`shrink-0 px-4 py-1.5 rounded-full text-xs font-medium uppercase tracking-[0.2em] border transition-all ${brand === id ? 'border-amber-300 text-amber-200 bg-amber-500/10' : 'border-zinc-800 text-zinc-500 hover:text-white hover:border-zinc-600'}`}>{label}</button>
-                ))}
-              </div>
-              <span className="hidden md:block text-white/45 text-[11px] uppercase tracking-[0.3em] whitespace-nowrap">{total} {t(TX.count)}</span>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-3 pt-1">
-              <label className="relative flex-1">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
-                <input
-                  type="search"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder={t(TX.search)}
-                  aria-label={t(TX.search)}
-                  className="w-full bg-zinc-900/60 border border-zinc-800 rounded-full pl-11 pr-4 py-3 text-white text-sm placeholder:text-zinc-600 outline-none focus:border-amber-500"
-                />
-              </label>
-              <label className="flex items-center gap-3 text-white/45 text-[11px] uppercase tracking-[0.25em]">
-                {t(TX.sort)}
-                <select value={sort} onChange={(e) => setSort(e.target.value as typeof sort)} className="bg-zinc-900 border border-zinc-800 rounded-full px-4 py-3 text-white text-sm normal-case tracking-normal outline-none focus:border-amber-500">
-                  <option value="cat">{t(TX.sortCat)}</option>
-                  <option value="name">{t(TX.sortName)}</option>
-                  <option value="low">{t(TX.sortLow)}</option>
-                  <option value="high">{t(TX.sortHigh)}</option>
-                </select>
-              </label>
-            </div>
+          </div>
+          <div className="flex flex-col md:flex-row md:items-center gap-x-10 gap-y-4 py-6">
+            <label className="relative flex-1 max-w-md">
+              <Search className="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+              <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t(TX.search)} aria-label={t(TX.search)} className="w-full py-2.5 text-white text-sm placeholder:text-white/35" />
+            </label>
+            <label className="flex items-center gap-3 text-white/45 text-[11px] uppercase tracking-[0.22em]">
+              {t(TX.allBrands)}
+              <select value={brand} onChange={(e) => go({ merk: e.target.value as Brand })} className="py-2.5 text-white text-sm normal-case tracking-normal">
+                {brands.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
+              </select>
+            </label>
+            <label className="flex items-center gap-3 text-white/45 text-[11px] uppercase tracking-[0.22em]">
+              {t(TX.sort)}
+              <select value={sort} onChange={(e) => setSort(e.target.value as typeof sort)} className="py-2.5 text-white text-sm normal-case tracking-normal">
+                <option value="cat">{t(TX.sortCat)}</option>
+                <option value="name">{t(TX.sortName)}</option>
+                <option value="low">{t(TX.sortLow)}</option>
+                <option value="high">{t(TX.sortHigh)}</option>
+              </select>
+            </label>
+            <span className="md:ml-auto text-white/40 text-[11px] uppercase tracking-[0.22em] whitespace-nowrap">{total} {t(TX.count)}</span>
           </div>
           {total === 0 && <p className="text-center text-zinc-400 text-lg py-24">{t(TX.none)}</p>}
 
           {overview && (
             <div>
               {heading(t(TX.pick), tiles.length)}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-12">
-                {tiles.map(({ id, label, count, sample }) => (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-14">
+                {tiles.map(({ id, label, count, sample, scene }) => (
                   <button key={id} onClick={() => go({ cat: id })} className="group text-left">
-                    <Plate className="h-56 md:h-72 transition-shadow duration-500 group-hover:shadow-[0_30px_60px_-30px_rgba(203,176,132,.55)]">
-                      {sample && <div className="absolute inset-x-0 top-8 bottom-[5%] flex items-end justify-center"><CatPhoto id={sample} bare className="h-full w-auto max-w-[78%] transition-transform duration-700 ease-out group-hover:scale-[1.04]" /></div>}
-                    </Plate>
-                    <span className="flex items-baseline justify-between gap-3 pt-4">
-                      <span className="font-display text-2xl md:text-3xl text-white">{t(label)}</span>
-                      <span className="text-white/45 text-xs whitespace-nowrap">{count} {t(TX.products)}</span>
+                    <span className="relative block aspect-[4/5] overflow-hidden bg-[#efece6]">
+                      {scene
+                        ? <img src={asset(scene)} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-[1400ms] ease-out group-hover:scale-[1.04]" />
+                        : sample && <span className="absolute inset-[9%] flex items-center justify-center"><CatPhoto id={sample} bare className="max-h-full max-w-full transition-transform duration-[1400ms] ease-out group-hover:scale-[1.04]" /></span>}
+                    </span>
+                    <span className="flex items-baseline justify-between gap-3 pt-5">
+                      <span className="font-display text-3xl md:text-4xl text-white">{t(label)}</span>
+                      <span className="text-white/40 text-[11px] uppercase tracking-[0.22em] whitespace-nowrap">{count}</span>
                     </span>
                   </button>
                 ))}
@@ -467,7 +457,7 @@ const Shop = () => {
           {!overview && factoryGroups.map((g) => (
             <div key={g.key}>
               {heading(t(g.label), g.items.length, g.brand || undefined)}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-14">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-20">
                 {g.items.map((it) => <CatCard key={it.id} item={it} open={(item, index) => setCat({ item, index })} />)}
               </div>
             </div>
@@ -491,12 +481,12 @@ const Shop = () => {
             </div>
           ))}
 
-          <div className="mt-20 flex flex-col md:flex-row md:items-center justify-between gap-6 rounded-3xl border border-white/10 p-8">
+          <div className="mt-32 pt-10 flex flex-col md:flex-row md:items-center justify-between gap-6 border-t border-white/10">
             <div>
               <p className="text-white/80 text-lg max-w-2xl">{t(TX.note)}</p>
               <p className="text-white/40 text-sm mt-2">{t(UI.indicative)}</p>
             </div>
-            <Link to="/contact" className="shrink-0 inline-flex items-center gap-2 px-7 py-4 rounded-full border border-zinc-700 hover:border-amber-500 hover:text-amber-300 font-bold transition-colors">
+            <Link to="/contact" className="sd-link shrink-0">
               {t(UI.nav.contact)} <ArrowRight className="w-5 h-5" />
             </Link>
           </div>

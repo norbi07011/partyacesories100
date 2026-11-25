@@ -89,7 +89,7 @@ const QuotePill = ({ compact = false }: { compact?: boolean }) => {
       <ClipboardList className="w-4 h-4" />
       {!compact && <span>{t(UI.nav.quote)}</span>}
       {count > 0 && (
-        <span className={`min-w-5 h-5 px-1.5 rounded-full bg-amber-400 text-black text-[11px] font-bold flex items-center justify-center ${compact ? 'absolute -top-1 -right-1' : ''}`}>
+        <span className={`min-w-5 h-5 px-1.5 sd-round bg-amber-400 text-black text-[11px] font-bold flex items-center justify-center ${compact ? 'absolute -top-1 -right-1' : ''}`}>
           {count}
         </span>
       )}
@@ -147,7 +147,6 @@ const Navbar = () => {
       >
         <div className="max-w-7xl mx-auto px-6 flex items-center justify-between gap-4">
           <Link to="/" className="flex items-center space-x-3 group shrink-0">
-            <Logo className="w-10 h-10 transition-transform duration-500 group-hover:scale-105" />
             <span className="text-lg sm:text-2xl text-white font-display whitespace-nowrap">
               Stijl <span className="text-amber-200/70">&amp;</span> <span className="italic text-amber-200">Dorpel</span>
             </span>
@@ -241,12 +240,10 @@ const Footer = () => {
   const t = useT();
   return (
     <footer className="relative bg-black/80 backdrop-blur-sm pt-24 border-t border-zinc-900 overflow-hidden">
-      <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[900px] h-[400px] bg-amber-500/10 blur-[160px] rounded-full pointer-events-none" />
       <div className="relative max-w-7xl mx-auto px-6">
         <Reveal stagger={0.12} className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
           <div className="col-span-1 md:col-span-2">
             <div className="flex items-center space-x-3 mb-6">
-              <Logo className="w-12 h-12" />
               <span className="text-2xl text-white font-display">
                 Stijl <span className="text-amber-200/70">&amp;</span> <span className="italic text-amber-200">Dorpel</span>
               </span>
@@ -302,7 +299,6 @@ const Footer = () => {
       </div>
 
       <div className="relative mt-10 pb-6 flex justify-center">
-        <TextFill text="Stijl & Dorpel" className="text-[11vw] font-display" />
       </div>
     </footer>
   );

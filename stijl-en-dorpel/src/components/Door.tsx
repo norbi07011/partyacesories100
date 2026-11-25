@@ -279,8 +279,7 @@ export function ProductArt({ art, className = '' }: { art: NonNullable<Product['
  * photos have white backgrounds, so they are blended (multiply) into it. */
 export function Plate({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
-    <div className={`${/\babsolute\b/.test(className) ? '' : 'relative'} overflow-hidden rounded-[14px] bg-[radial-gradient(120%_85%_at_50%_0%,#ffffff_0%,#f4f2ee_52%,#e8e5df_100%)] ring-1 ring-black/5 ${className}`}>
-      <span className="pointer-events-none absolute left-1/2 bottom-[2.2%] -translate-x-1/2 w-[52%] h-[5%] rounded-[100%] bg-black/25 blur-[14px]" aria-hidden="true" />
+    <div className={`${/\babsolute\b/.test(className) ? '' : 'relative'} overflow-hidden bg-[#efece6] ${className}`}>
       {children}
     </div>
   );

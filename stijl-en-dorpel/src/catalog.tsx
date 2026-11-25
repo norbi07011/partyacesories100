@@ -57,9 +57,13 @@ const load = () => {
   cache ??= fetch(asset('fabriek/catalog.json'))
     .then((r) => (r.ok ? r.json() : []))
     .then((d) => (Array.isArray(d) ? (d as CatItem[]) : []))
+    // sharp, recent photography first; the older catalogue scans follow
+    .then((d) => d.map((it, i) => [it, i] as const).sort((a, b) => (RANK[a[0].brand] ?? 9) - (RANK[b[0].brand] ?? 9) || a[1] - b[1]).map(([it]) => it))
     .catch(() => []);
   return cache;
 };
+
+const RANK: Record<string, number> = { 'Eko-Okna': 0, Invado: 1, Porta: 2 };
 
 export function useCatalog() {
   const [items, setItems] = useState<CatItem[]>([]);
@@ -203,58 +207,27 @@ export function CatCard({ item, open }: { item: CatItem; open: (it: CatItem, ind
   const [index, setIndex] = useState(item.hero ? -2 : 0);
   const hasLead = !!(item.strip || item.hero);
   const price = guidePrice(item);
+  // old, low-resolution catalogue scans are shown smaller instead of being blown up
+  const weak = item.brand === 'Porta' || (item.strip ? item.strip.h < 420 : false);
   return (
-    <article className="group h-full flex flex-col">
-      <button onClick={() => open(item, Math.max(0, index))} className="relative block text-left" aria-label={`${item.name} — ${t(UI.details)}`}>
-        <Plate className="h-[22rem] transition-shadow duration-500 group-hover:shadow-[0_30px_60px_-30px_rgba(203,176,132,.55)]">
+    <article className="group h-full">
+      <button onClick={() => open(item, Math.max(0, index))} className="block w-full text-left" aria-label={`${item.name} — ${t(UI.details)}`}>
+        <span className="relative block aspect-[4/5] overflow-hidden bg-[#efece6]">
           {hasLead ? (
-            <div className="absolute inset-x-0 top-12 bottom-[5%] flex items-end justify-center">
-              <Lead item={item} index={index} className="h-full w-auto max-w-[76%] transition-transform duration-700 ease-out group-hover:scale-[1.03]" />
-            </div>
+            <span className={`absolute flex items-center justify-center ${weak ? 'inset-[18%]' : 'inset-[7%]'}`}>
+              <Lead item={item} index={index} className="h-full w-auto max-w-full transition-transform duration-[1200ms] ease-out group-hover:scale-[1.03]" />
+            </span>
           ) : item.scene && (
-            <img src={asset(`${item.dir}/scene.jpg`)} alt={item.name} loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]" />
+            <img src={asset(`${item.dir}/scene.jpg`)} alt={item.name} loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-[1200ms] ease-out group-hover:scale-[1.03]" />
           )}
-          <span className={`absolute top-4 left-4 ${hasLead ? tag : chipDark}`}>{item.brand}</span>
-          {n > 1 && <span className={`absolute top-4 right-4 ${hasLead ? tag : chipDark}`}>{n} {t(TX.variants)}</span>}
-          {item.nl && <span className="absolute top-4 right-4 px-2 py-1 rounded-full bg-[#1d1a17] text-white text-[9px] font-semibold uppercase tracking-[0.2em]">NL-profiel</span>}
-          <span className="absolute bottom-3 right-3 w-9 h-9 rounded-full bg-[#1d1a17] text-white flex items-center justify-center opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-500">
-            <Expand className="w-4 h-4" />
-          </span>
-        </Plate>
+          {item.nl && <span className="absolute top-4 left-4 text-[9px] font-medium uppercase tracking-[0.26em] text-[#1d1a17]/70">NL-profiel</span>}
+        </span>
+        <span className="flex items-baseline justify-between gap-4 pt-5">
+          <span className="font-display text-[1.7rem] leading-tight text-white">{item.name}</span>
+          <span className="text-white/45 text-[10px] uppercase tracking-[0.22em] whitespace-nowrap">{price > 0 ? `${t(UI.from)} ${euro(price)}` : n > 1 ? `${n} ${t(TX.variants)}` : item.brand}</span>
+        </span>
+        <span className="block text-white/45 text-sm font-light leading-relaxed mt-1.5 line-clamp-1">{t(groupLabel(item.group))}</span>
       </button>
-      <div className="flex-1 flex flex-col pt-5">
-        <div className="flex items-baseline justify-between gap-4">
-          <h3 className="font-display text-[1.75rem] leading-tight text-white">{item.name}</h3>
-          <p className="text-white whitespace-nowrap text-[15px]">{price > 0 ? <><span className="text-white/45 text-xs mr-1">{t(UI.from)}</span>{euro(price)}</> : <span className="text-[10px] uppercase tracking-[0.22em] text-white/55">{t(TX.onRequest)}</span>}</p>
-        </div>
-        <p className="text-white/45 text-[10px] uppercase tracking-[0.28em] mt-1.5 mb-3">{t(groupLabel(item.group))}</p>
-        <p className="text-zinc-400 text-sm leading-relaxed mb-4 flex-1 line-clamp-2">{lang === 'PL' && item.descPL ? item.descPL : intro(item, t, lang)}</p>
-        {n > 1 && (
-          <div className="flex items-center gap-1.5 mb-4 overflow-hidden" role="group" aria-label={t(TX.nVariants)}>
-            {item.strip!.items.slice(0, 7).map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setIndex(i)}
-                aria-label={item.labels?.[i] ?? `${i + 1}`}
-                title={item.labels?.[i]}
-                aria-pressed={index === i}
-                className={`shrink-0 w-8 h-11 rounded-[5px] overflow-hidden bg-[#f4f2ee] flex items-end justify-center ring-1 transition-all ${index === i ? 'ring-amber-300 ring-2' : 'ring-white/10 opacity-55 hover:opacity-100'}`}
-              >
-                <Sprite item={item} index={i} className="h-full w-auto" />
-              </button>
-            ))}
-            {n > 7 && <span className="text-white/40 text-xs ml-1">+{n - 7}</span>}
-          </div>
-        )}
-        <div className="flex gap-2 pt-4 border-t border-white/10">
-          <button onClick={() => open(item, Math.max(0, index))} className="flex-1 inline-flex items-center justify-center h-11 rounded-full bg-[#ece7dc] hover:bg-white text-black text-sm font-semibold tracking-wide transition-colors">
-            {t(UI.details)}
-          </button>
-          <Link to={`/product/${item.id}`} aria-label={`${item.name} — ${t(TX.openPage)}`} title={t(TX.openPage)} className="w-11 h-11 shrink-0 rounded-full border border-white/20 hover:border-white text-white flex items-center justify-center transition-colors">
-            <ArrowUpRight className="w-4 h-4" />
-          </Link>
-        </div>
-      </div>
     </article>
   );
 }

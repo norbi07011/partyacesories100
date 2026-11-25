@@ -284,3 +284,74 @@ body::after {
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+/* ═════════════  Design system (one place for shape, weight and form styling)  ═════════════
+ * Two typefaces (Instrument Serif for display, Inter for text), one accent (champagne),
+ * square corners, hairlines instead of boxes. These rules are unlayered on purpose so they
+ * win over the utility classes that are scattered through the pages. */
+
+.rounded-full, .rounded-sm, .rounded, .rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl, .rounded-3xl, .rounded-4xl,
+[class*="rounded-["], [class*="rounded-t-"], [class*="rounded-b-"], [class*="rounded-l-"], [class*="rounded-r-"] {
+  border-radius: 1px;
+}
+/* genuinely round things keep their shape */
+.sd-round { border-radius: 9999px; }
+
+.font-bold, .font-black, .font-extrabold { font-weight: 500; }
+.font-semibold { font-weight: 500; }
+
+.shadow-sm, .shadow, .shadow-md, .shadow-lg, .shadow-xl, .shadow-2xl { box-shadow: none; }
+
+/* boxes become open areas with a single hairline */
+.bb-glass-card {
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+/* the gold gradient text is replaced by the flat accent */
+.bb-text-gold {
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  color: #e6d9bd;
+}
+
+/* Forms: a single line under the field, no grey boxes */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
+select,
+textarea {
+  background-color: transparent;
+  border-width: 0 0 1px 0;
+  border-style: solid;
+  border-color: rgba(255, 255, 255, 0.28);
+  border-radius: 0;
+  padding-left: 0;
+  padding-right: 0;
+  box-shadow: none;
+  transition: border-color 0.3s;
+}
+input[type="search"] { padding-left: 1.75rem !important; }
+select { padding-right: 1.5rem; }
+input:focus, select:focus, textarea:focus { border-color: #e6d9bd; outline: none; }
+option { background: #141210; color: #fff; }
+
+/* Buttons: two styles for the whole site */
+.sd-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.75rem;
+  height: 3.25rem; padding: 0 2rem;
+  background: #e6d9bd; color: #0b0a09;
+  font-size: 0.8125rem; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase;
+  border-radius: 1px; transition: background-color 0.3s;
+}
+.sd-btn:hover { background: #fff; }
+.sd-link {
+  display: inline-flex; align-items: center; gap: 0.75rem;
+  padding-bottom: 0.4rem; border-bottom: 1px solid rgba(230, 217, 189, 0.45);
+  color: #f2ebdd; font-size: 0.8125rem; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase;
+  transition: border-color 0.3s, color 0.3s;
+}
+.sd-link:hover { border-color: #e6d9bd; color: #fff; }
+.sd-label { font-size: 0.6875rem; font-weight: 500; letter-spacing: 0.3em; text-transform: uppercase; color: rgba(230, 217, 189, 0.8); }
