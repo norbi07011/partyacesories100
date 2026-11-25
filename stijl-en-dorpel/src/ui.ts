@@ -16,6 +16,7 @@ export const UI = {
   from: ['vanaf', 'from', 'od'],
   inclVat: ['incl. btw', 'incl. VAT', 'z VAT'],
   indicative: ['Richtprijs incl. btw. De definitieve prijs volgt na het inmeten.', 'Guide price incl. VAT. The final price follows after the survey.', 'Cena orientacyjna z VAT. Ostateczna cena po pomiarze.'],
+  details: ['Bekijk details', 'View details', 'Zobacz szczegóły'],
   configure: ['Stel samen', 'Configure', 'Skonfiguruj'],
   addToQuote: ['Op de offertelijst', 'Add to quote list', 'Dodaj do wyceny'],
   added: ['Toegevoegd', 'Added', 'Dodano'],

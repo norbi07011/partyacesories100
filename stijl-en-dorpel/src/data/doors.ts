@@ -373,7 +373,9 @@ const OWN: DoorModel[] = [
   },
 ];
 
-export const MODELS: DoorModel[] = [...INVADO, ...OWN];
+/** Getekende huiscollectie (configureerbaar). De fabriekscollecties staan in public/fabriek/catalog.json. */
+export const MODELS: DoorModel[] = OWN;
+export const INVADO_DRAWN: DoorModel[] = INVADO;
 
 export const modelById = (id: string | null | undefined) => MODELS.find((m) => m.id === id) ?? MODELS[0];
 
@@ -567,42 +569,6 @@ export const PRODUCTS: Product[] = [
   },
 
   /* ───────────── Systemen & afwerking ───────────── */
-  I({
-    id: 'pocket', cover: true, cat: 'systeem', price: 499, unit: PER, photos: F('pocket'),
-    name: ['Schuifdeur in de wand', 'Pocket sliding door', 'Drzwi przesuwne chowane w ścianę'],
-    desc: [
-      'Cassettesysteem voor gipswanden: de deur schuift volledig in de muur. Geen draairuimte, geen rail in zicht.',
-      'A cassette system for stud walls: the door slides fully into the wall. No swing space, no visible rail.',
-      'System kasetowy do ścian g-k: skrzydło chowa się całkowicie w ścianie. Bez miejsca na otwieranie, bez widocznej szyny.',
-    ],
-  }),
-  I({
-    id: 'wall', cover: true, cat: 'systeem', price: 189, unit: PER, photos: F('wall'),
-    name: ['Schuifdeur voor de wand', 'Surface sliding door', 'Drzwi przesuwne naścienne'],
-    desc: [
-      'Schuifsysteem met afdekkap dat vóór de wand loopt. Achteraf te plaatsen, zonder breekwerk.',
-      'A sliding system with cover that runs in front of the wall. Fitted afterwards, no demolition needed.',
-      'System przesuwny z maskownicą prowadzony po ścianie. Montaż bez kucia, także po remoncie.',
-    ],
-  }),
-  I({
-    id: 'amber', cover: true, cat: 'systeem', price: 249, unit: PER, photos: F('amber'),
-    name: ['Glazen deur', 'Glass door', 'Drzwi szklane'],
-    desc: [
-      'Volglazen deur van gehard matglas. Laat het licht door, houdt de inkijk tegen.',
-      'A full-glass door in toughened frosted glass. Lets the light through, keeps prying eyes out.',
-      'Całoszklane drzwi z hartowanego szkła matowego. Przepuszczają światło, chronią prywatność.',
-    ],
-  }),
-  I({
-    id: 'egida', cover: true, cat: 'systeem', price: 449, unit: PER, photos: F('egida'),
-    name: ['Appartementdeur RC2', 'Apartment entrance door RC2', 'Drzwi wejściowe do mieszkania RC2'],
-    desc: [
-      'Binnen-toegangsdeur voor appartementen met inbraakwerendheid RC2, in combinatie met het bijbehorende kozijn en beslag.',
-      'An internal entrance door for apartments with RC2 burglar resistance, in combination with the matching frame and hardware.',
-      'Drzwi wejściowe wewnętrzne do mieszkań o odporności na włamanie RC2, w komplecie z dedykowaną ościeżnicą i okuciami.',
-    ],
-  }),
   I({
     id: 'listwy', cover: true, cat: 'systeem', price: 9, unit: PERM, photos: F('listwy', 3),
     name: ['Plinten', 'Skirting boards', 'Listwy przypodłogowe'],

@@ -20,5 +20,8 @@ export const company = {
   hours: 'Ma–Vr 08:00–17:30 · Za 09:00–13:00',
 };
 
+/** Richtprijs fabriekscollectie = catalogusprijs netto (PLN) / koers × opslag. Pas aan na de inkoopafspraken. */
+export const PRICING = { plnPerEur: 4.3, markup: 1.8 };
+
 /** Alle prijzen in src/data/doors.ts zijn richtprijzen (placeholders). */
 export const PRICES_ARE_INDICATIVE = true;

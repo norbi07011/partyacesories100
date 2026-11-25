@@ -9,11 +9,12 @@ import {
 import { useQuote } from '../quote';
 import { Door, DoorVisual, Plate, ProductArt, asset } from '../components/Door';
 import { PageHero, Badge } from '../components/PageHero';
-import { Reveal } from '../fx/components';
 import { flyTo, lockScroll } from '../fx/core';
 import { CTA } from './Home';
+import { useCatalog, CatCard, CatDialog, groupLabel, type CatItem } from '../catalog';
 
-type Cat = 'all' | 'binnen' | 'buiten' | 'kozijn' | 'systeem' | 'beslag';
+type Cat = 'all' | 'binnen' | 'buiten' | 'schuif' | 'technisch' | 'kozijn' | 'systeem' | 'beslag';
+type Brand = 'all' | 'Invado' | 'Porta' | 'huis';
 
 const TX = {
   title: ['Deuren & kozijnen', 'Doors & frames', 'Drzwi i futryny'],
@@ -29,6 +30,12 @@ const TX = {
     taats: ['Taatsdeur', 'Pivot door', 'Drzwi osiowe'],
   },
   systems: ['Systemen & afwerking', 'Systems & finishing', 'Systemy i wykończenie'],
+  entrance: ['Voordeuren & entree', 'Front & entrance doors', 'Drzwi wejściowe'],
+  sliding: ['Schuif & vouw', 'Sliding & folding', 'Przesuwne i łamane'],
+  technical: ['Technisch', 'Technical', 'Techniczne'],
+  allBrands: ['Alle merken', 'All brands', 'Wszystkie marki'],
+  house: ['Huiscollectie', 'House collection', 'Kolekcja własna'],
+  houseTitle: ['Huiscollectie · zelf samen te stellen', 'House collection · configure it yourself', 'Kolekcja własna · do samodzielnej konfiguracji'],
   double: ['dubbel', 'double', 'podwójne'],
   count: ['resultaten', 'results', 'wyników'],
   colourHint: ['Kleur', 'Colour', 'Kolor'],
@@ -287,18 +294,53 @@ const ProductCard = ({ p, open }: { p: Product; open: (d: Detail) => void }) => 
 const Shop = () => {
   const t = useT();
   useDocumentTitle(t(TX.title));
+  const catalog = useCatalog();
   const [params, setParams] = useSearchParams();
   const [detail, setDetail] = useState<Detail | null>(null);
+  const [cat, setCat] = useState<{ item: CatItem; index: number } | null>(null);
   const raw = params.get('cat') as Cat | null;
-  const cat: Cat = raw && ['binnen', 'buiten', 'kozijn', 'systeem', 'beslag'].includes(raw) ? raw : 'all';
-  const tabs: [Cat, L][] = [['all', UI.all], ['binnen', UI.interior], ['buiten', UI.exterior], ['kozijn', UI.frames], ['systeem', TX.systems], ['beslag', UI.hardware]];
-  const doors = MODELS.filter((m) => cat === 'all' || m.cat === cat);
-  const products = PRODUCTS.filter((p) => cat === 'all' || p.cat === cat);
-  const groups = ([
+  const tab: Cat = raw && ['binnen', 'buiten', 'schuif', 'technisch', 'kozijn', 'systeem', 'beslag'].includes(raw) ? raw : 'all';
+  const rawBrand = params.get('merk') as Brand | null;
+  const brand: Brand = rawBrand && ['Invado', 'Porta', 'huis'].includes(rawBrand) ? rawBrand : 'all';
+  const tabs: [Cat, L][] = [
+    ['all', UI.all], ['binnen', UI.interior], ['buiten', TX.entrance], ['schuif', TX.sliding], ['technisch', TX.technical],
+    ['kozijn', UI.frames], ['systeem', TX.systems], ['beslag', UI.hardware],
+  ];
+  const brands: [Brand, string][] = [['all', t(TX.allBrands)], ['Invado', 'Invado'], ['Porta', 'Porta'], ['huis', t(TX.house)]];
+  const go = (next: { cat?: Cat; merk?: Brand }) => {
+    const c = next.cat ?? tab;
+    const b = next.merk ?? brand;
+    setParams({ ...(c !== 'all' ? { cat: c } : {}), ...(b !== 'all' ? { merk: b } : {}) }, { replace: true });
+  };
+
+  const inTab = (c: string) => tab === 'all' || c === tab || (tab === 'buiten' && c === 'entree');
+  const factory = catalog.filter((it) => inTab(it.cat) && (brand === 'all' || brand === it.brand));
+  const doors = brand === 'all' || brand === 'huis' ? MODELS.filter((m) => inTab(m.cat)) : [];
+  const products = PRODUCTS.filter((p) => inTab(p.cat) && (brand === 'all' || (brand === 'huis' ? !p.brand : p.brand === brand)));
+  const productGroups = ([
     [UI.frames, products.filter((p) => p.cat === 'kozijn')],
     [TX.systems, products.filter((p) => p.cat === 'systeem')],
     [UI.hardware, products.filter((p) => p.cat === 'beslag')],
   ] as [L, Product[]][]).filter(([, list]) => list.length > 0);
+  // factory items grouped by brand + range, in catalogue order
+  const factoryGroups: { key: string; brand: string; label: L; items: CatItem[] }[] = [];
+  factory.forEach((it) => {
+    const key = `${it.brand}-${it.group}`;
+    let g = factoryGroups.find((x) => x.key === key);
+    if (!g) { g = { key, brand: it.brand, label: groupLabel(it.group), items: [] }; factoryGroups.push(g); }
+    g.items.push(it);
+  });
+  const total = factory.length + doors.length + products.length;
+  const chip = (on: boolean) => `shrink-0 px-5 py-2.5 rounded-full text-sm font-medium border transition-all ${on ? 'bg-amber-500 text-black border-amber-500' : 'bg-zinc-900/60 text-zinc-400 border-zinc-800 hover:border-amber-500/50 hover:text-white'}`;
+  const heading = (label: string, count: number, kicker?: string) => (
+    <div className="flex items-end justify-between gap-6 mt-24 mb-10 pb-5 border-b border-white/10">
+      <div>
+        {kicker && <p className="text-amber-300/80 text-[11px] font-medium uppercase tracking-[0.4em] mb-3">{kicker}</p>}
+        <h2 className="font-display text-4xl md:text-5xl text-white leading-none">{label}</h2>
+      </div>
+      <span className="font-display italic text-2xl text-amber-300/60">{String(count).padStart(2, '0')}</span>
+    </div>
+  );
 
   return (
     <>
@@ -318,39 +360,50 @@ const Shop = () => {
 
       <section className="relative pb-28">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="-mx-6 px-6 py-4 border-y border-white/10 flex items-center justify-between gap-4 mb-12">
+          <div className="-mx-6 px-6 py-4 border-y border-white/10 space-y-3">
             <div className="flex gap-2 overflow-x-auto no-scrollbar" role="tablist">
               {tabs.map(([id, label]) => (
-                <button
-                  key={id}
-                  role="tab"
-                  aria-selected={cat === id}
-                  onClick={() => setParams(id === 'all' ? {} : { cat: id }, { replace: true })}
-                  className={`shrink-0 px-5 py-2.5 rounded-full text-sm font-medium border transition-all ${cat === id ? 'bg-amber-500 text-black border-amber-500' : 'bg-zinc-900/60 text-zinc-400 border-zinc-800 hover:border-amber-500/50 hover:text-white'}`}
-                >
-                  {t(label)}
-                </button>
+                <button key={id} role="tab" aria-selected={tab === id} onClick={() => go({ cat: id })} className={chip(tab === id)}>{t(label)}</button>
               ))}
             </div>
-            <span className="hidden md:block text-white/45 text-[11px] uppercase tracking-[0.3em] whitespace-nowrap">{doors.length + products.length} {t(TX.count)}</span>
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex gap-2 overflow-x-auto no-scrollbar">
+                {brands.map(([id, label]) => (
+                  <button key={id} aria-pressed={brand === id} onClick={() => go({ merk: id })} className={`shrink-0 px-4 py-1.5 rounded-full text-xs font-medium uppercase tracking-[0.2em] border transition-all ${brand === id ? 'border-amber-300 text-amber-200 bg-amber-500/10' : 'border-zinc-800 text-zinc-500 hover:text-white hover:border-zinc-600'}`}>{label}</button>
+                ))}
+              </div>
+              <span className="hidden md:block text-white/45 text-[11px] uppercase tracking-[0.3em] whitespace-nowrap">{total} {t(TX.count)}</span>
+            </div>
           </div>
 
-          {doors.length > 0 && (
-            <Reveal key={`d-${cat}`} stagger={0.05} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {doors.map((m) => <DoorCard key={m.id} m={m} open={setDetail} />)}
-            </Reveal>
-          )}
-
-          {groups.map(([label, list], gi) => (
-            <div key={`${cat}-${gi}`}>
-              {cat === 'all' && <h2 className="font-display text-4xl md:text-5xl text-white mt-24 mb-10">{t(label)}</h2>}
-              <Reveal stagger={0.05} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {list.map((p) => <ProductCard key={p.id} p={p} open={setDetail} />)}
-              </Reveal>
+          {factoryGroups.map((g) => (
+            <div key={g.key}>
+              {heading(t(g.label), g.items.length, g.brand)}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {g.items.map((it) => <CatCard key={it.id} item={it} open={(item, index) => setCat({ item, index })} />)}
+              </div>
             </div>
           ))}
 
-          <div className="mt-16 flex flex-col md:flex-row md:items-center justify-between gap-6 rounded-3xl border border-white/10 p-8">
+          {doors.length > 0 && (
+            <div>
+              {heading(t(TX.houseTitle), doors.length, 'Stijl & Dorpel')}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {doors.map((m) => <DoorCard key={m.id} m={m} open={setDetail} />)}
+              </div>
+            </div>
+          )}
+
+          {productGroups.map(([label, list], gi) => (
+            <div key={`${tab}-${gi}`}>
+              {heading(t(label), list.length)}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {list.map((p) => <ProductCard key={p.id} p={p} open={setDetail} />)}
+              </div>
+            </div>
+          ))}
+
+          <div className="mt-20 flex flex-col md:flex-row md:items-center justify-between gap-6 rounded-3xl border border-white/10 p-8">
             <div>
               <p className="text-white/80 text-lg max-w-2xl">{t(TX.note)}</p>
               <p className="text-white/40 text-sm mt-2">{t(UI.indicative)}</p>
@@ -363,6 +416,7 @@ const Shop = () => {
       </section>
       <CTA />
       {detail && <DetailDialog key={detail.kind === 'door' ? detail.m.id : detail.p.id} detail={detail} onClose={() => setDetail(null)} />}
+      {cat && <CatDialog key={cat.item.id} item={cat.item} start={cat.index} onClose={() => setCat(null)} />}
     </>
   );
 };

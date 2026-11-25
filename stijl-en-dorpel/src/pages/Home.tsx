@@ -9,6 +9,7 @@ import { UI, useDocumentTitle } from '../ui';
 import { MODELS, FINISHES, GLASS, defaultConfig, modelById } from '../data/doors';
 import { STEPS, WHY, SERVICES, FAQ, type ServiceIcon } from '../data/content';
 import { useQuote } from '../quote';
+import { useCatalog } from '../catalog';
 import { Door, DoorVisual, Plate } from '../components/Door';
 import { Kicker } from '../components/PageHero';
 import { gsap, reducedMotion, isMobile, flyTo } from '../fx/core';
@@ -42,7 +43,7 @@ const TX = {
     ['Drzwi wewnętrzne', 'Drzwi wejściowe', 'Futryny', 'Drzwi przesuwne', 'Drzwi osiowe', 'En-suite', 'Pomiar', 'Montaż', 'Drzwi tarasowe'],
   ],
   facts: [
-    ['Deurmodellen', 'Door models', 'Modeli drzwi'],
+    ['Collecties & modellen', 'Collections & models', 'Kolekcji i modeli'],
     ['Kleuren & houtsoorten', 'Colours & timbers', 'Kolorów i oklein'],
     ['Glassoorten', 'Glass types', 'Rodzaje szkła'],
     ['Aanspreekpunt', 'Point of contact', 'Osoba kontaktowa'],
@@ -191,13 +192,14 @@ const Marquee = () => {
 
 const Facts = () => {
   const t = useT();
-  const facts = [MODELS.length, FINISHES.length, GLASS.length, 1];
+  const catalog = useCatalog();
+  const facts = [MODELS.length + catalog.length, FINISHES.length, GLASS.length, 1];
   return (
     <section className="relative py-20 md:py-28">
       <Reveal stagger={0.1} className="max-w-7xl mx-auto px-6 grid grid-cols-2 lg:grid-cols-4 border-y border-white/10">
         {facts.map((n, i) => (
           <div key={i} className={`py-10 md:py-14 px-4 md:px-8 ${i % 2 ? 'border-l border-white/10' : ''} ${i === 2 ? 'lg:border-l border-t lg:border-t-0 border-white/10' : ''} ${i === 3 ? 'border-t lg:border-t-0 border-white/10' : ''}`}>
-            <div className="font-display text-6xl md:text-8xl bb-text-gold leading-none"><CountUp to={n} /></div>
+            <div className="font-display text-6xl md:text-8xl bb-text-gold leading-none"><CountUp key={n} to={n} /></div>
             <div className="mt-5 text-white/55 text-[11px] md:text-xs uppercase tracking-[0.3em]">{t(TX.facts[i])}</div>
           </div>
         ))}

@@ -27,7 +27,7 @@ npm run lint     # typecheck
 | Privacy, voorwaarden, cookies (basisteksten, laat juridisch nakijken) | `src/pages/Legal.tsx` |
 | Titel, beschrijving, social-preview | `index.html` |
 
-De Invado-collectie (11 deurmodellen met varianten en sfeerbeelden, plus kozijnen, systemen en beslag) gebruikt foto's uit de catalogus 2/2021. Die staan in `public/fabriek/` en worden niet gecommit tot de fabrikant toestemming geeft; zonder de bestanden toont de site de tekening. Alle deuren worden getekend als SVG uit de data in `src/data/doors.ts` — er zijn geen
+De fabriekscollecties (Invado 2/2021: 42 collecties; Porta 2/2013: 65 collecties) staan in `public/fabriek/` als `catalog.json` plus afbeeldingen, gegenereerd uit de catalogi. Die map wordt niet gecommit tot de fabrikanten toestemming geven; zonder de map toont de winkel alleen de huiscollectie. Richtprijzen voor Invado volgen uit `PRICING` in `src/company.ts`; Porta staat op 'prijs op aanvraag' omdat de catalogus uit 2013 is. Alle deuren worden getekend als SVG uit de data in `src/data/doors.ts` — er zijn geen
 foto's nodig. Een nieuw model toevoegen is één object in de `MODELS`-lijst.
 
 ## Formulieren

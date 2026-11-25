@@ -26,6 +26,7 @@ const TX = {
   remove: ['Verwijderen', 'Remove', 'Usuń'],
   edit: ['Opnieuw samenstellen', 'Configure again', 'Skonfiguruj ponownie'],
   send: ['Offerte aanvragen', 'Request your quote', 'Poproś o wycenę'],
+  onRequest: ['op aanvraag', 'on request', 'na zapytanie'],
   noPay: [
     'Je betaalt nu niets. Deuren zijn maatwerk: na het inmeten krijg je een definitieve offerte.',
     'You pay nothing now. Doors are made to measure: after the survey you receive a final quote.',
@@ -66,7 +67,9 @@ const QuoteList = () => {
                 return (
                   <li key={it.key} className="grid grid-cols-[72px_1fr] md:grid-cols-[96px_1fr_auto_auto] gap-x-5 gap-y-4 items-center py-6 border-b border-white/10">
                     <div className="h-28 md:h-32 flex items-center justify-center rounded-2xl bg-zinc-900/60 border border-white/10 p-2">
-                      {it.type === 'door'
+                      {it.type === 'catalog'
+                        ? <span className="font-display text-3xl text-amber-200/80">{it.brand.charAt(0)}</span>
+                        : it.type === 'door'
                         ? <Door model={modelById(it.config.model)} finish={it.config.finish} glass={it.config.glass} handle={it.config.handle} hinge={it.config.hinge} className="h-full w-auto max-w-full" />
                         : product?.photos?.[0]
                           ? <img src={asset(product.photos[0])} alt="" className="max-h-full max-w-full object-contain rounded-md" />
@@ -74,6 +77,7 @@ const QuoteList = () => {
                     </div>
                     <div className="min-w-0">
                       <h2 className="font-display text-2xl md:text-3xl text-white leading-tight">{itemTitle(it, t)}</h2>
+                      {it.type === 'catalog' && it.variant && <p className="text-zinc-500 text-sm leading-relaxed mt-1">{it.variant}</p>}
                       {it.type === 'door' && <p className="text-zinc-500 text-sm leading-relaxed mt-1">{describeDoor(it.config, t).join(' · ')}</p>}
                       <div className="flex gap-4 mt-2 text-sm">
                         {it.type === 'door' && <Link to={`/configurator?model=${it.config.model}&finish=${it.config.finish}`} className="text-amber-300/80 hover:text-amber-200 underline underline-offset-4">{t(TX.edit)}</Link>}
@@ -85,7 +89,7 @@ const QuoteList = () => {
                       <span className="w-7 text-center text-white tabular-nums">{it.qty}</span>
                       <button onClick={() => setQty(it.key, it.qty + 1)} aria-label="+" className="w-10 h-10 flex items-center justify-center text-white hover:text-amber-300"><Plus className="w-4 h-4" /></button>
                     </div>
-                    <p className="col-start-2 md:col-start-auto md:text-right text-amber-200 text-xl tabular-nums md:min-w-[110px]">{euro(unit * it.qty)}</p>
+                    <p className="col-start-2 md:col-start-auto md:text-right text-amber-200 text-xl tabular-nums md:min-w-[110px]">{unit > 0 ? euro(unit * it.qty) : <span className="text-sm">{t(TX.onRequest)}</span>}</p>
                   </li>
                 );
               })}
