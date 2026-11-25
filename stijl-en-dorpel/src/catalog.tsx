@@ -200,6 +200,18 @@ const Lead = ({ item, index, className }: { item: CatItem; index: number; classN
   return null;
 };
 
+/** Small photo of a product, or of one of its versions, for lists and search results. */
+export function Thumb({ item, index = -1, className = '' }: { item: CatItem; index?: number; className?: string }) {
+  const lead = item.strip || item.hero;
+  return (
+    <span className={`relative block overflow-hidden bg-[#efece6] ${className}`}>
+      {lead
+        ? <span className="absolute inset-[8%] flex items-center justify-center"><Lead item={item} index={index >= 0 ? index : -2} className="h-full w-auto max-w-full" /></span>
+        : item.scene && <img src={asset(`${item.dir}/scene.webp`)} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover" />}
+    </span>
+  );
+}
+
 /* ───────────── Card ───────────── */
 
 const tag = 'text-[9px] font-semibold uppercase tracking-[0.26em] text-[#1d1a17]/60';
@@ -277,7 +289,7 @@ export function CatBody({ item, start, onNavigate, page = false }: BodyProps) {
   const { addCatalog, count } = useQuote();
   const n = item.strip?.items.length ?? 0;
   // view: -2 = cover photo, -1 = room scene, otherwise a version index
-  const [view, setView] = useState(item.hero ? -2 : n ? start : -1);
+  const [view, setView] = useState(item.hero && start === 0 ? -2 : n ? start : -1);
   const [variant, setVariant] = useState(Math.min(start, Math.max(0, n - 1)));
   const [colour, setColour] = useState('');
   const [width, setWidth] = useState<number | 'maat'>(83);
@@ -371,10 +383,20 @@ export function CatBody({ item, start, onNavigate, page = false }: BodyProps) {
         <div className="mt-8 pt-8 border-t border-white/10 space-y-6">
           {n > 1 && (
             <div>
-              <p className={optLabel}>{t(TX.nVariants)}</p>
-              <div className="flex flex-wrap gap-1.5">
-                {(item.labels ?? item.strip!.items.map((_, k) => String(k + 1))).map((l, i) => <button key={i} onClick={() => pick(i)} aria-pressed={variant === i} className={opt(variant === i)}>{l}</button>)}
-              </div>
+              <p className={optLabel}>{t(TX.nVariants)}{label ? <span className="text-white normal-case tracking-normal"> · {label}</span> : null}</p>
+              {n > 8 ? (
+                <div className="grid grid-cols-4 sm:grid-cols-6 gap-1.5 max-h-[21rem] overflow-y-auto pr-1" data-lenis-prevent>
+                  {item.strip!.items.map((_, i) => (
+                    <button key={i} onClick={() => pick(i)} aria-pressed={variant === i} aria-label={item.labels?.[i] ?? String(i + 1)} title={item.labels?.[i]} className={`relative aspect-[3/4] bg-[#efece6] border-2 transition-colors ${variant === i ? 'border-amber-200' : 'border-transparent hover:border-white/40'}`}>
+                      <span className="absolute inset-[6%] flex items-center justify-center"><Sprite item={item} index={i} className="h-full w-auto max-w-full" /></span>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-1.5">
+                  {(item.labels ?? item.strip!.items.map((_, k) => String(k + 1))).map((l, i) => <button key={i} onClick={() => pick(i)} aria-pressed={variant === i} className={opt(variant === i)}>{l}</button>)}
+                </div>
+              )}
             </div>
           )}
           {item.coats.length > 0 && !form && (

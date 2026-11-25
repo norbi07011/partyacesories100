@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowRight, Check, CheckCircle2, Expand, Plus, Search, SlidersHorizontal, X } from 'lucide-react';
 import { useT, euro, type L } from '../i18n';
@@ -9,12 +9,16 @@ import {
 import { useQuote } from '../quote';
 import { Door, DoorVisual, Plate, ProductArt, asset } from '../components/Door';
 import { PageHero, Badge } from '../components/PageHero';
-import { flyTo, lockScroll } from '../fx/core';
+import { flyTo, lockScroll, scrollState } from '../fx/core';
+import { search, materialOf } from '../search';
 import { CTA } from './Home';
 import { useCatalog, CatCard, CatDialog, CatPhoto, groupLabel, guidePrice, type CatItem } from '../catalog';
 
 type Cat = 'all' | 'ramen' | 'binnen' | 'buiten' | 'schuif' | 'kozijn' | 'zonwering' | 'garage' | 'glas' | 'technisch' | 'systeem' | 'beslag';
 type Brand = 'all' | 'Eko-Okna' | 'Invado' | 'Porta' | 'huis';
+type Mat = 'kunststof' | 'aluminium' | 'hout' | 'staal';
+const STEP = 18;
+const MEMO = 'sd-shop-v1';
 const CATS: Cat[] = ['ramen', 'binnen', 'buiten', 'schuif', 'kozijn', 'zonwering', 'garage', 'glas', 'technisch', 'systeem', 'beslag'];
 
 const TX = {
@@ -49,6 +53,14 @@ const TX = {
   sort: ['Sorteren', 'Sort', 'Sortuj'],
   none: ['Niets gevonden. Probeer een andere zoekterm of filter.', 'Nothing found. Try another search term or filter.', 'Nic nie znaleziono. Spróbuj innej frazy lub filtra.'],
   results: ['Zoekresultaten', 'Search results', 'Wyniki wyszukiwania'],
+  doorsAll: ['Deuren', 'Doors', 'Drzwi'],
+  fences: ['Garage & hekwerk', 'Garage & fences', 'Bramy i ogrodzenia'],
+  everything: ['Alles in', 'Everything in', 'Wszystko w'],
+  material: ['Materiaal', 'Material', 'Materiał'],
+  more: ['Toon meer', 'Show more', 'Pokaż więcej'],
+  left: ['nog', 'more', 'jeszcze'],
+  clear: ['Filters wissen', 'Clear filters', 'Wyczyść filtry'],
+  mats: { kunststof: ['Kunststof', 'uPVC', 'PVC'], aluminium: ['Aluminium', 'Aluminium', 'Aluminium'], hout: ['Hout', 'Timber', 'Drewno'], staal: ['Staal', 'Steel', 'Stal'] },
   quoteShort: ['Offerte', 'Quote', 'Wycena'],
   house: ['Huiscollectie', 'House collection', 'Kolekcja własna'],
   houseTitle: ['Huiscollectie · zelf samen te stellen', 'House collection · configure it yourself', 'Kolekcja własna · do samodzielnej konfiguracji'],
@@ -321,30 +333,51 @@ const Shop = () => {
   const [params, setParams] = useSearchParams();
   const [detail, setDetail] = useState<Detail | null>(null);
   const [cat, setCat] = useState<{ item: CatItem; index: number } | null>(null);
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(() => params.get('q') ?? '');
   const [sort, setSort] = useState<'cat' | 'name' | 'low' | 'high'>('cat');
+  const [limit, setLimit] = useState(STEP);
   const raw = params.get('cat') as Cat | null;
   const tab: Cat = raw && CATS.includes(raw) ? raw : 'all';
   const rawBrand = params.get('merk') as Brand | null;
   const brand: Brand = rawBrand && ['Eko-Okna', 'Invado', 'Porta', 'huis'].includes(rawBrand) ? rawBrand : 'all';
+  const mat = (['kunststof', 'aluminium', 'hout', 'staal'].includes(params.get('mat') ?? '') ? params.get('mat') : '') as Mat | '';
   const tabs: [Cat, L][] = [
     ['all', UI.all], ['ramen', TX.windows], ['binnen', UI.interior], ['buiten', TX.entrance], ['schuif', TX.sliding], ['kozijn', UI.frames],
     ['zonwering', TX.shading], ['garage', TX.garage], ['glas', TX.glass], ['technisch', TX.technical], ['systeem', TX.systems], ['beslag', UI.hardware],
   ];
+  const catLabel = (c: Cat) => tabs.find(([id]) => id === c)![1];
+  // two levels: a handful of main groups, each with its own sub-categories
+  const MAIN: { id: string; label: L; cats: Cat[] }[] = [
+    { id: 'ramen', label: TX.windows, cats: ['ramen', 'glas'] },
+    { id: 'deuren', label: TX.doorsAll, cats: ['binnen', 'buiten', 'technisch', 'kozijn'] },
+    { id: 'schuif', label: TX.sliding, cats: ['schuif'] },
+    { id: 'zon', label: TX.shading, cats: ['zonwering'] },
+    { id: 'garage', label: TX.fences, cats: ['garage'] },
+    { id: 'beslag', label: UI.hardware, cats: ['beslag', 'systeem'] },
+  ];
+  const main = MAIN.find((m) => m.id === params.get('groep')) ?? (tab !== 'all' ? MAIN.find((m) => m.cats.includes(tab)) : undefined);
   const brands: [Brand, string][] = [['all', t(TX.allBrands)], ['Eko-Okna', 'Eko-Okna'], ['Invado', 'Invado'], ['Porta', 'Porta'], ['huis', t(TX.house)]];
-  const go = (next: { cat?: Cat; merk?: Brand }) => {
-    const c = next.cat ?? tab;
+  const go = (next: { groep?: string; cat?: Cat; merk?: Brand; mat?: Mat | '' }) => {
+    const g = 'groep' in next ? next.groep : main?.id;
+    const c = 'cat' in next ? next.cat! : 'groep' in next ? 'all' : tab;
     const b = next.merk ?? brand;
-    setParams({ ...(c !== 'all' ? { cat: c } : {}), ...(b !== 'all' ? { merk: b } : {}) }, { replace: true });
+    const m = 'mat' in next ? next.mat : 'groep' in next || 'cat' in next ? '' : mat;
+    setLimit(STEP);
+    setParams({ ...(g ? { groep: g } : {}), ...(c !== 'all' ? { cat: c } : {}), ...(b !== 'all' ? { merk: b } : {}), ...(m ? { mat: m } : {}), ...(query.trim() ? { q: query.trim() } : {}) }, { replace: true });
   };
 
-  const inTab = (c: string) => tab === 'all' || c === tab || (tab === 'buiten' && c === 'entree');
+  const fix = (c: string) => (c === 'entree' ? 'buiten' : c);
+  const inTab = (c: string) => (tab !== 'all' ? fix(c) === tab : main ? main.cats.includes(fix(c) as Cat) : true);
   const q = query.trim().toLowerCase();
   const hit = (...texts: (string | undefined)[]) => !q || texts.some((x) => x?.toLowerCase().includes(q));
-  const factory = catalog.filter((it) => inTab(it.cat) && (brand === 'all' || brand === it.brand) && hit(it.name, it.brand, it.tagline, t(groupLabel(it.group)), ...(it.labels ?? [])));
+  // typed words go through the forgiving search; otherwise the catalogue order is kept
+  const found = q.length >= 2 ? search(catalog, q, 400).map((h) => h.item) : catalog;
+  const pool = found.filter((it) => inTab(it.cat) && (brand === 'all' || brand === it.brand));
+  const mats = (['kunststof', 'aluminium', 'hout', 'staal'] as Mat[]).map((m) => [m, pool.filter((it) => materialOf(it) === m).length] as const).filter(([, n]) => n > 0);
+  const factory = mat ? pool.filter((it) => materialOf(it) === mat) : pool;
   // the illustrated house collection only shows under its own filter (or when nothing else exists)
-  const doors = brand === 'huis' || (brand === 'all' && catalog.length === 0) ? MODELS.filter((m) => inTab(m.cat) && hit(m.name, t(m.style), t(m.desc))) : [];
-  const products = PRODUCTS.filter((p) => inTab(p.cat) && (p.photos || catalog.length === 0 || brand === 'huis') && (brand === 'all' || (brand === 'huis' ? !p.brand : p.brand === brand)) && hit(t(p.name), t(p.desc), p.brand));
+  const doors = !mat && (brand === 'huis' || (brand === 'all' && catalog.length === 0)) ? MODELS.filter((m) => inTab(m.cat) && hit(m.name, t(m.style), t(m.desc))) : [];
+  const products = mat ? [] : PRODUCTS.filter((p) => inTab(p.cat) && (p.photos || catalog.length === 0 || brand === 'huis') && (brand === 'all' || (brand === 'huis' ? !p.brand : p.brand === brand)) && hit(t(p.name), t(p.desc), p.brand));
   const flat = sort !== 'cat' || !!q;
   if (sort === 'name') factory.sort((a, b) => a.name.localeCompare(b.name));
   if (sort === 'low' || sort === 'high') {
@@ -359,24 +392,56 @@ const Shop = () => {
     [TX.systems, products.filter((p) => p.cat === 'systeem')],
     [UI.hardware, products.filter((p) => p.cat === 'beslag')],
   ] as [L, Product[]][]).filter(([, list]) => list.length > 0);
+  // only the first `limit` cards are rendered; "show more" adds the next batch
+  const shown = factory.slice(0, limit);
+  const rest = factory.length - shown.length;
   // factory items grouped by brand + range, in catalogue order
-  const factoryGroups: { key: string; brand: string; label: L; items: CatItem[] }[] = [];
-  factory.forEach((it) => {
+  const factoryGroups: { key: string; brand: string; label: L; items: CatItem[]; total: number }[] = [];
+  shown.forEach((it) => {
     const key = flat ? 'all' : `${it.brand}-${it.group}`;
     let g = factoryGroups.find((x) => x.key === key);
-    if (!g) { g = { key, brand: flat ? '' : it.brand, label: flat ? TX.results : groupLabel(it.group), items: [] }; factoryGroups.push(g); }
+    if (!g) { g = { key, brand: flat ? '' : it.brand, label: flat ? TX.results : groupLabel(it.group), items: [], total: flat ? factory.length : factory.filter((x) => x.brand === it.brand && x.group === it.group).length }; factoryGroups.push(g); }
     g.items.push(it);
   });
   const total = factory.length + doors.length + products.length;
-  // the unfiltered start view shows category tiles instead of several hundred cards
-  const overview = tab === 'all' && brand === 'all' && !q && sort === 'cat' && catalog.length > 0;
-  const tiles = tabs.filter(([id]) => id !== 'all').map(([id, label]) => {
-    const inCat = (c: string) => c === id || (id === 'buiten' && c === 'entree');
+  // the unfiltered start view shows the main groups as photo tiles instead of several hundred cards
+  const overview = !main && tab === 'all' && brand === 'all' && !q && sort === 'cat' && catalog.length > 0;
+  const tiles = MAIN.map(({ id, label, cats }) => {
+    const inCat = (c: string) => cats.includes(fix(c) as Cat);
     const list = catalog.filter((it) => inCat(it.cat));
     const sample = (list.find((it) => it.nl && (it.hero || it.strip)) ?? list.find((it) => it.hero || it.strip))?.id;
     const withScene = list.find((it) => it.brand === 'Eko-Okna' && it.scene && it.scene[0] >= 1200) ?? list.find((it) => it.scene && it.scene[0] >= 1200);
     return { id, label, count: list.length + PRODUCTS.filter((p) => p.photos && inCat(p.cat)).length, sample, scene: withScene ? `${withScene.dir}/scene.webp` : undefined };
   }).filter((x) => x.count > 0);
+  const filtered = !!(main || tab !== 'all' || brand !== 'all' || mat || q);
+
+  // coming back from a product: same filters, same number of cards, same scroll position
+  const memoKey = `${params.toString()}|`;
+  const restored = useRef(false);
+  useLayoutEffect(() => {
+    if (restored.current || !catalog.length) return;
+    restored.current = true;
+    try {
+      const m = JSON.parse(sessionStorage.getItem(MEMO) ?? 'null');
+      if (!m || m.key !== memoKey) return;
+      setLimit(m.limit);
+      // wait until the restored cards are laid out, then jump back to where the visitor was
+      let tries = 0;
+      const jump = () => {
+        const ready = document.documentElement.scrollHeight >= m.y + window.innerHeight * 0.9;
+        if (ready || tries > 20) {
+          if (scrollState.lenis) scrollState.lenis.scrollTo(m.y, { immediate: true, force: true }); else window.scrollTo(0, m.y);
+          if (Math.abs(window.scrollY - m.y) > 40 && tries <= 24) { tries++; window.setTimeout(jump, 150); }
+          return;
+        }
+        tries++; window.setTimeout(jump, 120);
+      };
+      window.setTimeout(jump, 80);
+    } catch { /* ignore */ }
+  }, [catalog.length, memoKey]);
+  const remember = () => { try { sessionStorage.setItem(MEMO, JSON.stringify({ key: memoKey, limit, y: window.scrollY })); } catch { /* ignore */ } };
+  useEffect(() => { setLimit(STEP); }, [q, sort]);
+  const sub = (on: boolean) => `px-4 py-2 text-sm border transition-colors ${on ? 'border-amber-200 text-white bg-white/[0.05]' : 'border-white/15 text-white/55 hover:text-white hover:border-white/40'}`;
   const chip = (on: boolean) => `shrink-0 px-5 py-2.5 rounded-full text-sm font-medium border transition-all ${on ? 'bg-amber-500 text-black border-amber-500' : 'bg-zinc-900/60 text-zinc-400 border-zinc-800 hover:border-amber-500/50 hover:text-white'}`;
   const heading = (label: string, count: number, kicker?: string) => (
     <div className="flex items-end justify-between gap-6 mt-28 md:mt-36 mb-12 pb-6 border-b border-white/10">
@@ -403,15 +468,32 @@ const Shop = () => {
         <div className="max-w-7xl mx-auto px-6">
           <div className="sticky top-0 z-40 -mx-6 px-6 bg-[#0b0a09]/95 backdrop-blur border-y border-white/10">
             <div className="flex gap-7 overflow-x-auto no-scrollbar" role="tablist">
-              {tabs.map(([id, label]) => (
-                <button key={id} role="tab" aria-selected={tab === id} onClick={() => go({ cat: id })} className={`shrink-0 py-4 text-[11px] font-medium uppercase tracking-[0.22em] border-b transition-colors ${tab === id ? 'text-white border-amber-200' : 'text-white/45 border-transparent hover:text-white'}`}>{t(label)}</button>
-              ))}
+              {[{ id: '', label: UI.all }, ...MAIN].map((m) => {
+                const on = (main?.id ?? '') === m.id;
+                return <button key={m.id} role="tab" aria-selected={on} onClick={() => go({ groep: m.id || undefined })} className={`shrink-0 py-4 text-[11px] font-medium uppercase tracking-[0.22em] border-b transition-colors ${on ? 'text-white border-amber-200' : 'text-white/45 border-transparent hover:text-white'}`}>{t(m.label)}</button>;
+              })}
             </div>
           </div>
+          {(main && main.cats.length > 1 || mats.length > 1) && (
+            <div className="flex flex-wrap items-center gap-x-10 gap-y-4 pt-6">
+              {main && main.cats.length > 1 && (
+                <div className="flex flex-wrap gap-2">
+                  <button onClick={() => go({ cat: 'all' })} aria-pressed={tab === 'all'} className={sub(tab === 'all')}>{t(TX.everything)} {t(main.label).toLowerCase()}</button>
+                  {main.cats.filter((c) => catalog.some((it) => fix(it.cat) === c) || PRODUCTS.some((p) => p.cat === c)).map((c) => <button key={c} onClick={() => go({ cat: c })} aria-pressed={tab === c} className={sub(tab === c)}>{t(catLabel(c))}</button>)}
+                </div>
+              )}
+              {mats.length > 1 && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-white/40 text-[11px] uppercase tracking-[0.22em] mr-1">{t(TX.material)}</span>
+                  {mats.map(([m, n]) => <button key={m} onClick={() => go({ mat: mat === m ? '' : m })} aria-pressed={mat === m} className={sub(mat === m)}>{t(TX.mats[m])} <span className="opacity-50">{n}</span></button>)}
+                </div>
+              )}
+            </div>
+          )}
           <div className="flex flex-col md:flex-row md:items-center gap-x-10 gap-y-4 py-6">
             <label className="relative flex-1 max-w-md">
               <Search className="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
-              <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t(TX.search)} aria-label={t(TX.search)} className="w-full py-2.5 text-white text-sm placeholder:text-white/35" />
+              <input type="search" value={query} onChange={(e) => { setQuery(e.target.value); const n = new URLSearchParams(params); if (e.target.value.trim()) n.set('q', e.target.value.trim()); else n.delete('q'); setParams(n, { replace: true }); }} placeholder={t(TX.search)} aria-label={t(TX.search)} className="w-full py-2.5 text-white text-sm placeholder:text-white/35" />
             </label>
             <label className="flex items-center gap-3 text-white/45 text-[11px] uppercase tracking-[0.22em]">
               {t(TX.allBrands)}
@@ -428,7 +510,10 @@ const Shop = () => {
                 <option value="high">{t(TX.sortHigh)}</option>
               </select>
             </label>
-            <span className="md:ml-auto text-white/40 text-[11px] uppercase tracking-[0.22em] whitespace-nowrap">{total} {t(TX.count)}</span>
+            <span className="md:ml-auto flex items-center gap-6 text-white/40 text-[11px] uppercase tracking-[0.22em] whitespace-nowrap">
+              {filtered && <button onClick={() => { setQuery(''); setLimit(STEP); setParams({}, { replace: true }); }} className="underline underline-offset-4 hover:text-white uppercase tracking-[0.22em]">{t(TX.clear)}</button>}
+              {total} {t(TX.count)}
+            </span>
           </div>
           {total === 0 && <p className="text-center text-zinc-400 text-lg py-24">{t(TX.none)}</p>}
 
@@ -437,7 +522,7 @@ const Shop = () => {
               {heading(t(TX.pick), tiles.length)}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-14">
                 {tiles.map(({ id, label, count, sample, scene }) => (
-                  <button key={id} onClick={() => go({ cat: id })} className="group text-left">
+                  <button key={id} onClick={() => go({ groep: id })} className="group text-left">
                     <span className="relative block aspect-[4/5] overflow-hidden bg-[#efece6]">
                       {scene
                         ? <img src={asset(scene)} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-[1400ms] ease-out group-hover:scale-[1.04]" />
@@ -456,12 +541,18 @@ const Shop = () => {
 
           {!overview && factoryGroups.map((g) => (
             <div key={g.key}>
-              {heading(t(g.label), g.items.length, g.brand || undefined)}
+              {heading(t(g.label), g.total, g.brand || undefined)}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-20">
-                {g.items.map((it) => <CatCard key={it.id} item={it} open={(item, index) => setCat({ item, index })} />)}
+                {g.items.map((it) => <CatCard key={it.id} item={it} open={(item, index) => { remember(); setCat({ item, index }); }} />)}
               </div>
             </div>
           ))}
+
+          {!overview && rest > 0 && (
+            <div className="flex justify-center mt-20">
+              <button onClick={() => setLimit((l) => l + STEP)} className="sd-btn">{t(TX.more)} <span className="opacity-60 normal-case tracking-normal">({t(TX.left)} {rest})</span></button>
+            </div>
+          )}
 
           {!overview && doors.length > 0 && (
             <div>

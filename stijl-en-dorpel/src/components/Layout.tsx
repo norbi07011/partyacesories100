@@ -1,3 +1,4 @@
+import { SearchBox } from './SearchBox';
 import { useState, useEffect, useRef, type ReactNode, type CSSProperties } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -129,7 +130,7 @@ const Navbar = () => {
   useEffect(() => { setIsMobileMenuOpen(false); }, [location.pathname]);
 
   const navLinks = [
-    { name: t(UI.nav.doors), href: '/deuren' },
+    { name: t(UI.nav.doors), href: '/producten' },
     { name: t(UI.nav.configurator), href: '/configurator' },
     { name: t(UI.nav.services), href: '/diensten' },
     { name: t(UI.nav.measure), href: '/inmeten' },
@@ -167,11 +168,13 @@ const Navbar = () => {
                 </Link>
               );
             })}
+            <SearchBox />
             <LanguageSwitcher />
             <Magnetic strength={0.35}><QuotePill /></Magnetic>
           </div>
 
-          <div className="xl:hidden flex items-center space-x-3">
+          <div className="xl:hidden flex items-center space-x-2">
+            <SearchBox compact />
             <LanguageSwitcher />
             <QuotePill compact />
             <button
