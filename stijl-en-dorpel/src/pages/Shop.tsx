@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowRight, Check, CheckCircle2, Expand, Plus, Search, SlidersHorizontal, X } from 'lucide-react';
 import { useT, euro, type L } from '../i18n';
@@ -70,11 +70,18 @@ const chipDark = 'text-[9px] font-semibold uppercase tracking-[0.26em] text-[#1d
 const chipBrand = chipDark;
 
 /* A photo that renders nothing when the file is missing, so the layout stays intact. */
-const Photo = ({ src, alt, className }: { src: string; alt: string; className: string }) => {
+const Photo = ({ src, alt, className, fallback = null }: { src: string; alt: string; className: string; fallback?: ReactNode }) => {
   const [ok, setOk] = useState(true);
-  if (!ok) return null;
+  if (!ok) return <>{fallback}</>;
   return <img src={asset(src)} alt={alt} loading="lazy" draggable={false} onError={() => setOk(false)} className={className} />;
 };
+
+/** Drawing shown while a product has no (loadable) photo. */
+const FALLBACK_ART: Record<string, NonNullable<Product['art']>> = {
+  kozijn: 'frame-wood', beslag: 'handle', systeem: 'seal',
+  zawiasy: 'hinge', wkladka: 'lock', uszczelka: 'seal', prog: 'seal', wentylacja: 'seal',
+};
+const fallbackArt = (p: Product) => p.art ?? FALLBACK_ART[p.id] ?? FALLBACK_ART[p.cat] ?? 'handle';
 
 /* ───────────── Detail dialog ───────────── */
 
@@ -286,7 +293,7 @@ const ProductCard = ({ p, open }: { p: Product; open: (d: Detail) => void }) => 
         <Plate className="h-60">
           <div ref={art} className="absolute inset-0 flex items-center justify-center p-5">
             {photo
-              ? <Photo src={photo} alt={t(p.name)} className={p.cover ? 'absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]' : 'max-h-full max-w-full object-contain mix-blend-multiply rounded-lg transition-transform duration-700 ease-out group-hover:scale-[1.04]'} />
+              ? <Photo src={photo} alt={t(p.name)} className={p.cover ? 'absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]' : 'max-h-full max-w-full object-contain mix-blend-multiply rounded-lg transition-transform duration-700 ease-out group-hover:scale-[1.04]'} fallback={<ProductArt art={fallbackArt(p)} className="h-[82%] w-auto" />} />
               : p.art && <ProductArt art={p.art} className="h-full w-auto" />}
           </div>
           {p.brand && <span className={`absolute top-3 right-3 ${chipBrand}`}>{p.brand}</span>}

@@ -193,7 +193,7 @@ const Navbar = () => {
             animate={{ clipPath: 'circle(150% at 92% 4%)' }}
             exit={{ clipPath: 'circle(0% at 92% 4%)' }}
             transition={{ duration: 0.7, ease: [0.7, 0, 0.3, 1] }}
-            className="xl:hidden fixed inset-0 z-[45] bg-black/95 backdrop-blur-xl flex flex-col justify-center px-8"
+            className="xl:hidden fixed inset-0 z-[45] bg-black/95 backdrop-blur-xl flex flex-col justify-center px-8 pt-20 pb-8 overflow-y-auto"
             data-lenis-prevent
           >
             <div className="flex flex-col space-y-3">
@@ -215,15 +215,21 @@ const Navbar = () => {
                 </motion.div>
               ))}
             </div>
-            <motion.a
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.7 }}
-              href={company.phoneHref}
-              className="mt-12 inline-flex items-center gap-2 text-amber-500 font-bold"
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.65, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              className="mt-10 pt-8 border-t border-white/10"
             >
-              <Phone className="w-5 h-5" /> {company.phoneDisplay}
-            </motion.a>
+              <div className="grid grid-cols-2 gap-3 mb-7">
+                <Link to="/configurator" onClick={() => setIsMobileMenuOpen(false)} className="h-12 rounded-full bg-amber-200 text-black text-sm font-semibold flex items-center justify-center">{t(UI.configure)}</Link>
+                <Link to="/inmeten" onClick={() => setIsMobileMenuOpen(false)} className="h-12 rounded-full border border-white/25 text-white text-sm font-medium flex items-center justify-center text-center leading-tight px-3">{t(UI.bookSurvey)}</Link>
+              </div>
+              <div className="flex flex-wrap items-center gap-x-7 gap-y-3 text-sm">
+                <a href={company.phoneHref} className="inline-flex items-center gap-2 text-amber-200 font-medium"><Phone className="w-4 h-4" /> {company.phoneDisplay}</a>
+                <a href={`mailto:${company.email}`} className="inline-flex items-center gap-2 text-white/70"><Mail className="w-4 h-4" /> {company.email}</a>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

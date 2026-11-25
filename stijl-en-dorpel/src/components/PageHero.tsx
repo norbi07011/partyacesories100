@@ -3,10 +3,11 @@ import { useLanguage } from '../i18n';
 import { gsap, reducedMotion } from '../fx/core';
 import { Spotlights, Dust } from '../fx/Backdrop';
 import { SplitText, useIntroReady } from '../fx/components';
+import { Picture, type MediaName } from './Media';
 
 /* Shared sub-page hero: warm light, spotlights + dust, kinetic title. */
 export function PageHero({
-  badge, title, subtitle, children, aside, minH = 'min-h-[72svh]',
+  badge, title, subtitle, children, aside, minH = 'min-h-[72svh]', image, imagePosition = '50% 50%',
 }: {
   badge?: ReactNode;
   title: string;
@@ -14,6 +15,9 @@ export function PageHero({
   children?: ReactNode;
   aside?: ReactNode;
   minH?: string;
+  /** sfeerfoto rechts achter de titel */
+  image?: MediaName;
+  imagePosition?: string;
 }) {
   const { lang } = useLanguage();
   const ready = useIntroReady();
@@ -41,10 +45,17 @@ export function PageHero({
 
   return (
     <section ref={sec} className={`relative ${minH} flex items-center pt-32 pb-16 overflow-hidden`}>
-      <div className="absolute inset-0 z-0 bg-[radial-gradient(70%_80%_at_78%_45%,rgba(191,159,110,.2),transparent_65%)]" />
-      <div className="absolute inset-0 z-0 bg-gradient-to-t from-black via-transparent to-black/40" />
-      <Spotlights className="z-[1] opacity-60" />
-      <Dust className="z-[2]" count={60} />
+      {image && (
+        <div className="absolute inset-y-0 right-0 z-0 w-full lg:w-[64%] overflow-hidden" aria-hidden="true">
+          <Picture name={image} position={imagePosition} eager drift={10} sizes="(min-width: 1024px) 64vw, 100vw" className="opacity-50 lg:opacity-100" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black via-black/35 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/35" />
+        </div>
+      )}
+      <div className={`absolute inset-0 z-0 bg-[radial-gradient(70%_80%_at_78%_45%,rgba(191,159,110,.2),transparent_65%)] ${image ? 'opacity-40' : ''}`} />
+      <div className={`absolute inset-0 z-0 bg-gradient-to-t from-black via-transparent ${image ? 'to-transparent' : 'to-black/40'}`} />
+      {!image && <Spotlights className="z-[1] opacity-60" />}
+      <Dust className="z-[2]" count={image ? 30 : 60} />
 
       <div className="relative z-10 max-w-7xl mx-auto px-6 w-full grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-10 items-center">
         <div ref={copy} className="max-w-3xl">

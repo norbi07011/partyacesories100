@@ -71,6 +71,17 @@ export function useCatalog() {
   return items;
 }
 
+/** true once the catalogue request has settled (with or without items). */
+export function useCatalogReady() {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    let on = true;
+    load().then(() => { if (on) setReady(true); });
+    return () => { on = false; };
+  }, []);
+  return ready;
+}
+
 /** Guide price in euro derived from the factory list price (see PRICING in company.ts). */
 export const guidePrice = (it: CatItem) =>
   // The Porta catalogue is from 2013: its prices are too old to derive a guide price from.

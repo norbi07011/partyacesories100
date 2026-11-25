@@ -9,8 +9,10 @@ import { UI, useDocumentTitle } from '../ui';
 import { MODELS, FINISHES, GLASS, defaultConfig, modelById } from '../data/doors';
 import { STEPS, WHY, SERVICES, FAQ, type ServiceIcon } from '../data/content';
 import { useQuote } from '../quote';
-import { useCatalog, Sprite } from '../catalog';
+import { useCatalog, useCatalogReady, Sprite } from '../catalog';
 import { Recommended, Showcase3D } from './HomeShowcase';
+import { Categories, Statement, SectionRail } from './HomeEditorial';
+import { mediaUrl } from '../components/Media';
 import { Door, DoorVisual, Plate } from '../components/Door';
 import { Kicker } from '../components/PageHero';
 import { gsap, reducedMotion, isMobile, flyTo } from '../fx/core';
@@ -72,6 +74,19 @@ const TX = {
   servicesTitle: ['Alles rond deuren', 'Everything about doors', 'Wszystko o drzwiach'],
   allServices: ['Alle diensten', 'All services', 'Wszystkie usługi'],
   faqTitle: ['Veelgestelde vragen', 'Frequently asked questions', 'Najczęstsze pytania'],
+  faqSub: [
+    'Staat je vraag er niet bij? Bel, mail of stuur een foto via WhatsApp — je krijgt dezelfde dag antwoord.',
+    'Is your question not listed? Call, e-mail or send a photo on WhatsApp — you will hear back the same day.',
+    'Nie ma tu twojego pytania? Zadzwoń, napisz lub wyślij zdjęcie przez WhatsApp — odpowiemy tego samego dnia.',
+  ],
+  rail: {
+    collection: ['Collectie', 'Collection', 'Kolekcja'],
+    models: ['Modellen', 'Models', 'Modele'],
+    process: ['Werkwijze', 'Process', 'Proces'],
+    craft: ['Vakwerk', 'Craft', 'Rzemiosło'],
+    services: ['Diensten', 'Services', 'Usługi'],
+    faq: ['Vragen', 'Questions', 'Pytania'],
+  },
   ctaTitle: ['Klaar voor nieuwe deuren?', 'Ready for new doors?', 'Gotowi na nowe drzwi?'],
   ctaSub: [
     'Stel je deur samen en vraag een offerte aan — of plan direct een inmeetafspraak.',
@@ -120,7 +135,9 @@ const Hero = () => {
         <div className="hero-doorway relative h-[40svh] md:h-[70svh] max-h-[720px] aspect-[100/214] will-change-transform" style={{ perspective: 1500 }}>
           {/* light from the room behind */}
           <div className="absolute inset-0 bg-[linear-gradient(180deg,#fff6e0_0%,#f0d7a4_55%,#c9a86f_100%)]" />
-          <div className="absolute inset-0 bg-[radial-gradient(60%_40%_at_50%_30%,#ffffff,transparent)] opacity-80" />
+          <img src={mediaUrl('interior')} alt="" aria-hidden="true" draggable={false} className="absolute inset-0 w-full h-full object-cover" style={{ objectPosition: '88% 50%' }} />
+          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,246,224,.5)_0%,rgba(240,215,164,.28)_55%,rgba(201,168,111,.4)_100%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(60%_40%_at_50%_30%,#ffffff,transparent)] opacity-40" />
           {/* frame: two stijlen and a bovendorpel */}
           <div className="absolute -inset-x-[5%] -top-[2.2%] bottom-0 border-x-[0.9vh] border-t-[0.9vh] border-[#1d1a17] shadow-[inset_0_0_0_1px_rgba(203,176,132,.45),0_0_120px_rgba(0,0,0,.8)] pointer-events-none" />
           {/* the leaf, hinged on the left */}
@@ -199,7 +216,7 @@ const Facts = () => {
   const catalog = useCatalog();
   const facts = [MODELS.length + catalog.length, FINISHES.length, GLASS.length, 1];
   return (
-    <section className="relative py-20 md:py-28">
+    <section className="relative pb-8 md:pb-12">
       <Reveal stagger={0.1} className="max-w-7xl mx-auto px-6 grid grid-cols-2 lg:grid-cols-4 border-y border-white/10">
         {facts.map((n, i) => (
           <div key={i} className={`py-10 md:py-14 px-4 md:px-8 ${i % 2 ? 'border-l border-white/10' : ''} ${i === 2 ? 'lg:border-l border-t lg:border-t-0 border-white/10' : ''} ${i === 3 ? 'border-t lg:border-t-0 border-white/10' : ''}`}>
@@ -565,9 +582,16 @@ const Faq = () => {
   const t = useT();
   const { lang } = useLanguage();
   return (
-    <section className="py-28 md:py-36 border-t border-white/10">
-      <div className="max-w-5xl mx-auto px-6">
-        <SplitText key={`${lang}-faq`} as="h2" mode="words" text={t(TX.faqTitle)} className="font-display text-5xl md:text-7xl text-white leading-[1] mb-14" />
+    <section className="py-24 md:py-32 border-t border-white/10">
+      <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-[0.75fr_1.25fr] gap-12 lg:gap-20 items-start">
+        <div className="lg:sticky lg:top-32">
+          <Kicker>FAQ</Kicker>
+          <SplitText key={`${lang}-faq`} as="h2" mode="words" text={t(TX.faqTitle)} className="font-display text-5xl md:text-6xl text-white leading-[1] mb-7" />
+          <p className="text-white/65 text-lg font-light leading-relaxed max-w-sm mb-8">{t(TX.faqSub)}</p>
+          <Link to="/contact" className="group inline-flex items-center gap-3 text-amber-100 text-sm font-medium tracking-wide border-b border-amber-200/40 hover:border-amber-200 pb-1.5 transition-colors">
+            {t(UI.nav.contact)} <ArrowRight className="w-4 h-4 transition-transform duration-500 group-hover:translate-x-1" />
+          </Link>
+        </div>
         <FaqList />
       </div>
     </section>
@@ -612,18 +636,32 @@ export const CTA = () => {
 
 const Home = () => {
   useDocumentTitle();
+  const t = useT();
+  const catalog = useCatalog();
+  const ready = useCatalogReady();
   return (
     <>
+      <SectionRail />
       {/* pinned sections get their own wrapper so sections that mount later keep a stable sibling */}
       <div><Hero /></div>
       <Marquee />
-      <Facts />
-      <Recommended />
-      <Showcase3D />
-      <div><ProcessStory /></div>
-      <Anatomy />
-      <ServicesGrid />
-      <Faq />
+      <div data-rail={t(TX.rail.collection)}>
+        <Categories />
+        <Facts />
+      </div>
+      <div data-rail={t(TX.rail.models)}>
+        <Recommended />
+        <Showcase3D />
+        {/* without the factory catalogue the house collection takes the stage */}
+        {ready && !catalog.length && <ModelCarousel />}
+      </div>
+      <div data-rail={t(TX.rail.process)}><ProcessStory /></div>
+      <div data-rail={t(TX.rail.craft)}>
+        <Statement />
+        <Anatomy />
+      </div>
+      <div data-rail={t(TX.rail.services)}><ServicesGrid /></div>
+      <div data-rail={t(TX.rail.faq)}><Faq /></div>
       <CTA />
     </>
   );

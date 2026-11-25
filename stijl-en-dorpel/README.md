@@ -30,6 +30,13 @@ npm run lint     # typecheck
 De fabriekscollecties (Invado 2/2021: 42 collecties; Porta 2/2013: 65 collecties) staan in `public/fabriek/` als `catalog.json` plus afbeeldingen, gegenereerd uit de catalogi. Die map wordt niet gecommit tot de fabrikanten toestemming geven; zonder de map toont de winkel alleen de huiscollectie. Richtprijzen voor Invado volgen uit `PRICING` in `src/company.ts`; Porta staat op 'prijs op aanvraag' omdat de catalogus uit 2013 is. Alle deuren worden getekend als SVG uit de data in `src/data/doors.ts` — er zijn geen
 foto's nodig. Een nieuw model toevoegen is één object in de `MODELS`-lijst.
 
+## Sfeerfoto's
+
+De sfeerfoto's staan in `public/media/` (per foto `naam.jpg` op 1920 px en `naam-960.jpg`).
+Ze zijn met AI gegenereerd en dus vrij te vervangen door eigen projectfoto's: zet een bestand met
+dezelfde naam neer, of voeg een nieuwe naam toe in `src/components/Media.tsx`. Ze worden gebruikt in
+de categorie-tegels en de paginabrede foto op de homepage en in de koppen van de subpagina's.
+
 ## Formulieren
 
 Er is geen betaalmodule: deuren zijn maatwerk, dus de "winkelwagen" is een offertelijst

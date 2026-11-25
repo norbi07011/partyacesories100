@@ -10,10 +10,11 @@ export function SmoothScroll() {
   useEffect(() => {
     if (reducedMotion()) return;
     const lenis = new Lenis({
-      duration: 1.3,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      // lerp follows the wheel directly (no fixed 1.3 s glide), so the page never feels like
+      // it is still catching up after the hand has stopped.
+      lerp: 0.11,
       smoothWheel: true,
-      wheelMultiplier: 0.95,
+      wheelMultiplier: 1,
       touchMultiplier: 1.5,
     });
     scrollState.lenis = lenis;

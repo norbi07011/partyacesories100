@@ -34,7 +34,7 @@ const Contact = () => {
   ];
   return (
     <>
-      <PageHero badge={<Badge>{t(TX.badge)}</Badge>} title={t(TX.title)} subtitle={t(TX.sub)} minH="min-h-[56svh]" />
+      <PageHero badge={<Badge>{t(TX.badge)}</Badge>} title={t(TX.title)} subtitle={t(TX.sub)} minH="min-h-[56svh]" image="hall" imagePosition="68% 40%" />
       <section className="pb-28">
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-[0.8fr_1.2fr] gap-10 lg:gap-16 items-start">
           <Reveal stagger={0.08} className="border-t border-white/10">

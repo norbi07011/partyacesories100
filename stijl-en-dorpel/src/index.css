@@ -20,6 +20,21 @@
   --color-amber-900: #3e3325;
   --color-amber-950: #231d16;
 
+  /* Warm greys: the `zinc-*` utilities carry all secondary text and hairlines. The default
+   * scale is cold blue-grey, which fights the warm black; 500/600 are also lifted a step so
+   * small text stays readable. */
+  --color-zinc-50: #faf9f7;
+  --color-zinc-100: #f3f1ed;
+  --color-zinc-200: #e6e2db;
+  --color-zinc-300: #d6d0c6;
+  --color-zinc-400: #b3aca0;
+  --color-zinc-500: #8f887c;
+  --color-zinc-600: #746d62;
+  --color-zinc-700: #46413a;
+  --color-zinc-800: #2c2824;
+  --color-zinc-900: #1a1816;
+  --color-zinc-950: #100e0d;
+
   /* Warm near-black instead of pure #000 / cold zinc. */
   --color-black: #0b0a09;
 }
@@ -32,6 +47,17 @@ body {
   @apply bg-black text-white antialiased;
   overflow-x: hidden;
   font-feature-settings: "ss01", "cv11";
+  text-rendering: optimizeLegibility;
+}
+
+/* Keyboard focus: one consistent champagne ring instead of the browser default. */
+:focus-visible {
+  outline: 1.5px solid #e6d9bd;
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+main:focus-visible {
+  outline: none;
 }
 
 /* Very fine film grain + a whisper of warm light at the top of the page.

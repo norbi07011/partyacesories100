@@ -72,7 +72,8 @@ const About = () => {
         badge={<Badge>{t(TX.badge)}</Badge>}
         title={t(TX.title)}
         subtitle={t(TX.sub)}
-        aside={<CatPhoto id="porta-porta-classic-52" className="h-[440px] w-[250px] mr-10" />}
+        image="interior"
+        imagePosition="30% 50%"
       />
 
       <section className="py-24">

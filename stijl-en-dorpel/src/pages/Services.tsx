@@ -50,7 +50,8 @@ const Services = () => {
         badge={<Badge icon={<Wrench className="w-3.5 h-3.5" />}>{t(TX.badge)}</Badge>}
         title={t(TX.title)}
         subtitle={t(TX.sub)}
-        aside={<CatPhoto id="porta-gdynia-wroclaw-116" className="h-[440px] w-[250px] mr-10" />}
+        image="entrance"
+        imagePosition="70% 50%"
       >
         <div className="flex flex-col sm:flex-row gap-4">
           <Magnetic><Link to="/contact" className="inline-flex items-center gap-2 px-8 py-4 bg-amber-500 hover:bg-amber-400 text-black font-bold rounded-full transition-colors">{t(UI.requestQuote)} <ArrowRight className="w-5 h-5" /></Link></Magnetic>

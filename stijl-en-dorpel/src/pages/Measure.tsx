@@ -158,7 +158,8 @@ const Measure = () => {
         badge={<Badge icon={<Ruler className="w-3.5 h-3.5" />}>{t(TX.badge)}</Badge>}
         title={t(TX.title)}
         subtitle={t(TX.sub)}
-        aside={<Door model={model} wire className="h-[420px] w-auto mr-10" />}
+        image="hall"
+        imagePosition="68% 50%"
       />
 
       <section className="py-24">
