@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { ArrowRight, CheckCircle2, Mail } from 'lucide-react';
 import { useT, type L } from '../i18n';
 import { company } from '../company';
-import { useQuote, quoteAsText } from '../quote';
+import { useQuote, factoryRequest, quoteAsText } from '../quote';
 import { confettiBurst } from '../fx/core';
 import { Magnetic } from '../fx/components';
 
@@ -49,6 +49,8 @@ const TX = {
     'Wiadomość jest gotowa — wystarczy kliknąć „wyślij”. Jeśli się nie uda, napisz lub zadzwoń bezpośrednio.',
   ],
   again: ['Nog een aanvraag', 'Send another', 'Kolejne zapytanie'],
+  alsoWhatsapp: ['Stuur ook via WhatsApp', 'Also send via WhatsApp', 'Wyślij też przez WhatsApp'],
+  whatsappHint: ['Je aanvraag staat al klaar in WhatsApp — je hoeft alleen op verzenden te drukken.', 'Your request is ready in WhatsApp — just press send.', 'Zapytanie jest już wpisane w WhatsApp — wystarczy nacisnąć „wyślij”.'],
 } satisfies Record<string, L | Record<string, L>>;
 
 const input =
@@ -62,6 +64,9 @@ export function QuoteForm({ defaultKind = 'offerte', includeList = true, prefill
   const [state, setState] = useState<'idle' | 'sending' | 'sent' | 'mail'>('idle');
   const withList = includeList && items.length > 0;
   const listText = withList ? quoteAsText(items, t) : '';
+  // ready-to-forward price request for the manufacturer, generated from the sizes the customer entered
+  const factoryText = withList ? factoryRequest(items) : '';
+  const [wa, setWa] = useState('');
 
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -69,8 +74,10 @@ export function QuoteForm({ defaultKind = 'offerte', includeList = true, prefill
     const data = new FormData(form);
     if (data.get('bot-field')) return; // honeypot
     setState('sending');
-    const fields: Record<string, string> = { 'form-name': 'offerte', soort: kind, offertelijst: listText };
+    const fields: Record<string, string> = { 'form-name': 'offerte', soort: kind, offertelijst: listText, bericht_fabriek: factoryText };
     data.forEach((v, k) => { if (typeof v === 'string') fields[k] = v; });
+
+    setWa([`${t(TX.kinds[kind])} — ${fields.naam ?? ''}`, fields.telefoon ?? '', `${fields.postcode ?? ''} ${fields.plaats ?? ''}`.trim(), fields.bericht ?? '', listText].filter(Boolean).join('\n'));
 
     let ok = false;
     try {
@@ -103,6 +110,7 @@ export function QuoteForm({ defaultKind = 'offerte', includeList = true, prefill
       '',
       fields.bericht ?? '',
       listText ? `\n— ${t(TX.listIncluded)} —\n${listText}` : '',
+      factoryText ? `\n— Bericht voor de fabriek / wiadomość do producenta —\n${factoryText}` : '',
     ].filter((l, i, a) => l !== '' || a[i - 1] !== '').join('\n');
     window.location.href = `mailto:${company.email}?subject=${encodeURIComponent(`${t(TX.kinds[kind])} — ${fields.naam ?? ''}`)}&body=${encodeURIComponent(body)}`;
     setState('mail');
@@ -120,9 +128,11 @@ export function QuoteForm({ defaultKind = 'offerte', includeList = true, prefill
             <a className="underline underline-offset-4" href={`mailto:${company.email}`}>{company.email}</a> · <a className="underline underline-offset-4" href={company.phoneHref}>{company.phoneDisplay}</a>
           </p>
         )}
-        <button onClick={() => setState('idle')} className="px-7 py-3 rounded-full border border-zinc-700 hover:border-amber-500 text-white text-sm font-medium transition-colors">
-          {t(TX.again)}
-        </button>
+        <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-5">
+          <a href={`${company.whatsappHref}?text=${encodeURIComponent(wa)}`} target="_blank" rel="noreferrer" className="sd-btn">{t(TX.alsoWhatsapp)}</a>
+          <button onClick={() => setState('idle')} className="sd-link">{t(TX.again)}</button>
+        </div>
+        <p className="text-white/40 text-sm mt-6 max-w-md mx-auto">{t(TX.whatsappHint)}</p>
       </div>
     );
   }

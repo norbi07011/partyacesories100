@@ -1,3 +1,5 @@
+import { SizeForm } from './components/SizeForm';
+import { emptySpec, specText, specValid, type SpecKind } from './spec';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowUpRight, Check, ChevronDown, Expand, Minus, Plus, X } from 'lucide-react';
@@ -198,6 +200,9 @@ const Lead = ({ item, index, className }: { item: CatItem; index: number; classN
   return null;
 };
 
+/** catalogue entries that are information rather than something to size */
+const NO_SIZES = /kleur|profielen|consoles|modelramen|exclusive|grepen|dorpels|sierrooster|aio-|ekogreen-zij/;
+
 /* ───────────── Card ───────────── */
 
 const tag = 'text-[9px] font-semibold uppercase tracking-[0.26em] text-[#1d1a17]/60';
@@ -287,15 +292,23 @@ export function CatBody({ item, start, onNavigate, page = false }: BodyProps) {
   const label = n > 0 ? item.labels?.[variant] : undefined;
   const isDoor = ['binnen', 'entree', 'buiten', 'technisch', 'schuif'].includes(item.cat) && item.brand !== 'Eko-Okna';
   const pick = (i: number) => { setView(i); setVariant(i); setDone(false); };
+  // made-to-measure Eko-Okna windows, sliding systems and front doors ask for the sizes the factory needs
+  const specKind: SpecKind | null = item.brand !== 'Eko-Okna' || NO_SIZES.test(item.id) ? null
+    : item.cat === 'schuif' ? 'schuif' : item.cat === 'buiten' ? 'deur' : item.cat === 'ramen' && /^Ramen · (kunststof|aluminium|hout|staal)/.test(item.group) ? 'raam' : null;
+  const [spec, setSpec] = useState(() => emptySpec(specKind ?? 'raam'));
+  const [specError, setSpecError] = useState(false);
 
   const add = () => {
+    if (specKind && !specValid(spec)) { setSpecError(true); return; }
+    setSpecError(false);
     const parts = [label ?? ''];
+    if (specKind) parts.push(specText(spec, t));
     if (colour) parts.push(colour);
     if (isDoor) {
       parts.push(`${width === 'maat' ? t(TX.custom) : width} × ${height === 'maat' ? t(TX.custom) : String(height).replace('.', ',')} cm`);
       parts.push(t(hinge === 'L' ? TX.left : TX.right));
     }
-    addCatalog({ catId: item.id, name: item.name, brand: item.brand, variant: parts.filter(Boolean).join(' · '), price }, qty);
+    addCatalog({ catId: item.id, name: item.name, brand: item.brand, variant: parts.filter(Boolean).join(' · '), price, ...(specKind ? { spec: { ...spec, model: label } } : {}) }, qty);
     setDone(true);
     window.setTimeout(() => setDone(false), 2000);
   };
@@ -401,7 +414,9 @@ export function CatBody({ item, start, onNavigate, page = false }: BodyProps) {
               <p className="text-white/40 text-xs">{t(TX.sizeNote)}</p>
             </>
           )}
-          {item.brand === 'Eko-Okna' && <p className="text-white/55 text-sm">{t(TX.bespoke)}</p>}
+          {specKind
+            ? <SizeForm spec={spec} onChange={(n) => { setSpec(n); setSpecError(false); setDone(false); }} error={specError} />
+            : item.brand === 'Eko-Okna' && <p className="text-white/55 text-sm">{t(TX.bespoke)}</p>}
           <div className="flex flex-wrap items-end justify-between gap-6 pt-7 border-t border-white/10">
             <div>
               {price > 0

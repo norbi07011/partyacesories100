@@ -3,6 +3,8 @@ import {
   FINISHES, FRAMES, GLASS, HANDLES, SERVICE, PRODUCTS, hasGlass, modelById, needsFrame, priceOf, type DoorConfig,
 } from './data/doors';
 import type { L } from './i18n';
+import { specFactory, type Spec } from './spec';
+import { company } from './company';
 
 /* The "offertelijst" — a cart without payment. Doors are made to measure, so
  * the list is sent as a quote request instead of being paid online. */
@@ -10,7 +12,7 @@ import type { L } from './i18n';
 export type QuoteItem =
   | { key: string; type: 'door'; config: DoorConfig; qty: number }
   | { key: string; type: 'product'; productId: string; qty: number }
-  | { key: string; type: 'catalog'; catId: string; name: string; brand: string; variant: string; price: number; qty: number };
+  | { key: string; type: 'catalog'; catId: string; name: string; brand: string; variant: string; price: number; qty: number; spec?: Spec };
 
 type Ctx = {
   items: QuoteItem[];
@@ -18,7 +20,7 @@ type Ctx = {
   total: number;
   addDoor: (c: DoorConfig, qty?: number) => void;
   addProduct: (id: string) => void;
-  addCatalog: (c: { catId: string; name: string; brand: string; variant: string; price: number }, qty?: number) => void;
+  addCatalog: (c: { catId: string; name: string; brand: string; variant: string; price: number; spec?: Spec }, qty?: number) => void;
   setQty: (key: string, qty: number) => void;
   remove: (key: string) => void;
   clear: () => void;
@@ -55,7 +57,7 @@ export const QuoteProvider = ({ children }: { children: ReactNode }) => {
       return [...l, { key: `p-${productId}`, type: 'product', productId, qty: 1 }];
     });
   }, []);
-  const addCatalog = useCallback((c: { catId: string; name: string; brand: string; variant: string; price: number }, qty = 1) => {
+  const addCatalog = useCallback((c: { catId: string; name: string; brand: string; variant: string; price: number; spec?: Spec }, qty = 1) => {
     setItems((l) => {
       const key = `c-${c.catId}-${c.variant}`;
       const hit = l.find((i) => i.key === key);
@@ -132,3 +134,26 @@ export const quoteAsText = (items: QuoteItem[], t: (l: L) => string) =>
       return it.type === 'door' ? `${line}\n   ${describeDoor(it.config, t).join(' · ')}` : line;
     })
     .join('\n');
+
+/** Ready-to-send price request for the manufacturer (Polish), built from the positions that carry sizes. */
+export const factoryRequest = (items: QuoteItem[]): string => {
+  const rows = items.filter((it): it is Extract<QuoteItem, { type: 'catalog' }> => it.type === 'catalog' && it.brand === 'Eko-Okna');
+  if (!rows.length) return '';
+  const body = rows.map((it, i) => {
+    const head = `${i + 1}. ${it.name} — ${it.qty} szt.`;
+    const lines = it.spec ? specFactory(it.spec) : [it.variant ? `Wariant: ${it.variant}` : 'Wymiary do ustalenia po pomiarze'];
+    return [head, ...lines.map((l) => `   ${l}`)].join('\n');
+  }).join('\n\n');
+  return [
+    'Dzień dobry,',
+    '',
+    'proszę o wycenę poniższych pozycji. Wymiary w mm, strony podane w widoku od wewnątrz.',
+    '',
+    body,
+    '',
+    'Proszę o podanie ceny netto, terminu realizacji i kosztu transportu do Holandii.',
+    '',
+    'Pozdrawiam',
+    company.legalName,
+  ].join('\n');
+};
