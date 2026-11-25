@@ -1,7 +1,6 @@
 import { useLayoutEffect, useRef, type ReactNode } from 'react';
 import { useLanguage } from '../i18n';
 import { gsap, reducedMotion } from '../fx/core';
-import { Spotlights, Dust } from '../fx/Backdrop';
 import { SplitText, useIntroReady } from '../fx/components';
 import { Picture, type MediaName } from './Media';
 
@@ -44,7 +43,7 @@ export function PageHero({
   }, [ready]);
 
   return (
-    <section ref={sec} className={`relative ${minH} flex items-center pt-32 pb-16 overflow-hidden`}>
+    <section ref={sec} className={`relative ${minH} flex items-end md:items-center pt-28 md:pt-32 pb-14 md:pb-16 overflow-hidden`}>
       {image && (
         <div className="absolute inset-y-0 right-0 z-0 w-full lg:w-[64%] overflow-hidden" aria-hidden="true">
           <Picture name={image} position={imagePosition} eager drift={10} sizes="(min-width: 1024px) 64vw, 100vw" className="opacity-50 lg:opacity-100" />
@@ -52,10 +51,7 @@ export function PageHero({
           <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/35" />
         </div>
       )}
-      <div className={`absolute inset-0 z-0 bg-[radial-gradient(70%_80%_at_78%_45%,rgba(191,159,110,.2),transparent_65%)] ${image ? 'opacity-40' : ''}`} />
       <div className={`absolute inset-0 z-0 bg-gradient-to-t from-black via-transparent ${image ? 'to-transparent' : 'to-black/40'}`} />
-      {!image && <Spotlights className="z-[1] opacity-60" />}
-      <Dust className="z-[2]" count={image ? 30 : 60} />
 
       <div className="relative z-10 max-w-7xl mx-auto px-6 w-full grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-10 items-center">
         <div ref={copy} className="max-w-3xl">
@@ -66,9 +62,9 @@ export function PageHero({
             text={title}
             mode={title.length > 22 ? 'words' : 'chars'}
             trigger="load"
-            className="font-display text-5xl md:text-7xl lg:text-8xl text-white leading-[0.95] tracking-tight mb-8"
+            className="font-display text-5xl md:text-7xl lg:text-8xl text-white leading-[0.95] tracking-tight mb-7"
           />
-          {subtitle && <p className="ph-fade text-lg md:text-xl text-zinc-300 leading-relaxed max-w-2xl mb-10">{subtitle}</p>}
+          {subtitle && <p className="ph-fade text-lg text-white/65 font-light leading-relaxed max-w-xl mb-10">{subtitle}</p>}
           {children && <div className="ph-fade">{children}</div>}
         </div>
         {aside && <div ref={side} className="ph-fade hidden lg:block">{aside}</div>}
@@ -78,7 +74,7 @@ export function PageHero({
 }
 
 export const Badge = ({ icon, children }: { icon?: ReactNode; children: ReactNode }) => (
-  <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold uppercase tracking-widest backdrop-blur">
+  <span className="sd-label inline-flex items-center gap-2">
     {icon}
     {children}
   </span>

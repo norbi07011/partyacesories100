@@ -162,7 +162,7 @@ const Measure = () => {
         imagePosition="68% 50%"
       />
 
-      <section className="py-24">
+      <section className="py-24 md:py-36">
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-14 lg:gap-24">
           <div>
             <Kicker>{t(TX.weKicker)}</Kicker>
@@ -179,7 +179,7 @@ const Measure = () => {
         </div>
       </section>
 
-      <section className="py-24 border-t border-white/10">
+      <section className="py-24 md:py-36 border-t border-white/10">
         <div className="max-w-7xl mx-auto px-6">
           <div className="max-w-3xl mb-14">
             <Kicker>{t(TX.selfKicker)}</Kicker>
@@ -222,7 +222,7 @@ const Measure = () => {
         </div>
       </section>
 
-      <section className="py-24 border-t border-white/10" id="afspraak">
+      <section className="py-24 md:py-36 border-t border-white/10" id="afspraak">
         <div className="max-w-4xl mx-auto px-6">
           <Kicker>{t(TX.formKicker)}</Kicker>
           <h2 className="font-display text-5xl md:text-6xl text-white mb-10">{t(TX.formTitle)}</h2>

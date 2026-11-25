@@ -59,7 +59,7 @@ const Services = () => {
         </div>
       </PageHero>
 
-      <section className="py-20">
+      <section className="py-24 md:py-36">
         <div className="max-w-7xl mx-auto px-6 border-t border-white/10">
           {SERVICES.map((s, i) => {
             const Icon = SERVICE_ICONS[s.icon];
@@ -88,7 +88,7 @@ const Services = () => {
         </div>
       </section>
 
-      <section className="py-24 border-t border-white/10">
+      <section className="py-24 md:py-36 border-t border-white/10">
         <div className="max-w-7xl mx-auto px-6">
           <Kicker>{t(TX.priceKicker)}</Kicker>
           <SplitText key={`${lang}-price`} as="h2" mode="words" text={t(TX.priceTitle)} className="font-display text-5xl md:text-7xl text-white leading-[1] mb-14" />
@@ -105,7 +105,7 @@ const Services = () => {
         </div>
       </section>
 
-      <section className="py-24 border-t border-white/10">
+      <section className="py-24 md:py-36 border-t border-white/10">
         <div className="max-w-7xl mx-auto px-6">
           <SplitText key={`${lang}-steps`} as="h2" mode="words" text={t(TX.stepsTitle)} className="font-display text-5xl md:text-7xl text-white leading-[1] mb-14" />
           <Reveal stagger={0.1} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -120,7 +120,7 @@ const Services = () => {
         </div>
       </section>
 
-      <section className="py-24 border-t border-white/10">
+      <section className="py-24 md:py-36 border-t border-white/10">
         <div className="max-w-5xl mx-auto px-6">
           <h2 className="font-display text-5xl md:text-6xl text-white mb-12">{t(TX.faqTitle)}</h2>
           <FaqList />

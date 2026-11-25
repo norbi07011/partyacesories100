@@ -355,3 +355,9 @@ option { background: #141210; color: #fff; }
 }
 .sd-link:hover { border-color: #e6d9bd; color: #fff; }
 .sd-label { font-size: 0.6875rem; font-weight: 500; letter-spacing: 0.3em; text-transform: uppercase; color: rgba(230, 217, 189, 0.8); }
+
+/* One accent: the older, more saturated gold fills are re-toned to champagne */
+.bg-amber-500, .bg-amber-400 { background-color: #e6d9bd; }
+.hover\:bg-amber-400:hover, .hover\:bg-amber-300:hover { background-color: #fff; }
+.text-amber-500, .text-amber-400 { color: #d8c39b; }
+.border-amber-500, .border-amber-400 { border-color: #e6d9bd; }

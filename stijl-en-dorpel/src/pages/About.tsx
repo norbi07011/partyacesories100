@@ -76,7 +76,7 @@ const About = () => {
         imagePosition="30% 50%"
       />
 
-      <section className="py-24">
+      <section className="py-24 md:py-36">
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-14 lg:gap-24">
           <div>
             <Kicker>{t(TX.storyKicker)}</Kicker>
@@ -90,7 +90,7 @@ const About = () => {
         </div>
       </section>
 
-      <section className="py-24 border-t border-white/10">
+      <section className="py-24 md:py-36 border-t border-white/10">
         <div className="max-w-7xl mx-auto px-6">
           <SplitText key={`${lang}-values`} as="h2" mode="words" text={t(TX.valuesTitle)} className="font-display text-5xl md:text-7xl text-white leading-[1] mb-14" />
           <Reveal stagger={0.1} className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -110,7 +110,7 @@ const About = () => {
         </div>
       </section>
 
-      <section className="py-24 border-t border-white/10">
+      <section className="py-24 md:py-36 border-t border-white/10">
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-14 lg:gap-24">
           <div>
             <Kicker>{t(TX.areaKicker)}</Kicker>
