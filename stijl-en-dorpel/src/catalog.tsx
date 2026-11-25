@@ -357,7 +357,7 @@ export function CatBody({ item, start, onNavigate, page = false }: BodyProps) {
             <div>
               <p className={optLabel}>{t(TX.nVariants)}</p>
               <div className="flex flex-wrap gap-1.5">
-                {item.labels!.map((l, i) => <button key={i} onClick={() => pick(i)} aria-pressed={variant === i} className={opt(variant === i)}>{l}</button>)}
+                {(item.labels ?? item.strip!.items.map((_, k) => String(k + 1))).map((l, i) => <button key={i} onClick={() => pick(i)} aria-pressed={variant === i} className={opt(variant === i)}>{l}</button>)}
               </div>
             </div>
           )}
