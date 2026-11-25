@@ -3,8 +3,7 @@ import { ArrowRight, CheckCircle2, Wrench } from 'lucide-react';
 import { useLanguage, useT, type L } from '../i18n';
 import { UI, useDocumentTitle } from '../ui';
 import { SERVICES, STEPS } from '../data/content';
-import { modelById } from '../data/doors';
-import { Door } from '../components/Door';
+import { CatPhoto } from '../catalog';
 import { PageHero, Badge, Kicker } from '../components/PageHero';
 import { Reveal, SplitText, Magnetic } from '../fx/components';
 import { SERVICE_ICONS, FaqList, CTA } from './Home';
@@ -51,7 +50,7 @@ const Services = () => {
         badge={<Badge icon={<Wrench className="w-3.5 h-3.5" />}>{t(TX.badge)}</Badge>}
         title={t(TX.title)}
         subtitle={t(TX.sub)}
-        aside={<Door model={modelById('polder')} className="h-[420px] w-auto mr-10 drop-shadow-[0_30px_50px_rgba(0,0,0,.7)]" />}
+        aside={<CatPhoto id="porta-gdynia-wroclaw-116" className="h-[440px] w-[250px] mr-10" />}
       >
         <div className="flex flex-col sm:flex-row gap-4">
           <Magnetic><Link to="/contact" className="inline-flex items-center gap-2 px-8 py-4 bg-amber-500 hover:bg-amber-400 text-black font-bold rounded-full transition-colors">{t(UI.requestQuote)} <ArrowRight className="w-5 h-5" /></Link></Magnetic>

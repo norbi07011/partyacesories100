@@ -274,11 +274,12 @@ export function ProductArt({ art, className = '' }: { art: NonNullable<Product['
   );
 }
 
-/* A light "passe-partout" panel: catalogue photos have white backgrounds, so they are
- * blended (multiply) into a warm ivory ground and read as one framed object. */
+/* Studio ground for product photos: a soft white sweep with a contact shadow. Catalogue
+ * photos have white backgrounds, so they are blended (multiply) into it. */
 export function Plate({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
-    <div className={`${/\babsolute\b/.test(className) ? '' : 'relative'} overflow-hidden rounded-[1.4rem] bg-[linear-gradient(180deg,#f6f1e8_0%,#ebe3d4_62%,#d9cfbc_62%,#cfc4b0_100%)] shadow-[inset_0_0_0_1px_rgba(255,255,255,.55),inset_0_-30px_50px_rgba(120,98,64,.12)] ${className}`}>
+    <div className={`${/\babsolute\b/.test(className) ? '' : 'relative'} overflow-hidden rounded-[14px] bg-[radial-gradient(120%_85%_at_50%_0%,#ffffff_0%,#f4f2ee_52%,#e8e5df_100%)] ring-1 ring-black/5 ${className}`}>
+      <span className="pointer-events-none absolute left-1/2 bottom-[2.2%] -translate-x-1/2 w-[52%] h-[5%] rounded-[100%] bg-black/25 blur-[14px]" aria-hidden="true" />
       {children}
     </div>
   );

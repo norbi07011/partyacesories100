@@ -9,7 +9,7 @@ import { UI, useDocumentTitle } from '../ui';
 import { MODELS, FINISHES, GLASS, defaultConfig, modelById } from '../data/doors';
 import { STEPS, WHY, SERVICES, FAQ, type ServiceIcon } from '../data/content';
 import { useQuote } from '../quote';
-import { useCatalog } from '../catalog';
+import { useCatalog, Sprite } from '../catalog';
 import { Recommended, Showcase3D } from './HomeShowcase';
 import { Door, DoorVisual, Plate } from '../components/Door';
 import { Kicker } from '../components/PageHero';
@@ -88,13 +88,14 @@ const Hero = () => {
   const section = useRef<HTMLElement>(null);
   const leaf = useRef<HTMLDivElement>(null);
   const model = modelById('gracht');
+  const photo = useCatalog().find((c) => c.id === 'invado-corato');
 
   useLayoutEffect(() => {
     if (reducedMotion()) return;
     const ctx = gsap.context(() => {
       const tl = gsap.timeline({
         defaults: { ease: 'none' },
-        scrollTrigger: { trigger: section.current, start: 'top top', end: '+=170%', scrub: 1, pin: true, anticipatePin: 1 },
+        scrollTrigger: { trigger: section.current, start: 'top top', end: '+=90%', scrub: 0.6, pin: true, anticipatePin: 1 },
       });
       tl.fromTo(leaf.current, { rotateY: 16 }, { rotateY: 84, duration: 1, ease: 'power1.inOut' }, 0)
         .fromTo('.hero-glow', { opacity: 0.25, scale: 0.8 }, { opacity: 1, scale: 1.5, duration: 1 }, 0)
@@ -116,7 +117,7 @@ const Hero = () => {
 
       {/* doorway */}
       <div className="absolute inset-0 flex items-start md:items-center justify-center md:justify-end md:pr-[9vw] lg:pr-[13vw] pt-24 md:pt-10">
-        <div className="hero-doorway relative h-[40svh] md:h-[70svh] max-h-[720px] aspect-[100/240] will-change-transform" style={{ perspective: 1500 }}>
+        <div className="hero-doorway relative h-[40svh] md:h-[70svh] max-h-[720px] aspect-[100/214] will-change-transform" style={{ perspective: 1500 }}>
           {/* light from the room behind */}
           <div className="absolute inset-0 bg-[linear-gradient(180deg,#fff6e0_0%,#f0d7a4_55%,#c9a86f_100%)]" />
           <div className="absolute inset-0 bg-[radial-gradient(60%_40%_at_50%_30%,#ffffff,transparent)] opacity-80" />
@@ -128,7 +129,9 @@ const Hero = () => {
             className="absolute inset-0 will-change-transform "
             style={{ transformOrigin: '0% 50%', transform: 'rotateY(24deg)' }}
           >
-            <Door model={model} frame={false} handle="messing" className="w-full h-full" />
+            {photo?.strip
+              ? <div className="w-full h-full bg-white"><Sprite item={photo} index={2} cap={false} className="w-full h-full" /></div>
+              : <Door model={model} frame={false} handle="messing" className="w-full h-full" />}
           </div>
           {/* light spilling over the floor */}
           <div
@@ -358,8 +361,8 @@ const ProcessStory = () => {
         scrollTrigger: {
           trigger: section.current,
           start: 'top top',
-          end: `+=${STEPS.length * 90}%`,
-          scrub: 1,
+          end: `+=${STEPS.length * 50}%`,
+          scrub: 0.6,
           pin: true,
           anticipatePin: 1,
           onUpdate: (self) => setActive(Math.min(STEPS.length - 1, Math.floor(self.progress * STEPS.length * 0.999))),
@@ -611,13 +614,13 @@ const Home = () => {
   useDocumentTitle();
   return (
     <>
-      <Hero />
+      {/* pinned sections get their own wrapper so sections that mount later keep a stable sibling */}
+      <div><Hero /></div>
       <Marquee />
       <Facts />
       <Recommended />
       <Showcase3D />
-      <ModelCarousel />
-      <ProcessStory />
+      <div><ProcessStory /></div>
       <Anatomy />
       <ServicesGrid />
       <Faq />

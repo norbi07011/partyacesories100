@@ -1,7 +1,11 @@
 import subprocess, re, os, json
-from PIL import Image
+from PIL import Image, ImageFilter
+SHARP=ImageFilter.UnsharpMask(radius=1.6,percent=110,threshold=2)
+def enhance(im,factor=1):
+    if factor!=1: im=im.resize((max(1,round(im.width*factor)),max(1,round(im.height*factor))),Image.LANCZOS)
+    return im.filter(SHARP)
 import numpy as np
-DPI=220
+DPI=200
 def render(pdf, p, cache):
     f=f'{cache}/p-{p:03d}.png'
     if not os.path.exists(f):
@@ -56,15 +60,16 @@ def slug(s):
 def save(im,path,maxh,q=82):
     os.makedirs(os.path.dirname(path),exist_ok=True)
     if im.height>maxh: im=im.resize((max(1,round(im.width*maxh/im.height)),maxh),Image.LANCZOS)
-    im.save(path,quality=q,optimize=True); return im.size
-def strip(ims,path,H=440):
+    im.save(path,quality=88,optimize=True); return im.size
+def strip(ims,path,H=None):
+    H=H or min(660,max(i.height for i in ims))
     """variants side by side; returns list of [x,w] and total size"""
-    rs=[i.resize((max(1,round(i.width*H/i.height)),H),Image.LANCZOS) for i in ims]
+    rs=[(i if i.height==H else i.resize((max(1,round(i.width*H/i.height)),H),Image.LANCZOS)) for i in ims]
     W=sum(r.width for r in rs)+4*(len(rs)-1)
     s=Image.new('RGB',(W,H),'white'); x=0; pos=[]
     for r in rs: s.paste(r,(x,0)); pos.append([x,r.width]); x+=r.width+4
     os.makedirs(os.path.dirname(path),exist_ok=True)
-    s.save(path,quality=82,optimize=True); return dict(w=W,h=H,items=pos)
+    s.save(path,quality=88,optimize=True); return dict(w=W,h=H,items=pos)
 
 def ylines(words,hmin=0,hmax=999,tol=2.6):
     ws=sorted([w for w in words if hmin<=w['h']<=hmax],key=lambda w:(w['y'],w['x']))
@@ -84,13 +89,33 @@ def pdf_images(pdf,p,tmp):
     subprocess.run(['pdftohtml','-xml','-f',str(p),'-l',str(p),'-q','-nodrm',pdf,f'{d}/t'],capture_output=True)
     try: pg=_ET.parse(f'{d}/t.xml').getroot().find('page')
     except Exception: return [],1,1
-    PW=float(pg.get('width')); PH=float(pg.get('height')); res=[]; seen=set()
+    PW=float(pg.get('width')); PH=float(pg.get('height')); res=[]; seen={}
     for im in pg.findall('image'):
-        r=tuple(int(im.get(k)) for k in ('left','top','width','height'))
+        r=tuple(int(im.get(k)) for k in ('left','top','width','height')); src=im.get('src')
         key=tuple(round(v/5) for v in r)
-        if key in seen: continue
-        seen.add(key); res.append(r)
-    _sh.rmtree(d,ignore_errors=True); return res,PW,PH
+        if key in seen:
+            if src.endswith('.png'): RAW[seen[key]]=src   # masked version wins
+            continue
+        seen[key]=(pdf,p)+r; RAW[(pdf,p)+r]=src; res.append(r)
+    return res,PW,PH
+RAW={}
+def raw_image(pdf,p,r,page,sc):
+    """The embedded image at its native pixels (no page overlays), on white; falls back to a page crop."""
+    src=RAW.get((pdf,p)+tuple(r))
+    try:
+        im=Image.open(src)
+        if im.mode in ('RGBA','LA','P'):
+            im=im.convert('RGBA'); bg=Image.new('RGBA',im.size,'white'); bg.alpha_composite(im); im=bg
+        im=im.convert('RGB')
+        if im.width<20 or im.height<20: raise ValueError
+        a=np.asarray(im).astype(int).sum(2)
+        if (a<40).mean()>0.12: raise ValueError   # unmasked cut-out on black: use the rendered page instead
+        rows=(a<60).mean(1)>0.5
+        b=im.height
+        while b>im.height*0.9 and rows[b-1]: b-=1
+        return im.crop((0,0,im.width,b))
+    except Exception:
+        x,y,w,h=r; return page.crop((round(x*sc),round(y*sc),round((x+w)*sc),round((y+h)*sc)))
 def loose_gallery(imgs,PW,PH,exclude=(),limit=24):
     big=[r for r in imgs if r not in exclude and r[2]>55 and r[3]>70 and r[2]*r[3]<PW*PH*0.4 and r[1]>PH*0.07]
     keep=[]

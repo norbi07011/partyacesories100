@@ -3,8 +3,7 @@ import { ArrowRight, Hammer, MapPin, ShieldCheck, Sparkles } from 'lucide-react'
 import { useLanguage, useT, type L } from '../i18n';
 import { UI, useDocumentTitle } from '../ui';
 import { WHY } from '../data/content';
-import { modelById } from '../data/doors';
-import { Door } from '../components/Door';
+import { CatPhoto } from '../catalog';
 import { PageHero, Badge, Kicker } from '../components/PageHero';
 import { Reveal, SplitText, TiltCard } from '../fx/components';
 import { CTA } from './Home';
@@ -73,12 +72,7 @@ const About = () => {
         badge={<Badge>{t(TX.badge)}</Badge>}
         title={t(TX.title)}
         subtitle={t(TX.sub)}
-        aside={
-          <div className="flex items-end gap-6 pr-8">
-            <Door model={modelById('delft')} wire className="h-[340px] w-auto" />
-            <Door model={modelById('delft')} className="h-[400px] w-auto drop-shadow-[0_30px_50px_rgba(0,0,0,.7)]" />
-          </div>
-        }
+        aside={<CatPhoto id="porta-porta-classic-52" className="h-[440px] w-[250px] mr-10" />}
       />
 
       <section className="py-24">

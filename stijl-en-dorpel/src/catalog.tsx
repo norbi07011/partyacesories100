@@ -147,7 +147,7 @@ export const intro = (it: CatItem, t: (l: L) => string, lang: string) => {
 /* ───────────── Images ───────────── */
 
 /** One variant cut out of the collection's strip image. */
-export function Sprite({ item, index, className = '' }: { item: CatItem; index: number; className?: string }) {
+export function Sprite({ item, index, className = '', cap = true }: { item: CatItem; index: number; className?: string; cap?: boolean }) {
   const s = item.strip;
   if (!s) return null;
   const [x, w] = s.items[Math.min(index, s.items.length - 1)];
@@ -157,56 +157,57 @@ export function Sprite({ item, index, className = '' }: { item: CatItem; index: 
       role="img"
       aria-label={item.labels?.[index] ?? item.name}
       className={`mix-blend-multiply bg-no-repeat ${className}`}
-      style={{ aspectRatio: `${w} / ${s.h}`, backgroundImage: `url("${asset(`${item.dir}/strip.jpg`)}")`, backgroundSize: `${(s.w / w) * 100}% 100%`, backgroundPosition: `${pos}% 0` }}
+      style={{ maxHeight: cap ? s.h : undefined, aspectRatio: `${w} / ${s.h}`, backgroundImage: `url("${asset(`${item.dir}/strip.jpg`)}")`, backgroundSize: `${(s.w / w) * 100}% 100%`, backgroundPosition: `${pos}% 0` }}
     />
   );
 }
 
+/** index -2 = the collection's cover photo (when it has one), otherwise a version from the strip. */
 const Lead = ({ item, index, className }: { item: CatItem; index: number; className: string }) => {
-  if (item.strip) return <Sprite item={item} index={index} className={className} />;
-  if (item.hero) return <img src={asset(`${item.dir}/hero.jpg`)} alt={item.name} loading="lazy" draggable={false} className={`${className} object-contain mix-blend-multiply`} />;
+  if (item.hero && (index === -2 || !item.strip)) return <img src={asset(`${item.dir}/hero.jpg`)} alt={item.name} loading="lazy" draggable={false} style={{ maxHeight: item.hero[1] }} className={`${className} object-contain mix-blend-multiply`} />;
+  if (item.strip) return <Sprite item={item} index={Math.max(0, index)} className={className} />;
   return null;
 };
 
 /* ───────────── Card ───────────── */
 
-const chipDark = 'px-2.5 py-1 rounded-full bg-[#1d1a17]/85 text-[9px] font-semibold uppercase tracking-[0.22em] text-amber-100';
-const chipBrand = 'px-2.5 py-1 rounded-full bg-white/80 border border-[#1d1a17]/15 text-[9px] font-bold uppercase tracking-[0.22em] text-[#1d1a17]';
+const tag = 'text-[9px] font-semibold uppercase tracking-[0.26em] text-[#1d1a17]/60';
+const chipDark = 'px-2.5 py-1 rounded-full bg-[#1d1a17]/85 text-[9px] font-semibold uppercase tracking-[0.22em] text-white';
 
 export function CatCard({ item, open }: { item: CatItem; open: (it: CatItem, index: number) => void }) {
   const t = useT();
   const { lang } = useLanguage();
-  const [index, setIndex] = useState(0);
   const n = item.strip?.items.length ?? 0;
+  const [index, setIndex] = useState(item.hero ? -2 : 0);
   const hasLead = !!(item.strip || item.hero);
   const price = guidePrice(item);
   return (
-    <article className="group h-full flex flex-col rounded-[2rem] bg-[#151311] border border-white/10 p-3 hover:border-amber-400/50 transition-colors duration-500">
-      <button onClick={() => open(item, index)} className="relative block text-left" aria-label={`${item.name} — ${t(UI.details)}`}>
-        <Plate className="h-[21rem]">
+    <article className="group h-full flex flex-col">
+      <button onClick={() => open(item, Math.max(0, index))} className="relative block text-left" aria-label={`${item.name} — ${t(UI.details)}`}>
+        <Plate className="h-[22rem] transition-shadow duration-500 group-hover:shadow-[0_30px_60px_-30px_rgba(203,176,132,.55)]">
           {hasLead ? (
-            <div className="absolute inset-x-0 top-10 bottom-0 flex items-end justify-center">
-              <Lead item={item} index={index} className="h-full w-auto max-w-[82%] transition-transform duration-700 ease-out group-hover:scale-[1.035]" />
+            <div className="absolute inset-x-0 top-12 bottom-[5%] flex items-end justify-center">
+              <Lead item={item} index={index} className="h-full w-auto max-w-[76%] transition-transform duration-700 ease-out group-hover:scale-[1.03]" />
             </div>
           ) : item.scene && (
-            <img src={asset(`${item.dir}/scene.jpg`)} alt={item.name} loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]" />
+            <img src={asset(`${item.dir}/scene.jpg`)} alt={item.name} loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]" />
           )}
-          {n > 1 && <span className={`absolute top-3 left-3 ${chipDark}`}>{n} {t(TX.variants)}</span>}
-          <span className={`absolute top-3 right-3 ${chipBrand}`}>{item.brand}</span>
-          <span className="absolute bottom-3 right-3 w-9 h-9 rounded-full bg-[#1d1a17]/85 text-amber-100 flex items-center justify-center opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-500">
+          <span className={`absolute top-4 left-4 ${hasLead ? tag : chipDark}`}>{item.brand}</span>
+          {n > 1 && <span className={`absolute top-4 right-4 ${hasLead ? tag : chipDark}`}>{n} {t(TX.variants)}</span>}
+          <span className="absolute bottom-3 right-3 w-9 h-9 rounded-full bg-[#1d1a17] text-white flex items-center justify-center opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-500">
             <Expand className="w-4 h-4" />
           </span>
         </Plate>
       </button>
-      <div className="flex-1 flex flex-col px-3 pt-5 pb-3">
-        <div className="flex items-baseline justify-between gap-4 mb-1">
-          <h3 className="font-display text-[1.7rem] leading-tight text-white">{item.name}</h3>
-          <p className="text-amber-200 whitespace-nowrap">{price > 0 ? <><span className="text-white/45 text-xs mr-1">{t(UI.from)}</span>{euro(price)}</> : <span className="text-xs uppercase tracking-[0.2em] text-amber-200/80">{t(TX.onRequest)}</span>}</p>
+      <div className="flex-1 flex flex-col pt-5">
+        <div className="flex items-baseline justify-between gap-4">
+          <h3 className="font-display text-[1.75rem] leading-tight text-white">{item.name}</h3>
+          <p className="text-white whitespace-nowrap text-[15px]">{price > 0 ? <><span className="text-white/45 text-xs mr-1">{t(UI.from)}</span>{euro(price)}</> : <span className="text-[10px] uppercase tracking-[0.22em] text-white/55">{t(TX.onRequest)}</span>}</p>
         </div>
-        <p className="text-amber-300/70 text-[11px] uppercase tracking-[0.28em] mb-4">{t(groupLabel(item.group))}</p>
-        <p className="text-zinc-400 text-sm leading-relaxed mb-5 flex-1 line-clamp-3">{lang === 'PL' && item.descPL ? item.descPL : intro(item, t, lang)}</p>
+        <p className="text-white/45 text-[10px] uppercase tracking-[0.28em] mt-1.5 mb-3">{t(groupLabel(item.group))}</p>
+        <p className="text-zinc-400 text-sm leading-relaxed mb-4 flex-1 line-clamp-2">{lang === 'PL' && item.descPL ? item.descPL : intro(item, t, lang)}</p>
         {n > 1 && (
-          <div className="flex items-center gap-1.5 mb-5 overflow-hidden" role="group" aria-label={t(TX.nVariants)}>
+          <div className="flex items-center gap-1.5 mb-4 overflow-hidden" role="group" aria-label={t(TX.nVariants)}>
             {item.strip!.items.slice(0, 7).map((_, i) => (
               <button
                 key={i}
@@ -214,7 +215,7 @@ export function CatCard({ item, open }: { item: CatItem; open: (it: CatItem, ind
                 aria-label={item.labels?.[i] ?? `${i + 1}`}
                 title={item.labels?.[i]}
                 aria-pressed={index === i}
-                className={`shrink-0 w-8 h-11 rounded-md overflow-hidden bg-[#efe9dd] border-2 flex items-end justify-center transition-all ${index === i ? 'border-amber-400' : 'border-transparent opacity-60 hover:opacity-100'}`}
+                className={`shrink-0 w-8 h-11 rounded-[5px] overflow-hidden bg-[#f4f2ee] flex items-end justify-center ring-1 transition-all ${index === i ? 'ring-amber-300 ring-2' : 'ring-white/10 opacity-55 hover:opacity-100'}`}
               >
                 <Sprite item={item} index={i} className="h-full w-auto" />
               </button>
@@ -222,12 +223,12 @@ export function CatCard({ item, open }: { item: CatItem; open: (it: CatItem, ind
             {n > 7 && <span className="text-white/40 text-xs ml-1">+{n - 7}</span>}
           </div>
         )}
-        <div className="flex gap-2">
-          <button onClick={() => open(item, index)} className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-full bg-amber-500 hover:bg-amber-400 text-black text-sm font-bold transition-colors">
+        <div className="flex gap-2 pt-4 border-t border-white/10">
+          <button onClick={() => open(item, Math.max(0, index))} className="flex-1 inline-flex items-center justify-center h-11 rounded-full bg-[#ece7dc] hover:bg-white text-black text-sm font-semibold tracking-wide transition-colors">
             {t(UI.details)}
           </button>
-          <Link to={`/product/${item.id}`} aria-label={`${item.name} — ${t(TX.openPage)}`} title={t(TX.openPage)} className="w-12 h-12 shrink-0 rounded-full border border-zinc-700 hover:border-amber-500 text-white flex items-center justify-center transition-colors">
-            <ArrowUpRight className="w-5 h-5" />
+          <Link to={`/product/${item.id}`} aria-label={`${item.name} — ${t(TX.openPage)}`} title={t(TX.openPage)} className="w-11 h-11 shrink-0 rounded-full border border-white/20 hover:border-white text-white flex items-center justify-center transition-colors">
+            <ArrowUpRight className="w-4 h-4" />
           </Link>
         </div>
       </div>
@@ -274,8 +275,8 @@ export function CatBody({ item, start, onNavigate, page = false }: BodyProps) {
   const { lang } = useLanguage();
   const { addCatalog, count } = useQuote();
   const n = item.strip?.items.length ?? 0;
-  // view: -1 = room scene, otherwise a variant index
-  const [view, setView] = useState(n || item.hero ? start : -1);
+  // view: -2 = cover photo, -1 = room scene, otherwise a version index
+  const [view, setView] = useState(item.hero ? -2 : n ? start : -1);
   const [variant, setVariant] = useState(Math.min(start, Math.max(0, n - 1)));
   const [colour, setColour] = useState('');
   const [width, setWidth] = useState<number | 'maat'>(83);
@@ -309,26 +310,26 @@ export function CatBody({ item, start, onNavigate, page = false }: BodyProps) {
     <div className={`grid grid-cols-1 md:grid-cols-[1.05fr_0.95fr] ${page ? 'gap-6 md:gap-12 items-start' : 'h-full grid-rows-[auto_1fr] md:grid-rows-1'}`}>
       {/* gallery */}
       <div className={`flex flex-col min-h-0 min-w-0 ${page ? 'md:sticky md:top-28' : 'p-4 md:p-6'}`}>
-        <Plate className={`${page ? 'h-[56svh] min-h-[360px]' : 'flex-1 min-h-[34svh] md:min-h-0'} flex items-end justify-center ${view === -1 ? '' : 'pt-8 px-8'}`}>
+        <Plate className={`${page ? 'h-[56svh] min-h-[360px]' : 'flex-1 min-h-[34svh] md:min-h-0'} flex items-end justify-center ${view === -1 ? '' : 'pt-10 px-8 pb-[4%]'}`}>
           {view === -1 && item.scene
             ? <img src={asset(`${item.dir}/scene.jpg`)} alt={item.name} className="absolute inset-0 w-full h-full object-cover" />
-            : <Lead item={item} index={Math.max(0, view)} className="h-full max-h-full w-auto max-w-full" />}
+            : <Lead item={item} index={view} className="h-full max-h-full w-auto max-w-full" />}
           {view >= 0 && item.labels?.[view] && <span className={`absolute top-3 left-3 ${chipDark}`}>{item.labels[view]}</span>}
         </Plate>
-        {(n > 1 || (item.scene && (n > 0 || item.hero))) && (
+        {(n > 1 || item.hero || item.scene) && (n + (item.hero ? 1 : 0) + (item.scene ? 1 : 0) > 1) && (
           <div className="flex gap-2 mt-3 overflow-x-auto no-scrollbar pb-1 shrink-0">
             {item.scene && (
-              <button onClick={() => setView(-1)} aria-label={t(TX.inRoom)} aria-pressed={view === -1} className={`shrink-0 w-24 h-20 rounded-xl overflow-hidden border-2 transition-all ${view === -1 ? 'border-amber-400' : 'border-transparent opacity-70 hover:opacity-100'}`}>
+              <button onClick={() => setView(-1)} aria-label={t(TX.inRoom)} aria-pressed={view === -1} className={`shrink-0 w-24 h-20 rounded-lg overflow-hidden border-2 transition-all ${view === -1 ? 'border-amber-400' : 'border-transparent opacity-70 hover:opacity-100'}`}>
                 <img src={asset(`${item.dir}/scene.jpg`)} alt="" loading="lazy" className="w-full h-full object-cover" />
               </button>
             )}
-            {n === 0 && item.hero && (
-              <button onClick={() => setView(0)} aria-pressed={view === 0} className={`shrink-0 w-14 h-20 rounded-xl overflow-hidden bg-[#efe9dd] border-2 ${view === 0 ? 'border-amber-400' : 'border-transparent opacity-70'}`}>
+            {item.hero && (
+              <button onClick={() => setView(-2)} aria-pressed={view === -2} className={`shrink-0 w-14 h-20 rounded-lg overflow-hidden bg-[#f4f2ee] border-2 ${view === -2 ? 'border-amber-400' : 'border-transparent opacity-70 hover:opacity-100'}`}>
                 <img src={asset(`${item.dir}/hero.jpg`)} alt="" className="w-full h-full object-contain mix-blend-multiply p-1" />
               </button>
             )}
             {item.strip?.items.map((_, i) => (
-              <button key={i} onClick={() => pick(i)} aria-label={item.labels?.[i] ?? `${i + 1}`} title={item.labels?.[i]} aria-pressed={view === i} className={`shrink-0 w-14 h-20 rounded-xl overflow-hidden bg-[#efe9dd] border-2 flex items-end justify-center pt-1 transition-all ${view === i ? 'border-amber-400' : 'border-transparent opacity-70 hover:opacity-100'}`}>
+              <button key={i} onClick={() => pick(i)} aria-label={item.labels?.[i] ?? `${i + 1}`} title={item.labels?.[i]} aria-pressed={view === i} className={`shrink-0 w-14 h-20 rounded-lg overflow-hidden bg-[#f4f2ee] border-2 flex items-end justify-center pt-1 transition-all ${view === i ? 'border-amber-400' : 'border-transparent opacity-70 hover:opacity-100'}`}>
                 <Sprite item={item} index={i} className="h-full w-auto" />
               </button>
             ))}
@@ -464,5 +465,16 @@ export function CatDialog({ item, start, onClose }: { item: CatItem; start: numb
       </div>
       <style>{`@keyframes sd-sheet{from{opacity:0;transform:translateY(40px) scale(.98)}to{opacity:1;transform:none}}`}</style>
     </div>
+  );
+}
+
+/** A catalogue cover photo on a studio plate, for page headers. Renders nothing without the catalogue. */
+export function CatPhoto({ id, className = '' }: { id: string; className?: string }) {
+  const item = useCatalog().find((c) => c.id === id);
+  if (!item || !(item.hero || item.strip)) return null;
+  return (
+    <Plate className={`flex items-end justify-center pt-8 pb-[4%] px-6 ${className}`}>
+      <Lead item={item} index={-2} className="h-full w-auto max-w-full" />
+    </Plate>
   );
 }

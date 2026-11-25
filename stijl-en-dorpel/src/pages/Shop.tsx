@@ -11,7 +11,7 @@ import { Door, DoorVisual, Plate, ProductArt, asset } from '../components/Door';
 import { PageHero, Badge } from '../components/PageHero';
 import { flyTo, lockScroll } from '../fx/core';
 import { CTA } from './Home';
-import { useCatalog, CatCard, CatDialog, groupLabel, guidePrice, type CatItem } from '../catalog';
+import { useCatalog, CatCard, CatDialog, CatPhoto, groupLabel, guidePrice, type CatItem } from '../catalog';
 
 type Cat = 'all' | 'binnen' | 'buiten' | 'schuif' | 'technisch' | 'kozijn' | 'systeem' | 'beslag';
 type Brand = 'all' | 'Invado' | 'Porta' | 'huis';
@@ -59,8 +59,8 @@ const TX = {
   ],
 } satisfies Record<string, L | Record<string, L>>;
 
-const chipDark = 'px-2.5 py-1 rounded-full bg-[#1d1a17]/85 text-[9px] font-semibold uppercase tracking-[0.22em] text-amber-100';
-const chipBrand = 'px-2.5 py-1 rounded-full bg-white/80 border border-[#1d1a17]/15 text-[9px] font-bold uppercase tracking-[0.22em] text-[#1d1a17]';
+const chipDark = 'text-[9px] font-semibold uppercase tracking-[0.26em] text-[#1d1a17]/60';
+const chipBrand = chipDark;
 
 /* A photo that renders nothing when the file is missing, so the layout stays intact. */
 const Photo = ({ src, alt, className }: { src: string; alt: string; className: string }) => {
@@ -195,7 +195,7 @@ const DoorCard = ({ m, open }: { m: DoorModel; open: (d: Detail) => void }) => {
   };
 
   return (
-    <article className="group h-full flex flex-col rounded-[2rem] bg-[#151311] border border-white/10 p-3 hover:border-amber-400/50 transition-colors duration-500">
+    <article className="group h-full flex flex-col">
       <button onClick={() => open({ kind: 'door', m, index })} className="relative block text-left" aria-label={`${m.name} — ${t(TX.details)}`}>
         <Plate className="h-[22rem]">
           <div ref={art} className="absolute inset-x-0 top-9 bottom-0 flex items-end justify-center">
@@ -209,7 +209,7 @@ const DoorCard = ({ m, open }: { m: DoorModel; open: (d: Detail) => void }) => {
         </Plate>
       </button>
 
-      <div className="flex-1 flex flex-col px-3 pt-5 pb-3">
+      <div className="flex-1 flex flex-col pt-5">
         <div className="flex items-baseline justify-between gap-4 mb-1">
           <h3 className="font-display text-3xl text-white">{m.name}</h3>
           <p className="text-amber-200 whitespace-nowrap"><span className="text-white/45 text-xs mr-1">{t(UI.from)}</span>{euro(m.price)}</p>
@@ -249,7 +249,7 @@ const DoorCard = ({ m, open }: { m: DoorModel; open: (d: Detail) => void }) => {
         )}
 
         <div className="flex gap-2">
-          <Link to={`/configurator?model=${m.id}&finish=${finish}`} className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-full bg-amber-500 hover:bg-amber-400 text-black text-sm font-bold transition-colors">
+          <Link to={`/configurator?model=${m.id}&finish=${finish}`} className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-full bg-[#ece7dc] hover:bg-white text-black text-sm font-semibold transition-colors">
             <SlidersHorizontal className="w-4 h-4" /> {t(UI.configure)}
           </Link>
           <button onClick={add} aria-label={t(UI.addToQuote)} title={t(UI.addToQuote)} className={`shrink-0 inline-flex items-center gap-1.5 px-4 h-12 rounded-full border text-sm font-medium transition-colors ${done ? 'bg-amber-200 text-black border-amber-200' : 'border-zinc-700 hover:border-amber-500 text-white'}`}>
@@ -274,7 +274,7 @@ const ProductCard = ({ p, open }: { p: Product; open: (d: Detail) => void }) => 
     window.setTimeout(() => setDone(false), 1800);
   };
   return (
-    <article className="group h-full flex flex-col rounded-[2rem] bg-[#151311] border border-white/10 p-3 hover:border-amber-400/50 transition-colors duration-500">
+    <article className="group h-full flex flex-col">
       <button onClick={() => open({ kind: 'product', p })} className="relative block text-left" aria-label={`${t(p.name)} — ${t(TX.details)}`}>
         <Plate className="h-60">
           <div ref={art} className="absolute inset-0 flex items-center justify-center p-5">
@@ -286,7 +286,7 @@ const ProductCard = ({ p, open }: { p: Product; open: (d: Detail) => void }) => 
           {(p.photos?.length ?? 0) > 1 && <span className={`absolute top-3 left-3 ${chipDark}`}>{p.photos!.length} ×</span>}
         </Plate>
       </button>
-      <div className="flex-1 flex flex-col px-3 pt-5 pb-3">
+      <div className="flex-1 flex flex-col pt-5">
         <h3 className="font-display text-2xl text-white mb-2">{t(p.name)}</h3>
         <p className="text-zinc-400 text-sm leading-relaxed mb-5 flex-1">{t(p.desc)}</p>
         <div className="flex items-center justify-between gap-3">
@@ -328,8 +328,9 @@ const Shop = () => {
   const q = query.trim().toLowerCase();
   const hit = (...texts: (string | undefined)[]) => !q || texts.some((x) => x?.toLowerCase().includes(q));
   const factory = catalog.filter((it) => inTab(it.cat) && (brand === 'all' || brand === it.brand) && hit(it.name, it.brand, it.tagline, t(groupLabel(it.group)), ...(it.labels ?? [])));
-  const doors = brand === 'all' || brand === 'huis' ? MODELS.filter((m) => inTab(m.cat) && hit(m.name, t(m.style), t(m.desc))) : [];
-  const products = PRODUCTS.filter((p) => inTab(p.cat) && (brand === 'all' || (brand === 'huis' ? !p.brand : p.brand === brand)) && hit(t(p.name), t(p.desc), p.brand));
+  // the illustrated house collection only shows under its own filter (or when nothing else exists)
+  const doors = brand === 'huis' || (brand === 'all' && catalog.length === 0) ? MODELS.filter((m) => inTab(m.cat) && hit(m.name, t(m.style), t(m.desc))) : [];
+  const products = PRODUCTS.filter((p) => inTab(p.cat) && (p.photos || catalog.length === 0 || brand === 'huis') && (brand === 'all' || (brand === 'huis' ? !p.brand : p.brand === brand)) && hit(t(p.name), t(p.desc), p.brand));
   const flat = sort !== 'cat' || !!q;
   if (sort === 'name') factory.sort((a, b) => a.name.localeCompare(b.name));
   if (sort === 'low' || sort === 'high') {
@@ -371,13 +372,13 @@ const Shop = () => {
         title={t(TX.title)}
         subtitle={t(TX.sub)}
         minH="min-h-[62svh]"
-        aside={
-          <div className="flex items-end gap-5 pr-6">
-            <Door model={modelById('tuindorp')} className="h-[300px] w-auto drop-shadow-[0_30px_50px_rgba(0,0,0,.7)]" />
-            <Door model={modelById('gracht')} className="h-[380px] w-auto drop-shadow-[0_30px_50px_rgba(0,0,0,.7)]" />
-            <Door model={modelById('loods')} className="h-[300px] w-auto drop-shadow-[0_30px_50px_rgba(0,0,0,.7)]" />
+        aside={catalog.length ? (
+          <div className="flex items-end gap-4 pr-6">
+            <CatPhoto id="invado-larina" className="h-[300px] w-[170px]" />
+            <CatPhoto id="porta-porta-inspire-48" className="h-[400px] w-[220px]" />
+            <CatPhoto id="invado-lago" className="h-[300px] w-[170px]" />
           </div>
-        }
+        ) : undefined}
       />
 
       <section className="relative pb-28">
@@ -424,7 +425,7 @@ const Shop = () => {
           {factoryGroups.map((g) => (
             <div key={g.key}>
               {heading(t(g.label), g.items.length, g.brand || undefined)}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-14">
                 {g.items.map((it) => <CatCard key={it.id} item={it} open={(item, index) => setCat({ item, index })} />)}
               </div>
             </div>
@@ -433,7 +434,7 @@ const Shop = () => {
           {doors.length > 0 && (
             <div>
               {heading(t(TX.houseTitle), doors.length, 'Stijl & Dorpel')}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-14">
                 {doors.map((m) => <DoorCard key={m.id} m={m} open={setDetail} />)}
               </div>
             </div>
@@ -442,7 +443,7 @@ const Shop = () => {
           {productGroups.map(([label, list], gi) => (
             <div key={`${tab}-${gi}`}>
               {heading(t(label), list.length)}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-14">
                 {list.map((p) => <ProductCard key={p.id} p={p} open={setDetail} />)}
               </div>
             </div>

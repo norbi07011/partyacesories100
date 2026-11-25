@@ -25,8 +25,8 @@ def doors(p):
     band=im.crop((0,y0,W,int(H*0.47))); a=np.asarray(band).astype(int)
     bg=a[6:30, W//2-12:W//2+12].reshape(-1,3).mean(0)
     d=(np.abs(a-bg).sum(2)>60); res=[]
-    for (r0,r1) in segs(d.mean(1)>0.22, 250, 8):
-        for (c0,c1) in segs(d[r0:r1].mean(0)>0.6, 110, 4):
+    for (r0,r1) in segs(d.mean(1)>0.22, 228, 7):
+        for (c0,c1) in segs(d[r0:r1].mean(0)>0.6, 100, 4):
             res.append((c0,r0+y0,c1,r1+y0))
     return im,res
 def norm(s): return re.sub(r'[^a-z]','',s.lower().replace('’','').replace("'",''))
@@ -70,17 +70,17 @@ for name,p,cat,grp in ALL:
             constr=secs.get('constr',[]),equip=secs.get('equip',[]),equip2=secs.get('equip2',[]),frame=secs.get('frame',[]),notes=secs.get('notes',[]),opts=secs.get('opts',[]),
             coats=[COL[c] for c in codes],widths=[int(mw.group(1)),int(mw.group(2))] if mw else None,dir=f'fabriek/invado/{cid}')
     op=render(PDF,p,CACHE)
-    it['scene']=list(save(op.crop((0,int(op.height*0.16),op.width,int(op.height*0.862))),f'{d}/scene.jpg',760))
+    it['scene']=list(save(enhance(op.crop((0,int(op.height*0.16),op.width,int(op.height*0.862)))),f'{d}/scene.jpg',1400))
     pick=pick[:30]
     if not pick:
         for q in (p+1,p):
             imgs,PW,PH=pdf_images(PDF,q,CACHE); g=loose_gallery(imgs,PW,PH,limit=12)
             if len(g)>=2:
                 pg=render(PDF,q,CACHE); s2=pg.width/PW
-                it['strip']=strip([pg.crop((round(r[0]*s2),round(r[1]*s2),round((r[0]+r[2])*s2),round((r[1]+r[3])*s2))) for r in g],f'{d}/strip.jpg',H=360)
+                it['strip']=strip([enhance(raw_image(PDF,q,r,pg,s2),2) for r in g],f'{d}/strip.jpg',H=420)
                 it['labels']=[f'{name} {k+1}' for k in range(len(g))]; break
     if pick:
-        it['strip']=strip([im.crop((ds[i][0]+3,ds[i][1]+3,ds[i][2]-3,ds[i][3]-3)) for i in pick],f'{d}/strip.jpg')
+        it['strip']=strip([enhance(im.crop((ds[i][0]+3,ds[i][1]+3,ds[i][2]-3,ds[i][3]-3))) for i in pick],f'{d}/strip.jpg')
         it['labels']=[dl[i] for i in pick]
     items.append(it)
     dbg.append(f"{p:3d} {name:26s} net={net} v={len(pick):2d} c={len(it['constr'])} e={len(it['equip'])} e2={len(it['equip2'])} o={len(it['opts'])} col={len(codes)} w={it['widths']} {flags} | {(it.get('labels') or [''])[:3]}")

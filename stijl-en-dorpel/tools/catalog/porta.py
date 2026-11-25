@@ -13,19 +13,7 @@ def cat_of(p):
     if p<132: return 'technisch','Technische deuren'
     return 'kozijn','Kozijnen'
 def images(p):
-    d=f'{CACHE}/x{p}'; os.makedirs(d,exist_ok=True)
-    subprocess.run(['pdftohtml','-xml','-f',str(p),'-l',str(p),'-q','-nodrm',PDF,f'{d}/t'],capture_output=True)
-    try: root=ET.parse(f'{d}/t.xml').getroot()
-    except Exception: return [],1
-    pg=root.find('page'); PW=float(pg.get('width'))
-    res=[]; seen=set()
-    for im in pg.findall('image'):
-        r=tuple(int(im.get(k)) for k in ('left','top','width','height'))
-        key=tuple(round(v/4) for v in r)
-        if key in seen: continue
-        seen.add(key); res.append(r)
-    shutil.rmtree(d,ignore_errors=True)
-    return res,PW
+    r,PW,PH=pdf_images(PDF,p,CACHE); return r,PW
 PRICE=re.compile(r'od\s+(\d[\d ]*),-\s*\|\s*(\d[\d ]*,\d\d)')
 HEAD=[(r'(?i)^konstrukcja','constr'),(r'(?i)^akcesoria w cenie','equip'),(r'(?i)^wyposażenie','equip'),(r'(?i)^ościeżnic[ea],','frame'),(r'(?i)^uwagi\b','notes'),(r'(?i)^dopłaty','opts'),(r'(?i)^opcje\b','opts')]
 COAT=re.compile(r'^(Farba|Okleina|Lakier|Laminat|Stal|Blacha|Fornir|CPL|HPL)\b[^★*]*')
@@ -53,8 +41,9 @@ for p in range(9,158):
     # images left page
     imgs,PW=images(p); k=PW/W
     page=render(PDF,p,CACHE); sc=page.width/PW
-    def crop(r): 
-        x,y,w,h=r; return page.crop((round(x*sc),round(y*sc),round((x+w)*sc),round((y+h)*sc)))
+    def crop(r,f=2):
+        im=raw_image(PDF,p,r,page,sc)
+        return enhance(im, f if im.height<700 else 1)
     big_imgs=[r for r in imgs if r[2]>60 and r[3]>100]
     scene=None; hero=None; vars_=[]
     land=[r for r in big_imgs if r[2]>r[3]*1.15 and r[2]>PW*0.3]
@@ -89,8 +78,8 @@ for p in range(9,158):
     d=f'{OUT}/{cid}'
     it=dict(id=cid,brand='Porta',cat=cat,group=grp,name=name.title() if name.isupper() else name,page=p,tagline=tag,descPL=desc,net=net,gross=gross,
             constr=secs.get('constr',[]),equip=secs.get('equip',[]),frame=secs.get('frame',[]),notes=secs.get('notes',[]),opts=secs.get('opts',[]),coats=coats,widths=widths,dir=f'fabriek/porta/{cid}')
-    if scene: it['scene']=list(save(crop(scene),f'{d}/scene.jpg',760))
-    if hero: it['hero']=list(save(crop(hero),f'{d}/hero.jpg',900))
+    if scene: it['scene']=list(save(crop(scene),f'{d}/scene.jpg',900))
+    if hero: it['hero']=list(save(crop(hero),f'{d}/hero.jpg',1200))
     if not scene and not hero:
         cand=[r for r in big_imgs if r not in vars_ and r[2]*r[3]>PW*PW*0.05]
         if cand: scene=max(cand,key=lambda r:r[2]*r[3])
@@ -99,7 +88,7 @@ for p in range(9,158):
         if len(vars_)<2: vars_=[]
     vars_=vars_[:30]
     if vars_:
-        it['strip']=strip([crop(r) for r in vars_],f'{d}/strip.jpg')
+        it['strip']=strip([crop(r,3) for r in vars_],f'{d}/strip.jpg',H=min(660,max(crop(r,3).height for r in vars_[:3])))
         it['labels']=[label(r) for r in vars_]
     if not (scene or hero or vars_): continue
     items.append(it); dbg.append(f"{p:3d} {it['name'][:34]:34s} net={net:5d} v={len(vars_):2d} hero={'y' if hero else '-'} scene={'y' if scene else '-'} c={len(it['constr'])} e={len(it['equip'])} o={len(it['opts'])} coats={len(coats)} | {tag[:30]}")
