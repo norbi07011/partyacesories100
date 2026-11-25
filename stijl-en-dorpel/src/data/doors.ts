@@ -1,0 +1,423 @@
+import type { L } from '../i18n';
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * Catalogus. Elke deur wordt getekend uit `parts` (zie components/Door.tsx),
+ * dus een nieuw model toevoegen = één object hieronder.
+ * Coördinaten per deurblad: 100 breed × 240 hoog.
+ *
+ * LET OP: alle prijzen zijn richtprijzen / placeholders (incl. btw).
+ * ───────────────────────────────────────────────────────────────────────── */
+
+export type Part =
+  | { k: 'panel'; x: number; y: number; w: number; h: number }
+  | { k: 'glass'; x: number; y: number; w: number; h: number; v?: number; h2?: number }
+  | { k: 'groove'; x1: number; y1: number; x2: number; y2: number };
+
+export type Category = 'binnen' | 'buiten';
+export type Kind = 'draai' | 'schuif' | 'taats';
+
+export type DoorModel = {
+  id: string;
+  name: string;
+  cat: Category;
+  kind: Kind;
+  leaves: 1 | 2;
+  style: L;
+  desc: L;
+  parts: Part[];
+  steel?: boolean; // slank staallook-profiel
+  pull?: boolean; // lange greep i.p.v. kruk
+  price: number;
+  finish: string; // standaardkleur
+  specs: L[];
+};
+
+const P = (x: number, y: number, w: number, h: number): Part => ({ k: 'panel', x, y, w, h });
+const G = (x: number, y: number, w: number, h: number, v = 0, h2 = 0): Part => ({ k: 'glass', x, y, w, h, v, h2 });
+const Gr = (x1: number, y1: number, x2: number, y2: number): Part => ({ k: 'groove', x1, y1, x2, y2 });
+
+const INT: L[] = [
+  ['Opdek of stomp leverbaar', 'Rebated or flush fit', 'Wersja przylgowa lub bezprzylgowa'],
+  ['Standaardmaten én maatwerk', 'Standard sizes and made to measure', 'Wymiary standardowe i na miarę'],
+  ['Afgelakt in kleur naar keuze', 'Factory finished in your colour', 'Lakierowane fabrycznie w wybranym kolorze'],
+];
+const EXT: L[] = [
+  ['Geïsoleerd deurblad, HR++ of triple glas', 'Insulated leaf, HR++ or triple glazing', 'Ocieplone skrzydło, szyba HR++ lub potrójna'],
+  ['Meerpuntssluiting, SKG-gekeurd hang- en sluitwerk', 'Multi-point lock, SKG-rated hardware', 'Zamek wielopunktowy, okucia z atestem SKG'],
+  ['Tochtprofielen rondom', 'Draught seals all round', 'Uszczelki na całym obwodzie'],
+];
+
+export const MODELS: DoorModel[] = [
+  {
+    id: 'linde', name: 'Linde', cat: 'binnen', kind: 'draai', leaves: 1, price: 189, finish: '9010',
+    style: ['Vlak · modern', 'Flush · modern', 'Gładkie · nowoczesne'],
+    desc: [
+      'Strakke vlakke binnendeur. Rustig, tijdloos en de voordeligste manier om je hele huis in één keer op te frissen.',
+      'A clean flush interior door. Calm, timeless and the most affordable way to refresh the whole house at once.',
+      'Proste, gładkie drzwi wewnętrzne. Spokojne, ponadczasowe i najtańszy sposób na odświeżenie całego domu.',
+    ],
+    parts: [], specs: INT,
+  },
+  {
+    id: 'lijn', name: 'Lijn', cat: 'binnen', kind: 'draai', leaves: 1, price: 229, finish: '7016',
+    style: ['Lijnfrees · modern', 'Grooved · modern', 'Frezowane · nowoczesne'],
+    desc: [
+      'Vlakke deur met drie horizontale freeslijnen. Net dat beetje extra tekening zonder druk te worden.',
+      'A flush door with three horizontal grooves. Just enough detail without getting busy.',
+      'Gładkie drzwi z trzema poziomymi frezami. Odrobina rysunku, bez przesady.',
+    ],
+    parts: [Gr(0, 60, 100, 60), Gr(0, 120, 100, 120), Gr(0, 180, 100, 180)], specs: INT,
+  },
+  {
+    id: 'texel', name: 'Texel', cat: 'binnen', kind: 'draai', leaves: 1, price: 259, finish: '9001',
+    style: ['Shaker · landelijk', 'Shaker · country', 'Shaker · rustykalne'],
+    desc: [
+      'Eén groot verdiept paneel in shakerstijl. Past net zo goed in een jaren-30-woning als in nieuwbouw.',
+      'One large recessed shaker panel. Works just as well in a 1930s home as in a new build.',
+      'Jeden duży, zagłębiony panel w stylu shaker. Pasuje i do kamienicy, i do nowego domu.',
+    ],
+    parts: [P(12, 12, 76, 216)], specs: INT,
+  },
+  {
+    id: 'haarlem', name: 'Haarlem', cat: 'binnen', kind: 'draai', leaves: 1, price: 279, finish: '9010',
+    style: ['Paneeldeur · klassiek', 'Panel door · classic', 'Płycinowe · klasyczne'],
+    desc: [
+      'Klassieke tweevaks paneeldeur met de verhoudingen van een oud-Hollandse deur, in een moderne opbouw.',
+      'A classic two-panel door with old Dutch proportions and a modern construction.',
+      'Klasyczne drzwi dwupłycinowe o holenderskich proporcjach i współczesnej konstrukcji.',
+    ],
+    parts: [P(12, 12, 76, 96), P(12, 120, 76, 108)], specs: INT,
+  },
+  {
+    id: 'delft', name: 'Delft', cat: 'binnen', kind: 'draai', leaves: 1, price: 299, finish: '9010',
+    style: ['Paneeldeur · klassiek', 'Panel door · classic', 'Płycinowe · klasyczne'],
+    desc: [
+      'Viervaks paneeldeur. De deur die je in herenhuizen en grachtenpanden terugziet, nu op jouw maat.',
+      'A four-panel door — the one you see in town houses and canal houses, now made to your size.',
+      'Drzwi czteropłycinowe, jakie spotkasz w kamienicach nad kanałami — teraz na Twój wymiar.',
+    ],
+    parts: [P(12, 12, 35, 120), P(53, 12, 35, 120), P(12, 144, 35, 84), P(53, 144, 35, 84)], specs: INT,
+  },
+  {
+    id: 'tuindorp', name: 'Tuindorp', cat: 'binnen', kind: 'draai', leaves: 1, price: 369, finish: 'salie',
+    style: ["Jaren '30 · glas", '1930s · glazed', 'Lata 30. · z szybą'],
+    desc: [
+      "Jaren-'30-deur met drie ruitjes boven twee panelen. Laat licht door naar de gang en houdt het karakter van je huis intact.",
+      'A 1930s door with three panes over two panels. Lets light through to the hallway and keeps the character of the house.',
+      'Drzwi w stylu lat 30.: trzy szybki nad dwiema płycinami. Wpuszczają światło do korytarza i zachowują charakter domu.',
+    ],
+    parts: [G(14, 14, 72, 52, 2), P(14, 78, 72, 66), P(14, 156, 72, 70)], specs: INT,
+  },
+  {
+    id: 'atelier', name: 'Atelier', cat: 'binnen', kind: 'draai', leaves: 1, price: 429, finish: 'eiken',
+    style: ['Glasdeur · hout', 'Glazed · timber', 'Przeszklone · drewno'],
+    desc: [
+      'Houten deur met drie glasvakken. Maakt van een donkere gang een lichte, zonder dat je de ruimte open hoeft te breken.',
+      'A timber door with three glazed sections. Turns a dark hallway into a bright one without knocking down a wall.',
+      'Drewniane drzwi z trzema szybami. Rozjaśniają ciemny korytarz bez wyburzania ścian.',
+    ],
+    parts: [G(14, 14, 72, 64), G(14, 88, 72, 64), G(14, 162, 72, 64)], specs: INT,
+  },
+  {
+    id: 'loods', name: 'Loods', cat: 'binnen', kind: 'taats', leaves: 1, price: 649, finish: '9005', steel: true, pull: true,
+    style: ['Staallook · taatsdeur', 'Steel look · pivot', 'Loft · drzwi osiowe'],
+    desc: [
+      'Taatsdeur met slanke staallook-profielen en acht glasvakken. Draait zonder kozijn, dus ook te plaatsen in een bestaande doorgang.',
+      'A pivot door with slim steel-look profiles and eight panes. No frame needed, so it fits an existing opening.',
+      'Drzwi osiowe ze smukłymi profilami w stylu stali i ośmioma szybami. Bez ościeżnicy — pasują do istniejącego otworu.',
+    ],
+    parts: [G(5, 5, 90, 230, 1, 3)],
+    specs: [
+      ['Taatsscharnier in vloer en plafond, geen kozijn nodig', 'Floor and ceiling pivot, no frame required', 'Zawias osiowy w podłodze i suficie, bez ościeżnicy'],
+      ['Veiligheidsglas', 'Safety glass', 'Szkło bezpieczne'],
+      ['Altijd op maat gemaakt', 'Always made to measure', 'Zawsze na wymiar'],
+    ],
+  },
+  {
+    id: 'rails', name: 'Rails', cat: 'binnen', kind: 'schuif', leaves: 1, price: 489, finish: 'noten',
+    style: ['Schuifdeur · loft', 'Sliding · loft', 'Przesuwne · loft'],
+    desc: [
+      'Schuifdeur op een zichtbare rail. Kost geen draairuimte, ideaal voor badkamer, bijkeuken of inloopkast.',
+      'A sliding door on an exposed rail. Needs no swing space — ideal for a bathroom, utility room or walk-in wardrobe.',
+      'Drzwi przesuwne na widocznej szynie. Nie zabierają miejsca — idealne do łazienki, spiżarni czy garderoby.',
+    ],
+    parts: [Gr(25, 0, 25, 240), Gr(50, 0, 50, 240), Gr(75, 0, 75, 240)],
+    specs: [
+      ['Inclusief rail, rollers en vloergeleider', 'Rail, rollers and floor guide included', 'W komplecie szyna, rolki i prowadnik'],
+      ['Softclose mogelijk', 'Soft close available', 'Możliwy cichy domyk'],
+      ['Geen kozijn nodig', 'No frame required', 'Bez ościeżnicy'],
+    ],
+  },
+  {
+    id: 'jordaan', name: 'Jordaan', cat: 'binnen', kind: 'draai', leaves: 2, price: 1190, finish: '9010',
+    style: ['En-suite · dubbel', 'En-suite · double', 'Dwuskrzydłowe · en-suite'],
+    desc: [
+      'Dubbele en-suitedeuren met glas en roeden. Verbindt woon- en eetkamer, of sluit ze juist warm af.',
+      'Double en-suite doors with glazing bars. Connects living and dining room — or closes them off to keep the heat in.',
+      'Podwójne drzwi en-suite ze szprosami. Łączą salon z jadalnią albo zamykają je, żeby zatrzymać ciepło.',
+    ],
+    parts: [G(14, 14, 72, 150, 1, 3), P(14, 176, 72, 50)], specs: INT,
+  },
+
+  /* ───────────── Buitendeuren ───────────── */
+  {
+    id: 'gracht', name: 'Gracht', cat: 'buiten', kind: 'draai', leaves: 1, price: 1890, finish: 'grachtengroen',
+    style: ['Voordeur · klassiek', 'Front door · classic', 'Wejściowe · klasyczne'],
+    desc: [
+      'Klassieke voordeur met bovenlicht en twee panelen. De uitstraling van een stadsdeur, de isolatie van nu.',
+      'A classic front door with a top light and two panels. Town-house looks, modern insulation.',
+      'Klasyczne drzwi wejściowe z naświetlem i dwiema płycinami. Wygląd kamienicy, dzisiejsza izolacja.',
+    ],
+    parts: [G(16, 14, 68, 44), P(16, 70, 68, 74), P(16, 156, 68, 68)], specs: EXT,
+  },
+  {
+    id: 'polder', name: 'Polder', cat: 'buiten', kind: 'draai', leaves: 1, price: 2190, finish: '7016', pull: true,
+    style: ['Voordeur · modern', 'Front door · modern', 'Wejściowe · nowoczesne'],
+    desc: [
+      'Vlakke voordeur met een smalle verticale glasstrook en lange greep. Strak, veilig en opvallend ingetogen.',
+      'A flush front door with a slim vertical glass strip and a long pull. Clean, secure and quietly striking.',
+      'Gładkie drzwi wejściowe z wąskim pionowym przeszkleniem i długim pochwytem. Proste, bezpieczne, eleganckie.',
+    ],
+    parts: [G(60, 30, 14, 180)], specs: EXT,
+  },
+  {
+    id: 'wad', name: 'Wad', cat: 'buiten', kind: 'draai', leaves: 1, price: 2090, finish: 'duifblauw', pull: true,
+    style: ['Voordeur · modern', 'Front door · modern', 'Wejściowe · nowoczesne'],
+    desc: [
+      'Voordeur met horizontale groeven en drie vierkante ruitjes. Geeft daglicht in de hal zonder inkijk.',
+      'A front door with horizontal grooves and three square panes. Daylight in the hall, no view in.',
+      'Drzwi wejściowe z poziomymi frezami i trzema kwadratowymi szybkami. Światło w holu, bez zaglądania.',
+    ],
+    parts: [Gr(0, 48, 100, 48), Gr(0, 96, 100, 96), Gr(0, 144, 100, 144), Gr(0, 192, 100, 192), G(66, 14, 16, 22), G(66, 61, 16, 22), G(66, 109, 16, 22)],
+    specs: EXT,
+  },
+  {
+    id: 'tuin', name: 'Tuin', cat: 'buiten', kind: 'draai', leaves: 1, price: 1490, finish: '9010',
+    style: ['Achterdeur · glas', 'Back door · glazed', 'Tylne · przeszklone'],
+    desc: [
+      'Achterdeur met groot glasvlak en borstwering. Veel licht in de keuken, stevig onderin.',
+      'A back door with a large pane and a solid lower panel. Lots of light in the kitchen, sturdy below.',
+      'Drzwi tylne z dużą szybą i pełnym dołem. Dużo światła w kuchni, solidny dół.',
+    ],
+    parts: [G(14, 14, 72, 150), P(14, 176, 72, 50)], specs: EXT,
+  },
+  {
+    id: 'veranda', name: 'Veranda', cat: 'buiten', kind: 'draai', leaves: 2, price: 2890, finish: '9005',
+    style: ['Tuindeuren · dubbel', 'French doors · double', 'Balkonowe · podwójne'],
+    desc: [
+      'Openslaande tuindeuren met volledig glas. Zet ze open en de tuin hoort bij de kamer.',
+      'Fully glazed French doors. Open them and the garden becomes part of the room.',
+      'W pełni przeszklone drzwi tarasowe. Otwórz je, a ogród staje się częścią pokoju.',
+    ],
+    parts: [G(12, 12, 76, 216)], specs: EXT,
+  },
+  {
+    id: 'hoeve', name: 'Hoeve', cat: 'buiten', kind: 'draai', leaves: 1, price: 1990, finish: 'eiken',
+    style: ['Boerderijdeur · landelijk', 'Stable door · country', 'Dzielone · wiejskie'],
+    desc: [
+      'Boerderijdeur met los te openen bovendeel. Frisse lucht binnen, hond en kinderen ook.',
+      'A stable door with a top half that opens on its own. Fresh air in, dog and kids stay in too.',
+      'Drzwi dzielone z osobno otwieraną górą. Świeże powietrze w środku — pies i dzieci też.',
+    ],
+    parts: [G(16, 16, 68, 84, 1, 1), Gr(0, 118, 100, 118), P(16, 134, 68, 92)], specs: EXT,
+  },
+];
+
+export const modelById = (id: string | null | undefined) => MODELS.find((m) => m.id === id) ?? MODELS[0];
+
+/* ───────────── Opties ───────────── */
+
+export type Finish = { id: string; name: L; hex: string; wood?: boolean; price: number };
+export const FINISHES: Finish[] = [
+  { id: '9010', name: ['Zuiver wit · RAL 9010', 'Pure white · RAL 9010', 'Biel czysta · RAL 9010'], hex: '#efece4', price: 0 },
+  { id: '9001', name: ['Crèmewit · RAL 9001', 'Cream · RAL 9001', 'Kremowy · RAL 9001'], hex: '#e4dac4', price: 0 },
+  { id: '7016', name: ['Antraciet · RAL 7016', 'Anthracite · RAL 7016', 'Antracyt · RAL 7016'], hex: '#3a4045', price: 0 },
+  { id: '9005', name: ['Gitzwart · RAL 9005', 'Jet black · RAL 9005', 'Czarny · RAL 9005'], hex: '#171717', price: 0 },
+  { id: 'salie', name: ['Saliegroen', 'Sage green', 'Szałwiowa zieleń'], hex: '#8b9a84', price: 45 },
+  { id: 'grachtengroen', name: ['Grachtengroen', 'Canal green', 'Zieleń amsterdamska'], hex: '#1f3b30', price: 45 },
+  { id: 'duifblauw', name: ['Duifblauw', 'Dove blue', 'Gołębi błękit'], hex: '#5b7084', price: 45 },
+  { id: 'eiken', name: ['Eiken naturel', 'Natural oak', 'Dąb naturalny'], hex: '#b58a57', wood: true, price: 140 },
+  { id: 'noten', name: ['Noten', 'Walnut', 'Orzech'], hex: '#5d3f2a', wood: true, price: 180 },
+];
+export const finishById = (id: string) => FINISHES.find((f) => f.id === id) ?? FINISHES[0];
+
+export type GlassId = 'helder' | 'mat' | 'gerookt' | 'ribbel';
+export const GLASS: { id: GlassId; name: L; price: number }[] = [
+  { id: 'helder', name: ['Helder glas', 'Clear glass', 'Szkło przezroczyste'], price: 0 },
+  { id: 'mat', name: ['Mat glas', 'Frosted glass', 'Szkło matowe'], price: 35 },
+  { id: 'gerookt', name: ['Rookglas', 'Smoked glass', 'Szkło dymione'], price: 60 },
+  { id: 'ribbel', name: ['Ribbelglas', 'Fluted glass', 'Szkło ryflowane'], price: 95 },
+];
+
+export type HandleId = 'rvs' | 'zwart' | 'messing';
+export const HANDLES: { id: HandleId; name: L; hex: string; price: number }[] = [
+  { id: 'rvs', name: ['Geborsteld RVS', 'Brushed steel', 'Stal szczotkowana'], hex: '#c4c8cc', price: 0 },
+  { id: 'zwart', name: ['Mat zwart', 'Matt black', 'Czarny mat'], hex: '#222222', price: 15 },
+  { id: 'messing', name: ['Messing', 'Brass', 'Mosiądz'], hex: '#c9a45c', price: 30 },
+];
+
+export type FrameId = 'behouden' | 'hout' | 'staal' | 'geen';
+export const FRAMES: { id: FrameId; name: L; hint: L; price: [number, number] }[] = [
+  {
+    id: 'behouden', price: [0, 0],
+    name: ['Bestaand kozijn behouden', 'Keep the existing frame', 'Zostaje obecna futryna'],
+    hint: ['We meten het kozijn in en maken de deur passend.', 'We measure the frame and make the door fit.', 'Mierzymy futrynę i dopasowujemy drzwi.'],
+  },
+  {
+    id: 'hout', price: [245, 690],
+    name: ['Nieuw houten kozijn', 'New timber frame', 'Nowa futryna drewniana'],
+    hint: ['Gegrond of afgelakt, stomp of opdek.', 'Primed or finished, flush or rebated.', 'Zagruntowana lub lakierowana, przylgowa lub nie.'],
+  },
+  {
+    id: 'staal', price: [165, 165],
+    name: ['Nieuw stalen kozijn', 'New steel frame', 'Nowa futryna stalowa'],
+    hint: ['Nastelbaar montagekozijn, snel geplaatst.', 'Adjustable fitting frame, quickly installed.', 'Regulowana futryna montażowa, szybki montaż.'],
+  },
+];
+
+export const WIDTHS = [63, 68, 73, 78, 83, 88, 93];
+export const HEIGHTS = [201.5, 211.5, 231.5];
+
+export type ServiceId = 'levering' | 'montage';
+export const SERVICE: { id: ServiceId; name: L; hint: L; price: [number, number] }[] = [
+  {
+    id: 'montage', price: [145, 390],
+    name: ['Inmeten + montage', 'Survey + installation', 'Pomiar + montaż'],
+    hint: ['Wij meten in, hangen af en voeren de oude deur af.', 'We measure, hang the door and take the old one away.', 'Mierzymy, montujemy i zabieramy stare drzwi.'],
+  },
+  {
+    id: 'levering', price: [0, 0],
+    name: ['Alleen levering', 'Delivery only', 'Tylko dostawa'],
+    hint: ['Je hangt de deur zelf af. Bezorging in overleg.', 'You hang the door yourself. Delivery by arrangement.', 'Montujesz samodzielnie. Dostawa do uzgodnienia.'],
+  },
+];
+
+export type DoorConfig = {
+  model: string;
+  finish: string;
+  glass: GlassId;
+  handle: HandleId;
+  frame: FrameId;
+  width: number | 'maat';
+  height: number | 'maat';
+  customW?: string;
+  customH?: string;
+  hinge: 'L' | 'R';
+  service: ServiceId;
+};
+
+export const defaultConfig = (m: DoorModel): DoorConfig => ({
+  model: m.id, finish: m.finish, glass: 'helder', handle: m.finish === '9005' || m.finish === '7016' ? 'rvs' : 'zwart',
+  frame: 'behouden', width: 83, height: 201.5, hinge: 'L', service: 'montage',
+});
+
+export const hasGlass = (m: DoorModel) => m.parts.some((p) => p.k === 'glass');
+export const needsFrame = (m: DoorModel) => m.kind === 'draai';
+
+/** Richtprijs per stuk voor een samengestelde deur. */
+export const priceOf = (c: DoorConfig) => {
+  const m = modelById(c.model);
+  const ext = m.cat === 'buiten' ? 1 : 0;
+  let p = m.price;
+  p += finishById(c.finish).price * m.leaves * (ext ? 2 : 1);
+  if (hasGlass(m)) p += (GLASS.find((g) => g.id === c.glass)?.price ?? 0) * m.leaves;
+  p += (HANDLES.find((h) => h.id === c.handle)?.price ?? 0) * m.leaves;
+  if (needsFrame(m)) p += FRAMES.find((f) => f.id === c.frame)?.price[ext] ?? 0;
+  if (c.width === 'maat' || c.height === 'maat') p += Math.round(m.price * 0.15);
+  else {
+    if (c.width > 88) p += 35 * m.leaves;
+    if (c.height > 201.5) p += (c.height > 211.5 ? 95 : 45) * m.leaves;
+  }
+  p += (SERVICE.find((s) => s.id === c.service)?.price[ext] ?? 0) * (m.leaves === 2 ? 1.5 : 1);
+  return Math.round(p);
+};
+
+/* ───────────── Kozijnen & beslag (losse producten) ───────────── */
+
+export type Product = {
+  id: string;
+  cat: 'kozijn' | 'beslag';
+  name: L;
+  desc: L;
+  price: number;
+  unit: L;
+  art: 'frame-wood' | 'frame-steel' | 'frame-pvc' | 'frame-alu' | 'handle' | 'lock' | 'hinge' | 'seal';
+};
+
+const PER: L = ['per stuk', 'each', 'za sztukę'];
+const PERSET: L = ['per set', 'per set', 'za komplet'];
+
+export const PRODUCTS: Product[] = [
+  {
+    id: 'kozijn-hout', cat: 'kozijn', art: 'frame-wood', price: 245, unit: PER,
+    name: ['Houten binnenkozijn', 'Timber interior frame', 'Drewniana futryna wewnętrzna'],
+    desc: [
+      'Massief houten kozijn, stomp of opdek, gegrond of in kleur afgelakt. Op elke wanddikte te maken.',
+      'Solid timber frame, flush or rebated, primed or finished in colour. Made for any wall thickness.',
+      'Lita drewniana futryna, przylgowa lub bezprzylgowa, gruntowana lub lakierowana. Na każdą grubość ściany.',
+    ],
+  },
+  {
+    id: 'kozijn-staal', cat: 'kozijn', art: 'frame-steel', price: 165, unit: PER,
+    name: ['Stalen montagekozijn', 'Steel fitting frame', 'Stalowa futryna montażowa'],
+    desc: [
+      'Nastelbaar stalen kozijn dat we achteraf in een afgewerkte wand plaatsen. Snel, strak en onderhoudsvrij.',
+      'An adjustable steel frame fitted into a finished wall. Quick, crisp and maintenance-free.',
+      'Regulowana stalowa futryna montowana w wykończonej ścianie. Szybko, równo i bez konserwacji.',
+    ],
+  },
+  {
+    id: 'kozijn-kunststof', cat: 'kozijn', art: 'frame-pvc', price: 790, unit: PER,
+    name: ['Kunststof buitenkozijn', 'uPVC exterior frame', 'Zewnętrzna futryna PCV'],
+    desc: [
+      'Geïsoleerd kunststof deurkozijn met lage onderdorpel. Nooit meer schilderen, wel de uitstraling van hout.',
+      'An insulated uPVC door frame with a low threshold. No more painting, still the look of timber.',
+      'Ocieplona futryna PCV z niskim progiem. Bez malowania, a wygląda jak drewno.',
+    ],
+  },
+  {
+    id: 'kozijn-hardhout', cat: 'kozijn', art: 'frame-alu', price: 690, unit: PER,
+    name: ['Hardhouten buitenkozijn', 'Hardwood exterior frame', 'Zewnętrzna futryna z twardego drewna'],
+    desc: [
+      'Hardhouten kozijn met DTS- of hardstenen onderdorpel. De duurzame keuze voor voordeur en achterdeur.',
+      'A hardwood frame with a composite or bluestone threshold. The lasting choice for front and back doors.',
+      'Futryna z twardego drewna z progiem kompozytowym lub kamiennym. Trwały wybór do drzwi wejściowych.',
+    ],
+  },
+  {
+    id: 'kruk', cat: 'beslag', art: 'handle', price: 39, unit: PERSET,
+    name: ['Deurkrukken op rozet', 'Lever handles on rose', 'Klamki na rozecie'],
+    desc: [
+      'Krukkenset in RVS, mat zwart of messing. Inclusief rozetten en bevestiging.',
+      'Handle set in brushed steel, matt black or brass. Roses and fixings included.',
+      'Komplet klamek: stal, czarny mat lub mosiądz. Z rozetami i mocowaniem.',
+    ],
+  },
+  {
+    id: 'slot', cat: 'beslag', art: 'lock', price: 189, unit: PER,
+    name: ['Meerpuntssluiting SKG★★★', 'Multi-point lock SKG★★★', 'Zamek wielopunktowy SKG★★★'],
+    desc: [
+      'Driepuntssluiting met veiligheidscilinder en kerntrekbeveiliging voor buitendeuren.',
+      'Three-point lock with security cylinder and anti-snap protection for exterior doors.',
+      'Zamek trzypunktowy z wkładką antywłamaniową do drzwi zewnętrznych.',
+    ],
+  },
+  {
+    id: 'scharnier', cat: 'beslag', art: 'hinge', price: 24, unit: PERSET,
+    name: ['Kogellagerscharnieren', 'Ball-bearing hinges', 'Zawiasy łożyskowane'],
+    desc: [
+      'Set van drie scharnieren. Lopen licht, zakken niet door en zijn er in dezelfde afwerking als je kruk.',
+      'A set of three hinges. Smooth running, no sagging, in the same finish as your handle.',
+      'Komplet trzech zawiasów. Lekko chodzą, nie opadają, w kolorze klamki.',
+    ],
+  },
+  {
+    id: 'tocht', cat: 'beslag', art: 'seal', price: 49, unit: PER,
+    name: ['Valdorpel & tochtprofielen', 'Drop seal & draught strips', 'Próg opadający i uszczelki'],
+    desc: [
+      'Onzichtbare valdorpel onder de deur plus profielen rondom. Scheelt tocht, geluid en stookkosten.',
+      'A concealed drop seal under the door plus seals all round. Cuts draughts, noise and heating bills.',
+      'Niewidoczny próg opadający i uszczelki dookoła. Mniej przeciągów, hałasu i rachunków.',
+    ],
+  },
+];
