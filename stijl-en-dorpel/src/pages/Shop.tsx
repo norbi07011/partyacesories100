@@ -375,7 +375,7 @@ const Shop = () => {
     const list = catalog.filter((it) => inCat(it.cat));
     const sample = (list.find((it) => it.nl && (it.hero || it.strip)) ?? list.find((it) => it.hero || it.strip))?.id;
     const withScene = list.find((it) => it.brand === 'Eko-Okna' && it.scene && it.scene[0] >= 1200) ?? list.find((it) => it.scene && it.scene[0] >= 1200);
-    return { id, label, count: list.length + PRODUCTS.filter((p) => p.photos && inCat(p.cat)).length, sample, scene: withScene ? `${withScene.dir}/scene.jpg` : undefined };
+    return { id, label, count: list.length + PRODUCTS.filter((p) => p.photos && inCat(p.cat)).length, sample, scene: withScene ? `${withScene.dir}/scene.webp` : undefined };
   }).filter((x) => x.count > 0);
   const chip = (on: boolean) => `shrink-0 px-5 py-2.5 rounded-full text-sm font-medium border transition-all ${on ? 'bg-amber-500 text-black border-amber-500' : 'bg-zinc-900/60 text-zinc-400 border-zinc-800 hover:border-amber-500/50 hover:text-white'}`;
   const heading = (label: string, count: number, kicker?: string) => (

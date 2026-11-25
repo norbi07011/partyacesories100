@@ -125,7 +125,7 @@ const Editorial = () => {
   const facade = catalog.find((it) => it.id === 'eko-aio-modena' && it.scene);
   const rows: Row[] = [
     { to: '/producten?cat=binnen', title: UI.interior, text: TX.rowInterior, photo: 'interior', position: '34% 50%' },
-    ...(facade ? [{ to: '/producten?cat=ramen', title: TX.rowWindowsTitle, text: TX.rowWindows, src: asset(`${facade.dir}/scene.jpg`) } as Row] : []),
+    ...(facade ? [{ to: '/producten?cat=ramen', title: TX.rowWindowsTitle, text: TX.rowWindows, src: asset(`${facade.dir}/scene.webp`) } as Row] : []),
     { to: '/producten?cat=kozijn', title: UI.frames, text: TX.rowFrames, photo: 'hall', position: '62% 50%' },
   ];
   return (

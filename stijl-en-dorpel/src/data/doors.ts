@@ -29,7 +29,7 @@ export type DoorModel = {
   pull?: boolean; // lange greep i.p.v. kruk
   brand?: string; // fabrikant, als het model uit een fabriekscollectie komt
   glassDefault?: GlassId;
-  /** Fabrieksfoto's in public/fabriek/<dir>/: 1.jpg … n.jpg (varianten) en optioneel scene.jpg (sfeerbeeld).
+  /** Fabrieksfoto's in public/fabriek/<dir>/: 1.webp … n.webp (varianten) en optioneel scene.webp (sfeerbeeld).
    *  Ontbreken de bestanden, dan toont de site de tekening. */
   photos?: { dir: string; count: number; scene?: boolean };
   price: number;
@@ -79,8 +79,8 @@ export const modelImages = (m: DoorModel) => {
   const p = m.photos;
   if (!p || p.count < 1) return { variants: [] as string[], scene: undefined as string | undefined };
   return {
-    variants: Array.from({ length: p.count }, (_, i) => `${p.dir}/${i + 1}.jpg`),
-    scene: p.scene ? `${p.dir}/scene.jpg` : undefined,
+    variants: Array.from({ length: p.count }, (_, i) => `${p.dir}/${i + 1}.webp`),
+    scene: p.scene ? `${p.dir}/scene.webp` : undefined,
   };
 };
 
@@ -508,7 +508,7 @@ export type Product = {
 const PER: L = ['per stuk', 'each', 'za sztukę'];
 const PERSET: L = ['per set', 'per set', 'za komplet'];
 const PERM: L = ['per meter', 'per metre', 'za metr'];
-const F = (dir: string, n = 1) => Array.from({ length: n }, (_, i) => `fabriek/invado/${dir}/${i + 1}.jpg`);
+const F = (dir: string, n = 1) => Array.from({ length: n }, (_, i) => `fabriek/invado/${dir}/${i + 1}.webp`);
 const I = (p: Omit<Product, 'brand'>): Product => ({ brand: 'Invado', ...p });
 
 export const PRODUCTS: Product[] = [

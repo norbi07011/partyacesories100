@@ -110,7 +110,7 @@ export const Showcase3D = () => {
   return (
     <section ref={section} className="relative py-24 md:py-32 overflow-hidden [contain:paint]">
       {items.map((it, i) => it.scene && (
-        <img key={it.id} src={asset(`${it.dir}/scene.jpg`)} alt="" loading="lazy" className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${i === active ? 'opacity-25' : 'opacity-0'}`} />
+        <img key={it.id} src={asset(`${it.dir}/scene.webp`)} alt="" loading="lazy" className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${i === active ? 'opacity-25' : 'opacity-0'}`} />
       ))}
       <div className="absolute inset-0 bg-[radial-gradient(70%_70%_at_65%_50%,transparent,rgba(11,10,9,.9)_78%)]" />
       <div className="absolute inset-0 bg-gradient-to-b from-[#0b0a09] via-transparent to-[#0b0a09]" />

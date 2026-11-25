@@ -17,7 +17,8 @@ import { lockScroll } from './fx/core';
  * ───────────────────────────────────────────────────────────────────────── */
 
 export type CatCat = 'ramen' | 'binnen' | 'entree' | 'buiten' | 'schuif' | 'technisch' | 'kozijn' | 'beslag' | 'zonwering' | 'garage' | 'glas';
-type Strip = { w: number; h: number; items: [number, number][] };
+/** Variant sprite: tiles of equal height, laid out in one or more rows. items: [x, width, row?] */
+type Strip = { w: number; h: number; rows?: number; items: [number, number, number?][] };
 export type CatItem = {
   id: string;
   brand: 'Invado' | 'Porta' | 'Eko-Okna';
@@ -26,7 +27,7 @@ export type CatItem = {
   features?: string[];
   tech?: string[];
   nl?: boolean; // system made for the Dutch market (block profile)
-  gallery?: number; // extra photos g1.jpg … gN.jpg
+  gallery?: number; // extra photos g1.webp … gN.webp
   url?: string;
   cat: CatCat;
   group: string;
@@ -176,21 +177,23 @@ export const intro = (it: CatItem, t: (l: L) => string, lang: string) => {
 export function Sprite({ item, index, className = '', cap = true }: { item: CatItem; index: number; className?: string; cap?: boolean }) {
   const s = item.strip;
   if (!s) return null;
-  const [x, w] = s.items[Math.min(index, s.items.length - 1)];
-  const pos = s.w === w ? 0 : (x / (s.w - w)) * 100;
+  const [x, w, row = 0] = s.items[Math.min(index, s.items.length - 1)];
+  const rows = s.rows ?? 1;
+  const px = s.w === w ? 0 : (x / (s.w - w)) * 100;
+  const py = rows === 1 ? 0 : (row / (rows - 1)) * 100;
   return (
     <div
       role="img"
       aria-label={item.labels?.[index] ?? item.name}
       className={`mix-blend-multiply bg-no-repeat ${className}`}
-      style={{ maxHeight: cap ? s.h : undefined, aspectRatio: `${w} / ${s.h}`, backgroundImage: `url("${asset(`${item.dir}/strip.jpg`)}")`, backgroundSize: `${(s.w / w) * 100}% 100%`, backgroundPosition: `${pos}% 0` }}
+      style={{ maxHeight: cap ? s.h : undefined, aspectRatio: `${w} / ${s.h}`, backgroundImage: `url("${asset(`${item.dir}/strip.webp`)}")`, backgroundSize: `${(s.w / w) * 100}% ${rows * 100}%`, backgroundPosition: `${px}% ${py}%` }}
     />
   );
 }
 
 /** index -2 = the collection's cover photo (when it has one), otherwise a version from the strip. */
 const Lead = ({ item, index, className }: { item: CatItem; index: number; className: string }) => {
-  if (item.hero && (index === -2 || !item.strip)) return <img src={asset(`${item.dir}/hero.jpg`)} alt={item.name} loading="lazy" draggable={false} style={{ maxHeight: item.hero[1] }} className={`${className} object-contain mix-blend-multiply`} />;
+  if (item.hero && (index === -2 || !item.strip)) return <img src={asset(`${item.dir}/hero.webp`)} alt={item.name} loading="lazy" draggable={false} style={{ maxHeight: item.hero[1] }} className={`${className} object-contain mix-blend-multiply`} />;
   if (item.strip) return <Sprite item={item} index={Math.max(0, index)} className={className} />;
   return null;
 };
@@ -218,7 +221,7 @@ export function CatCard({ item, open }: { item: CatItem; open: (it: CatItem, ind
               <Lead item={item} index={index} className="h-full w-auto max-w-full transition-transform duration-[1200ms] ease-out group-hover:scale-[1.03]" />
             </span>
           ) : item.scene && (
-            <img src={asset(`${item.dir}/scene.jpg`)} alt={item.name} loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-[1200ms] ease-out group-hover:scale-[1.03]" />
+            <img src={asset(`${item.dir}/scene.webp`)} alt={item.name} loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-[1200ms] ease-out group-hover:scale-[1.03]" />
           )}
           {item.nl && <span className="absolute top-4 left-4 text-[9px] font-medium uppercase tracking-[0.26em] text-[#1d1a17]/70">NL-profiel</span>}
         </span>
@@ -308,9 +311,9 @@ export function CatBody({ item, start, onNavigate, page = false }: BodyProps) {
       <div className={`flex flex-col min-h-0 min-w-0 ${page ? 'md:sticky md:top-28' : 'p-4 md:p-6'}`}>
         <Plate className={`${page ? 'h-[56svh] min-h-[360px]' : 'flex-1 min-h-[34svh] md:min-h-0'} flex items-end justify-center ${view === -1 ? '' : 'pt-10 px-8 pb-[4%]'}`}>
           {view === -1 && item.scene
-            ? <img src={asset(`${item.dir}/scene.jpg`)} alt={item.name} className="absolute inset-0 w-full h-full object-cover" />
+            ? <img src={asset(`${item.dir}/scene.webp`)} alt={item.name} className="absolute inset-0 w-full h-full object-cover" />
             : view >= 100
-              ? <img src={asset(`${item.dir}/g${view - 99}.jpg`)} alt={item.name} className="max-h-full max-w-full object-contain mix-blend-multiply" />
+              ? <img src={asset(`${item.dir}/g${view - 99}.webp`)} alt={item.name} className="max-h-full max-w-full object-contain mix-blend-multiply" />
               : <Lead item={item} index={view} className="h-full max-h-full w-auto max-w-full" />}
           {view >= 0 && item.labels?.[view] && <span className={`absolute top-3 left-3 ${chipDark}`}>{item.labels[view]}</span>}
         </Plate>
@@ -318,17 +321,17 @@ export function CatBody({ item, start, onNavigate, page = false }: BodyProps) {
           <div className="flex gap-2 mt-3 overflow-x-auto no-scrollbar pb-1 shrink-0">
             {item.scene && (
               <button onClick={() => setView(-1)} aria-label={t(TX.inRoom)} aria-pressed={view === -1} className={`shrink-0 w-24 h-20 rounded-lg overflow-hidden border-2 transition-all ${view === -1 ? 'border-amber-400' : 'border-transparent opacity-70 hover:opacity-100'}`}>
-                <img src={asset(`${item.dir}/scene.jpg`)} alt="" loading="lazy" className="w-full h-full object-cover" />
+                <img src={asset(`${item.dir}/scene.webp`)} alt="" loading="lazy" className="w-full h-full object-cover" />
               </button>
             )}
             {item.hero && (
               <button onClick={() => setView(-2)} aria-pressed={view === -2} className={`shrink-0 w-14 h-20 rounded-lg overflow-hidden bg-[#f4f2ee] border-2 ${view === -2 ? 'border-amber-400' : 'border-transparent opacity-70 hover:opacity-100'}`}>
-                <img src={asset(`${item.dir}/hero.jpg`)} alt="" className="w-full h-full object-contain mix-blend-multiply p-1" />
+                <img src={asset(`${item.dir}/hero.webp`)} alt="" className="w-full h-full object-contain mix-blend-multiply p-1" />
               </button>
             )}
             {Array.from({ length: item.gallery ?? 0 }, (_, i) => (
               <button key={`g${i}`} onClick={() => setView(100 + i)} aria-pressed={view === 100 + i} className={`shrink-0 w-20 h-20 rounded-lg overflow-hidden bg-[#f4f2ee] border-2 transition-all ${view === 100 + i ? 'border-amber-400' : 'border-transparent opacity-70 hover:opacity-100'}`}>
-                <img src={asset(`${item.dir}/g${i + 1}.jpg`)} alt="" loading="lazy" className="w-full h-full object-contain mix-blend-multiply p-1" />
+                <img src={asset(`${item.dir}/g${i + 1}.webp`)} alt="" loading="lazy" className="w-full h-full object-contain mix-blend-multiply p-1" />
               </button>
             ))}
             {item.strip?.items.map((_, i) => (

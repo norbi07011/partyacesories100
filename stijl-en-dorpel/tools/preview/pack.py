@@ -5,9 +5,9 @@ root = sys.argv[1]; fab = f'{root}/fabriek'
 LIMIT = 1_400_000
 order = []
 for it in json.load(open(f'{fab}/catalog.json')):
-    order += sorted(glob.glob(f"{root}/{it['dir']}/*.jpg"))
+    order += sorted(glob.glob(f"{root}/{it['dir']}/*.webp"))
 seen = set(order)
-order += [f for f in sorted(glob.glob(f'{fab}/**/*.jpg', recursive=True)) if f not in seen and '/packs/' not in f]
+order += [f for f in sorted(glob.glob(f'{fab}/**/*.webp', recursive=True)) if f not in seen and '/packs/' not in f]
 shutil.rmtree(f'{fab}/packs', ignore_errors=True); os.makedirs(f'{fab}/packs')
 index = {}; n = 0; buf = bytearray()
 def flush():

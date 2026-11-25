@@ -2,7 +2,7 @@ import { useSyncExternalStore } from 'react';
 
 /**
  * Preview builds can only ship a limited number of files, so the catalogue photos are bundled
- * into a few "pack" files (plain concatenated JPEGs + an index). Normal builds don't use this.
+ * into a few "pack" files (plain concatenated WebP files + an index). Normal builds don't use this.
  */
 type Entry = [pack: number, offset: number, length: number];
 const BLANK = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
@@ -30,7 +30,7 @@ function load(pack: number) {
     .then((r) => r.arrayBuffer())
     .then((buf) => {
       for (const [path, [p, off, len]] of Object.entries(index!)) {
-        if (p === pack) urls.set(path, URL.createObjectURL(new Blob([buf.slice(off, off + len)], { type: 'image/jpeg' })));
+        if (p === pack) urls.set(path, URL.createObjectURL(new Blob([buf.slice(off, off + len)], { type: 'image/webp' })));
       }
       bump();
     })
@@ -39,7 +39,7 @@ function load(pack: number) {
 
 /** URL for a packed photo, a blank pixel while its pack loads, or null when the file isn't packed. */
 export function packed(path: string): string | null {
-  if (!PACKED || !path.startsWith('fabriek/') || !path.endsWith('.jpg')) return null;
+  if (!PACKED || !path.startsWith('fabriek/') || !path.endsWith('.webp')) return null;
   const hit = urls.get(path);
   if (hit) return hit;
   if (!index) return BLANK;
