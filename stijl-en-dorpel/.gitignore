@@ -7,3 +7,4 @@ coverage/
 .env*
 !.env.example
 media-src/
+dist-preview/

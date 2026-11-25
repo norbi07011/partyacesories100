@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, MemoryRouter, Routes, Route } from 'react-router-dom';
 import { LanguageProvider } from './i18n';
 import { QuoteProvider } from './quote';
 import { Layout } from './components/Layout';
@@ -11,6 +11,9 @@ import About from './pages/About';
 import Contact from './pages/Contact';
 import QuoteList from './pages/QuoteList';
 import NotFound from './pages/NotFound';
+
+// Preview builds (VITE_PREVIEW=1) run inside a sandboxed frame without real URLs.
+const Router = import.meta.env.VITE_PREVIEW ? MemoryRouter : BrowserRouter;
 
 const Configurator = lazy(() => import('./pages/Configurator'));
 const Legal = lazy(() => import('./pages/Legal'));
