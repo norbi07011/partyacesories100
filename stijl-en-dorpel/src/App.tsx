@@ -1,3 +1,4 @@
+import { usePackVersion } from './packs';
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, MemoryRouter, Routes, Route } from 'react-router-dom';
 import { LanguageProvider } from './i18n';
@@ -26,6 +27,7 @@ const PageFallback = () => (
 );
 
 export default function App() {
+  usePackVersion();
   return (
     <LanguageProvider>
       <QuoteProvider>

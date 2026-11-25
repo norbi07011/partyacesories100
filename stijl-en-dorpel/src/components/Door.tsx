@@ -1,3 +1,4 @@
+import { packed } from '../packs';
 import { useId, useState, type CSSProperties, type ReactNode } from 'react';
 import { finishById, HANDLES, modelImages, type DoorModel, type GlassId, type HandleId, type Part, type Product } from '../data/doors';
 
@@ -285,7 +286,7 @@ export function Plate({ children, className = '' }: { children: ReactNode; class
   );
 }
 
-export const asset = (path: string) => `${import.meta.env.BASE_URL}${path}`;
+export const asset = (path: string) => packed(path) ?? `${import.meta.env.BASE_URL}${path}`;
 
 /* Factory photo when the model has one and the file exists; otherwise the drawing. */
 export function DoorVisual({ model, finish, index = 0, className = '' }: { model: DoorModel; finish?: string; index?: number; className?: string }) {
