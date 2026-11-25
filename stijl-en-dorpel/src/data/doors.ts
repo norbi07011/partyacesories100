@@ -29,7 +29,7 @@ export type DoorModel = {
   pull?: boolean; // lange greep i.p.v. kruk
   brand?: string; // fabrikant, als het model uit een fabriekscollectie komt
   glassDefault?: GlassId;
-  photo?: string; // pad naar een productfoto (public/); vervangt de tekening in de winkel
+  photo?: string; // productfoto in public/ (relatief pad); ontbreekt het bestand, dan toont de site de tekening
   price: number;
   finish: string; // standaardkleur
   specs: L[];
@@ -65,7 +65,7 @@ const INV_FLAT: L[] = [
 const MOD: Part[] = [Gr(10, 0, 10, 240), Gr(90, 0, 90, 240)];
 const strips = (ys: number[], h = 8): Part[] => ys.map((y) => G(10, y, 80, h));
 const inv = (m: Omit<DoorModel, 'cat' | 'kind' | 'leaves' | 'brand' | 'glassDefault' | 'specs'> & { specs?: L[] }): DoorModel => ({
-  cat: 'binnen', kind: 'draai', leaves: 1, brand: 'Invado', glassDefault: 'mat', specs: INV, ...m,
+  cat: 'binnen', kind: 'draai', leaves: 1, brand: 'Invado', glassDefault: 'mat', specs: INV, photo: `fabriek/invado/${m.id}.jpg`, ...m,
 });
 
 const INVADO: DoorModel[] = [

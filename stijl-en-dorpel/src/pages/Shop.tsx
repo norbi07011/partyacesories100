@@ -5,7 +5,7 @@ import { useT, euro, type L } from '../i18n';
 import { UI, useDocumentTitle } from '../ui';
 import { MODELS, PRODUCTS, FINISHES, defaultConfig, modelById, type DoorModel, type Product } from '../data/doors';
 import { useQuote } from '../quote';
-import { Door, ProductArt } from '../components/Door';
+import { Door, DoorVisual, ProductArt } from '../components/Door';
 import { PageHero, Badge } from '../components/PageHero';
 import { Reveal, TiltCard } from '../fx/components';
 import { flyTo } from '../fx/core';
@@ -56,9 +56,7 @@ const DoorCard = ({ m }: { m: DoorModel }) => {
       <article className="group h-full flex flex-col bb-glass-card rounded-3xl overflow-hidden hover:border-amber-500/60 transition-colors">
         <Link to={`/configurator?model=${m.id}&finish=${finish}`} className="relative block h-80 bg-[radial-gradient(70%_70%_at_50%_25%,rgba(230,217,189,.18),transparent)]" aria-label={`${m.name} — ${t(UI.configure)}`}>
           <div ref={art} className="absolute inset-x-0 top-6 bottom-0 flex items-end justify-center">
-            {m.photo
-              ? <img src={m.photo} alt={m.name} loading="lazy" className="h-full w-auto max-w-[86%] object-contain transition-transform duration-700 group-hover:scale-[1.03]" />
-              : <Door model={m} finish={finish} className="h-full w-auto max-w-[86%] drop-shadow-[0_20px_30px_rgba(0,0,0,.65)] transition-transform duration-700 group-hover:scale-[1.03]" />}
+            <DoorVisual model={m} finish={finish} className="h-full w-auto max-w-[86%] drop-shadow-[0_20px_30px_rgba(0,0,0,.65)] transition-transform duration-700 group-hover:scale-[1.03]" />
           </div>
           <span className="absolute top-4 left-4 px-3 py-1 rounded-full bg-black/60 border border-white/10 text-[10px] uppercase tracking-[0.25em] text-white/70">
             {t(TX.kinds[m.kind])}{m.leaves === 2 ? ` · ${t(TX.double)}` : ''}
@@ -72,7 +70,7 @@ const DoorCard = ({ m }: { m: DoorModel }) => {
           </div>
           <p className="text-amber-300/70 text-[11px] uppercase tracking-[0.3em] mb-4">{t(m.style)}</p>
           <p className="text-zinc-400 text-sm leading-relaxed mb-5 flex-1">{t(m.desc)}</p>
-          {!m.steel && (
+          {!m.steel && !m.photo && (
             <div className="flex items-center gap-2 mb-5" role="group" aria-label={t(TX.colourHint)}>
               {swatches.map((f) => (
                 <button

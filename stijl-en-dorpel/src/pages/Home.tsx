@@ -9,7 +9,7 @@ import { UI, useDocumentTitle } from '../ui';
 import { MODELS, FINISHES, GLASS, defaultConfig, modelById } from '../data/doors';
 import { STEPS, WHY, SERVICES, FAQ, type ServiceIcon } from '../data/content';
 import { useQuote } from '../quote';
-import { Door } from '../components/Door';
+import { Door, DoorVisual } from '../components/Door';
 import { Kicker } from '../components/PageHero';
 import { gsap, reducedMotion, isMobile, flyTo } from '../fx/core';
 import { useTransitionNavigate } from '../fx/Engine';
@@ -272,7 +272,7 @@ const ModelCarousel = () => {
                 >
                   <div className="absolute inset-x-0 top-0 h-2/3 bg-[radial-gradient(60%_60%_at_50%_30%,rgba(230,217,189,.16),transparent)]" />
                   <div ref={(el) => { cards.current[i] = el; }} className="absolute inset-x-0 top-6 bottom-20 flex items-end justify-center">
-                    <Door model={it} className="h-full w-auto max-w-[82%] drop-shadow-[0_18px_30px_rgba(0,0,0,.6)]" />
+                    <DoorVisual model={it} className="h-full w-auto max-w-[82%] drop-shadow-[0_18px_30px_rgba(0,0,0,.6)]" />
                   </div>
                   <div className="absolute bottom-0 inset-x-0 p-5 text-left bg-gradient-to-t from-black via-black/80 to-transparent">
                     <div className="text-amber-500 font-mono text-xs mb-1">{String(i + 1).padStart(2, '0')} · {t(it.cat === 'binnen' ? UI.interior : UI.exterior)}</div>

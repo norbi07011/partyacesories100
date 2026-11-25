@@ -1,4 +1,4 @@
-import { useId, type CSSProperties } from 'react';
+import { useId, useState, type CSSProperties } from 'react';
 import { finishById, HANDLES, type DoorModel, type GlassId, type HandleId, type Part, type Product } from '../data/doors';
 
 /* Every door on the site is drawn from data (see data/doors.ts) — no photos.
@@ -272,4 +272,22 @@ export function ProductArt({ art, className = '' }: { art: Product['art']; class
       )}
     </svg>
   );
+}
+
+/* Product photo when the model has one and the file exists; otherwise the drawing. */
+export function DoorVisual({ model, finish, className = '' }: { model: DoorModel; finish?: string; className?: string }) {
+  const [failed, setFailed] = useState(false);
+  if (model.photo && !failed) {
+    return (
+      <img
+        src={`${import.meta.env.BASE_URL}${model.photo}`}
+        alt={model.name}
+        loading="lazy"
+        draggable={false}
+        onError={() => setFailed(true)}
+        className={`${className} object-contain rounded-sm`}
+      />
+    );
+  }
+  return <Door model={model} finish={finish} className={className} />;
 }
