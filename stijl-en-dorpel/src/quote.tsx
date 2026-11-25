@@ -141,7 +141,8 @@ export const factoryRequest = (items: QuoteItem[]): string => {
   if (!rows.length) return '';
   const body = rows.map((it, i) => {
     const head = `${i + 1}. ${it.name} — ${it.qty} szt.`;
-    const lines = it.spec ? specFactory(it.spec) : [it.variant ? `Wariant: ${it.variant}` : 'Wymiary do ustalenia po pomiarze'];
+    const fromSpec = it.spec ? specFactory(it.spec) : [];
+    const lines = fromSpec.length ? fromSpec : [it.variant ? `Wariant: ${it.variant}` : 'Wymiary do ustalenia po pomiarze'];
     return [head, ...lines.map((l) => `   ${l}`)].join('\n');
   }).join('\n\n');
   return [
