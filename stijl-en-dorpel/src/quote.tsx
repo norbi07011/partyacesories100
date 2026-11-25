@@ -18,7 +18,7 @@ type Ctx = {
   total: number;
   addDoor: (c: DoorConfig, qty?: number) => void;
   addProduct: (id: string) => void;
-  addCatalog: (c: { catId: string; name: string; brand: string; variant: string; price: number }) => void;
+  addCatalog: (c: { catId: string; name: string; brand: string; variant: string; price: number }, qty?: number) => void;
   setQty: (key: string, qty: number) => void;
   remove: (key: string) => void;
   clear: () => void;
@@ -55,12 +55,12 @@ export const QuoteProvider = ({ children }: { children: ReactNode }) => {
       return [...l, { key: `p-${productId}`, type: 'product', productId, qty: 1 }];
     });
   }, []);
-  const addCatalog = useCallback((c: { catId: string; name: string; brand: string; variant: string; price: number }) => {
+  const addCatalog = useCallback((c: { catId: string; name: string; brand: string; variant: string; price: number }, qty = 1) => {
     setItems((l) => {
       const key = `c-${c.catId}-${c.variant}`;
       const hit = l.find((i) => i.key === key);
-      if (hit) return l.map((i) => (i === hit ? { ...i, qty: i.qty + 1 } : i));
-      return [...l, { key, type: 'catalog', qty: 1, ...c }];
+      if (hit) return l.map((i) => (i === hit ? { ...i, qty: i.qty + qty } : i));
+      return [...l, { key, type: 'catalog', qty, ...c }];
     });
   }, []);
   const setQty = useCallback((key: string, qty: number) => {

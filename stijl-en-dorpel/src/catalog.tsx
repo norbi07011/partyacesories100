@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { Check, ChevronDown, Expand, Plus, X } from 'lucide-react';
+import { ArrowUpRight, Check, ChevronDown, Expand, Minus, Plus, X } from 'lucide-react';
 import { useLanguage, useT, euro, type L } from './i18n';
 import { UI } from './ui';
 import { PRICING } from './company';
@@ -117,6 +117,16 @@ const TX = {
   chosen: ['Gekozen uitvoering', 'Selected version', 'Wybrany wariant'],
   ask: ['Offerte aanvragen', 'Request a quote', 'Poproś o wycenę'],
   onRequest: ['Prijs op aanvraag', 'Price on request', 'Cena na zapytanie'],
+  custom: ['Maatwerk', 'Custom', 'Na wymiar'],
+  left: ['Linksdraaiend', 'Left-hung', 'Lewe'],
+  right: ['Rechtsdraaiend', 'Right-hung', 'Prawe'],
+  widthCm: ['Breedte (cm)', 'Width (cm)', 'Szerokość (cm)'],
+  heightCm: ['Hoogte (cm)', 'Height (cm)', 'Wysokość (cm)'],
+  swing: ['Draairichting', 'Swing direction', 'Kierunek'],
+  choose: ['Kies in overleg', 'Decide together later', 'Do ustalenia'],
+  sizeNote: ['Nederlandse standaardmaten. De exacte maat leggen we vast bij het inmeten.', 'Dutch standard sizes. The exact size is fixed at the survey.', 'Holenderskie wymiary standardowe. Dokładny wymiar ustalamy przy pomiarze.'],
+  openPage: ['Open productpagina', 'Open product page', 'Otwórz stronę produktu'],
+  toList: ['Naar de offertelijst', 'Go to quote list', 'Przejdź do listy wyceny'],
 } satisfies Record<string, L>;
 
 /** One generated sentence per item, so NL/EN visitors get a readable intro. */
@@ -212,9 +222,14 @@ export function CatCard({ item, open }: { item: CatItem; open: (it: CatItem, ind
             {n > 7 && <span className="text-white/40 text-xs ml-1">+{n - 7}</span>}
           </div>
         )}
-        <button onClick={() => open(item, index)} className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-full bg-amber-500 hover:bg-amber-400 text-black text-sm font-bold transition-colors">
-          {t(UI.details)}
-        </button>
+        <div className="flex gap-2">
+          <button onClick={() => open(item, index)} className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-full bg-amber-500 hover:bg-amber-400 text-black text-sm font-bold transition-colors">
+            {t(UI.details)}
+          </button>
+          <Link to={`/product/${item.id}`} aria-label={`${item.name} — ${t(TX.openPage)}`} title={t(TX.openPage)} className="w-12 h-12 shrink-0 rounded-full border border-zinc-700 hover:border-amber-500 text-white flex items-center justify-center transition-colors">
+            <ArrowUpRight className="w-5 h-5" />
+          </Link>
+        </div>
       </div>
     </article>
   );
@@ -251,18 +266,186 @@ const Fact = ({ label, children }: { label: string; children: ReactNode }) => (
   </div>
 );
 
-export function CatDialog({ item, start, onClose }: { item: CatItem; start: number; onClose: () => void }) {
+type BodyProps = { item: CatItem; start: number; onNavigate?: () => void; page?: boolean };
+
+/** Gallery + all information + order options. Used by the quick-view dialog and the product page. */
+export function CatBody({ item, start, onNavigate, page = false }: BodyProps) {
   const t = useT();
   const { lang } = useLanguage();
-  const { addCatalog } = useQuote();
+  const { addCatalog, count } = useQuote();
   const n = item.strip?.items.length ?? 0;
   // view: -1 = room scene, otherwise a variant index
   const [view, setView] = useState(n || item.hero ? start : -1);
+  const [variant, setVariant] = useState(Math.min(start, Math.max(0, n - 1)));
+  const [colour, setColour] = useState('');
+  const [width, setWidth] = useState<number | 'maat'>(83);
+  const [height, setHeight] = useState<number | 'maat'>(201.5);
+  const [hinge, setHinge] = useState<'L' | 'R'>('L');
+  const [qty, setQty] = useState(1);
   const [done, setDone] = useState(false);
-  const closeRef = useRef<HTMLButtonElement>(null);
   const price = guidePrice(item);
-  const label = view >= 0 ? item.labels?.[view] : undefined;
+  const label = n > 0 ? item.labels?.[variant] : undefined;
+  const isDoor = item.cat !== 'kozijn' && item.cat !== 'beslag';
+  const pick = (i: number) => { setView(i); setVariant(i); setDone(false); };
 
+  const add = () => {
+    const parts = [label ?? ''];
+    if (colour) parts.push(colour);
+    if (isDoor) {
+      parts.push(`${width === 'maat' ? t(TX.custom) : width} × ${height === 'maat' ? t(TX.custom) : String(height).replace('.', ',')} cm`);
+      parts.push(t(hinge === 'L' ? TX.left : TX.right));
+    }
+    addCatalog({ catId: item.id, name: item.name, brand: item.brand, variant: parts.filter(Boolean).join(' · '), price }, qty);
+    setDone(true);
+    window.setTimeout(() => setDone(false), 2000);
+  };
+
+  const f = item.flags;
+  const showOriginal = lang !== 'PL' && (item.constr.length + item.equip.length + item.opts.length + item.notes.length + item.frame.length > 0);
+  const opt = (on: boolean) => `px-3.5 py-2 rounded-full text-sm border transition-all ${on ? 'bg-amber-500 text-black border-amber-500 font-semibold' : 'bg-zinc-900/60 text-zinc-300 border-zinc-800 hover:border-amber-500/50'}`;
+  const optLabel = 'text-[10px] uppercase tracking-[0.28em] text-white/45 mb-2.5';
+
+  return (
+    <div className={`grid grid-cols-1 md:grid-cols-[1.05fr_0.95fr] ${page ? 'gap-6 md:gap-12 items-start' : 'h-full grid-rows-[auto_1fr] md:grid-rows-1'}`}>
+      {/* gallery */}
+      <div className={`flex flex-col min-h-0 min-w-0 ${page ? 'md:sticky md:top-28' : 'p-4 md:p-6'}`}>
+        <Plate className={`${page ? 'h-[56svh] min-h-[360px]' : 'flex-1 min-h-[34svh] md:min-h-0'} flex items-end justify-center ${view === -1 ? '' : 'pt-8 px-8'}`}>
+          {view === -1 && item.scene
+            ? <img src={asset(`${item.dir}/scene.jpg`)} alt={item.name} className="absolute inset-0 w-full h-full object-cover" />
+            : <Lead item={item} index={Math.max(0, view)} className="h-full max-h-full w-auto max-w-full" />}
+          {view >= 0 && item.labels?.[view] && <span className={`absolute top-3 left-3 ${chipDark}`}>{item.labels[view]}</span>}
+        </Plate>
+        {(n > 1 || (item.scene && (n > 0 || item.hero))) && (
+          <div className="flex gap-2 mt-3 overflow-x-auto no-scrollbar pb-1 shrink-0">
+            {item.scene && (
+              <button onClick={() => setView(-1)} aria-label={t(TX.inRoom)} aria-pressed={view === -1} className={`shrink-0 w-24 h-20 rounded-xl overflow-hidden border-2 transition-all ${view === -1 ? 'border-amber-400' : 'border-transparent opacity-70 hover:opacity-100'}`}>
+                <img src={asset(`${item.dir}/scene.jpg`)} alt="" loading="lazy" className="w-full h-full object-cover" />
+              </button>
+            )}
+            {n === 0 && item.hero && (
+              <button onClick={() => setView(0)} aria-pressed={view === 0} className={`shrink-0 w-14 h-20 rounded-xl overflow-hidden bg-[#efe9dd] border-2 ${view === 0 ? 'border-amber-400' : 'border-transparent opacity-70'}`}>
+                <img src={asset(`${item.dir}/hero.jpg`)} alt="" className="w-full h-full object-contain mix-blend-multiply p-1" />
+              </button>
+            )}
+            {item.strip?.items.map((_, i) => (
+              <button key={i} onClick={() => pick(i)} aria-label={item.labels?.[i] ?? `${i + 1}`} title={item.labels?.[i]} aria-pressed={view === i} className={`shrink-0 w-14 h-20 rounded-xl overflow-hidden bg-[#efe9dd] border-2 flex items-end justify-center pt-1 transition-all ${view === i ? 'border-amber-400' : 'border-transparent opacity-70 hover:opacity-100'}`}>
+                <Sprite item={item} index={i} className="h-full w-auto" />
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* information */}
+      <div className={`min-w-0 ${page ? '' : 'min-h-0 overflow-y-auto p-6 md:p-10 md:pl-4'}`}>
+        <p className="text-amber-300/80 text-[11px] font-medium uppercase tracking-[0.4em] mb-4">{item.brand} · {t(groupLabel(item.group))}</p>
+        {page
+          ? <h1 className="font-display text-5xl md:text-7xl text-white leading-none mb-3">{item.name}</h1>
+          : <h2 className="font-display text-5xl md:text-6xl text-white leading-none mb-3 pr-12">{item.name}</h2>}
+        {lang === 'PL' && item.tagline && <p className="font-display italic text-2xl text-amber-100/90 mb-5">{item.tagline}</p>}
+        <p className="text-zinc-300 text-lg leading-relaxed mb-3">{intro(item, t, lang)}</p>
+        {item.descPL && <p lang="pl" className={`leading-relaxed mb-4 ${lang === 'PL' ? 'text-zinc-300 text-lg' : 'text-zinc-500 text-sm italic'}`}>{lang === 'PL' ? item.descPL : `„${item.descPL}”`}</p>}
+        {!page && <Link to={`/product/${item.id}`} onClick={onNavigate} className="inline-flex items-center gap-1.5 text-amber-300/80 hover:text-amber-200 text-sm underline underline-offset-4 mb-2">{t(TX.openPage)}</Link>}
+
+        {/* order options */}
+        <div className="mt-5 rounded-3xl border border-white/10 bg-white/[0.02] p-5 md:p-6 space-y-5">
+          {n > 1 && (
+            <div>
+              <p className={optLabel}>{t(TX.nVariants)}</p>
+              <div className="flex flex-wrap gap-1.5">
+                {item.labels!.map((l, i) => <button key={i} onClick={() => pick(i)} aria-pressed={variant === i} className={opt(variant === i)}>{l}</button>)}
+              </div>
+            </div>
+          )}
+          {item.coats.length > 0 && (
+            <div>
+              <label className={`block ${optLabel}`} htmlFor={`col-${item.id}`}>{t(TX.colours)}</label>
+              <select id={`col-${item.id}`} value={colour} onChange={(e) => setColour(e.target.value)} className="w-full max-w-xs bg-zinc-900 border border-zinc-800 rounded-full px-4 py-2.5 text-white text-sm outline-none focus:border-amber-500">
+                <option value="">{t(TX.choose)}</option>
+                {item.coats.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+          )}
+          {isDoor && (
+            <>
+              <div>
+                <p className={optLabel}>{t(TX.widthCm)}</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {[63, 68, 73, 78, 83, 88, 93].map((w) => <button key={w} onClick={() => setWidth(w)} className={opt(width === w)}>{w}</button>)}
+                  <button onClick={() => setWidth('maat')} className={opt(width === 'maat')}>{t(TX.custom)}</button>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-x-8 gap-y-5">
+                <div>
+                  <p className={optLabel}>{t(TX.heightCm)}</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {[201.5, 211.5, 231.5].map((h) => <button key={h} onClick={() => setHeight(h)} className={opt(height === h)}>{String(h).replace('.', ',')}</button>)}
+                    <button onClick={() => setHeight('maat')} className={opt(height === 'maat')}>{t(TX.custom)}</button>
+                  </div>
+                </div>
+                <div>
+                  <p className={optLabel}>{t(TX.swing)}</p>
+                  <div className="flex gap-1.5">
+                    <button onClick={() => setHinge('L')} className={opt(hinge === 'L')}>{t(TX.left)}</button>
+                    <button onClick={() => setHinge('R')} className={opt(hinge === 'R')}>{t(TX.right)}</button>
+                  </div>
+                </div>
+              </div>
+              <p className="text-white/40 text-xs">{t(TX.sizeNote)}</p>
+            </>
+          )}
+          <div className="flex flex-wrap items-end justify-between gap-4 pt-5 border-t border-white/10">
+            <div>
+              {price > 0
+                ? <><p className="font-display text-5xl bb-text-gold leading-none">{euro(price * qty)}</p><p className="text-white/55 text-sm mt-1">{t(UI.from)} · {t(UI.inclVat)}</p></>
+                : <p className="font-display text-4xl bb-text-gold leading-none">{t(TX.onRequest)}</p>}
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="inline-flex items-center rounded-full border border-zinc-700">
+                <button onClick={() => setQty((q) => Math.max(1, q - 1))} aria-label="−" className="w-10 h-11 flex items-center justify-center text-white hover:text-amber-300"><Minus className="w-4 h-4" /></button>
+                <span className="w-6 text-center text-white tabular-nums" aria-live="polite">{qty}</span>
+                <button onClick={() => setQty((q) => Math.min(99, q + 1))} aria-label="+" className="w-10 h-11 flex items-center justify-center text-white hover:text-amber-300"><Plus className="w-4 h-4" /></button>
+              </div>
+              <button onClick={add} className={`inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full font-bold transition-colors ${done ? 'bg-amber-200 text-black' : 'bg-amber-500 hover:bg-amber-400 text-black'}`}>
+                {done ? <Check className="w-5 h-5" /> : <Plus className="w-5 h-5" />} {t(done ? UI.added : UI.addToQuote)}
+              </button>
+            </div>
+          </div>
+          {(done || count > 0) && (
+            <Link to="/offertelijst" onClick={onNavigate} className="inline-flex items-center gap-2 text-amber-200 text-sm font-medium hover:text-white">{t(TX.toList)} ({count}) →</Link>
+          )}
+        </div>
+
+        <h3 className="text-[11px] uppercase tracking-[0.4em] text-white/45 mt-10 mb-4">{t(TX.facts)}</h3>
+        <dl className="grid grid-cols-2 gap-px bg-white/10 rounded-2xl overflow-hidden mb-8">
+          <Fact label={t(TX.maker)}>{item.brand}</Fact>
+          <Fact label={t(TX.type)}>{t(groupLabel(item.group))}</Fact>
+          {n > 0 && <Fact label={t(TX.nVariants)}>{n}</Fact>}
+          {item.widths && <Fact label={t(TX.widths)}>{item.widths[0]}–{item.widths[1]} {t(TX.cm)}</Fact>}
+          {item.brand === 'Invado' && item.cat === 'binnen' && <Fact label={t(TX.fit)}>{t(f.flush ? TX.fitBoth : TX.fitRebated)}</Fact>}
+          {f.double && <Fact label={t(TX.double)}>{t(TX.yes)}</Fact>}
+          {f.sliding && <Fact label={t(TX.sliding)}>{t(TX.yes)}</Fact>}
+          {f.vent && <Fact label={t(TX.vent)}>{t(TX.yes)}</Fact>}
+        </dl>
+
+        {showOriginal && <p className="text-white/40 text-xs mb-2">{t(TX.original)}</p>}
+        <div className="border-t border-white/10">
+          <Section title={t(TX.constr)} items={item.constr} open />
+          <Section title={t(TX.equip)} items={item.equip} open={page} />
+          <Section title={t(TX.equip2)} items={item.equip2} />
+          <Section title={t(TX.frame)} items={item.frame} />
+          <Section title={t(TX.opts)} items={item.opts} />
+          <Section title={t(TX.notes)} items={item.notes} />
+        </div>
+        <p className="text-white/35 text-xs mt-6">{t(TX.source)} {item.brand} {item.brand === 'Invado' ? '2/2021' : '2/2013'}, p. {item.page}. {t(UI.indicative)}</p>
+      </div>
+    </div>
+  );
+}
+
+export function CatDialog({ item, start, onClose }: { item: CatItem; start: number; onClose: () => void }) {
+  const t = useT();
+  const closeRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     lockScroll(true);
     closeRef.current?.focus();
@@ -270,108 +453,14 @@ export function CatDialog({ item, start, onClose }: { item: CatItem; start: numb
     window.addEventListener('keydown', onKey);
     return () => { lockScroll(false); window.removeEventListener('keydown', onKey); };
   }, [onClose]);
-
-  const add = () => {
-    addCatalog({ catId: item.id, name: item.name, brand: item.brand, variant: label ?? '', price });
-    setDone(true);
-    window.setTimeout(() => setDone(false), 1800);
-  };
-
-  const f = item.flags;
-  const showOriginal = lang !== 'PL' && (item.constr.length + item.equip.length + item.opts.length + item.notes.length + item.frame.length > 0);
-
   return (
     <div className="fixed inset-0 z-[80] flex items-end md:items-center justify-center md:p-6" role="dialog" aria-modal="true" aria-label={item.name}>
       <button className="absolute inset-0 bg-black/80 backdrop-blur-md cursor-default" onClick={onClose} aria-label={t(UI.close)} tabIndex={-1} />
-      <div data-lenis-prevent className="relative w-full max-w-6xl h-[94svh] md:h-[88svh] overflow-hidden rounded-t-[2rem] md:rounded-[2rem] bg-[#141210] border border-white/10 shadow-2xl animate-[sd-sheet_.5s_cubic-bezier(.16,1,.3,1)] grid grid-cols-1 md:grid-cols-[1.05fr_0.95fr] grid-rows-[auto_1fr] md:grid-rows-1">
+      <div data-lenis-prevent className="relative w-full max-w-6xl h-[94svh] md:h-[88svh] overflow-hidden rounded-t-[2rem] md:rounded-[2rem] bg-[#141210] border border-white/10 shadow-2xl animate-[sd-sheet_.5s_cubic-bezier(.16,1,.3,1)]">
         <button ref={closeRef} onClick={onClose} aria-label={t(UI.close)} className="absolute top-4 right-4 z-20 w-11 h-11 rounded-full bg-black/60 border border-white/15 text-white flex items-center justify-center hover:border-amber-400 transition-colors">
           <X className="w-5 h-5" />
         </button>
-
-        {/* gallery */}
-        <div className="p-4 md:p-6 flex flex-col min-h-0 min-w-0">
-          <Plate className={`flex-1 min-h-[34svh] md:min-h-0 flex items-end justify-center ${view === -1 ? '' : 'pt-8 px-8'}`}>
-            {view === -1 && item.scene
-              ? <img src={asset(`${item.dir}/scene.jpg`)} alt={item.name} className="absolute inset-0 w-full h-full object-cover" />
-              : <Lead item={item} index={Math.max(0, view)} className="h-full max-h-full w-auto max-w-full" />}
-            {label && <span className={`absolute top-3 left-3 ${chipDark}`}>{label}</span>}
-          </Plate>
-          {(n > 1 || (item.scene && (n > 0 || item.hero))) && (
-            <div className="flex gap-2 mt-3 overflow-x-auto no-scrollbar pb-1 shrink-0">
-              {item.scene && (
-                <button onClick={() => setView(-1)} aria-label={t(TX.inRoom)} aria-pressed={view === -1} className={`shrink-0 w-24 h-20 rounded-xl overflow-hidden border-2 transition-all ${view === -1 ? 'border-amber-400' : 'border-transparent opacity-70 hover:opacity-100'}`}>
-                  <img src={asset(`${item.dir}/scene.jpg`)} alt="" loading="lazy" className="w-full h-full object-cover" />
-                </button>
-              )}
-              {n === 0 && item.hero && (
-                <button onClick={() => setView(0)} aria-pressed={view === 0} className={`shrink-0 w-14 h-20 rounded-xl overflow-hidden bg-[#efe9dd] border-2 ${view === 0 ? 'border-amber-400' : 'border-transparent opacity-70'}`}>
-                  <img src={asset(`${item.dir}/hero.jpg`)} alt="" className="w-full h-full object-contain mix-blend-multiply p-1" />
-                </button>
-              )}
-              {item.strip?.items.map((_, i) => (
-                <button key={i} onClick={() => setView(i)} aria-label={item.labels?.[i] ?? `${i + 1}`} title={item.labels?.[i]} aria-pressed={view === i} className={`shrink-0 w-14 h-20 rounded-xl overflow-hidden bg-[#efe9dd] border-2 flex items-end justify-center pt-1 transition-all ${view === i ? 'border-amber-400' : 'border-transparent opacity-70 hover:opacity-100'}`}>
-                  <Sprite item={item} index={i} className="h-full w-auto" />
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* information */}
-        <div className="min-h-0 min-w-0 overflow-y-auto p-6 md:p-10 md:pl-4">
-          <p className="text-amber-300/80 text-[11px] font-medium uppercase tracking-[0.4em] mb-4">{item.brand} · {t(groupLabel(item.group))}</p>
-          <h2 className="font-display text-5xl md:text-6xl text-white leading-none mb-3 pr-12">{item.name}</h2>
-          {lang === 'PL' && item.tagline && <p className="font-display italic text-2xl text-amber-100/90 mb-5">{item.tagline}</p>}
-          <p className="text-zinc-300 text-lg leading-relaxed mb-3">{intro(item, t, lang)}</p>
-          {item.descPL && <p lang="pl" className={`leading-relaxed mb-6 ${lang === 'PL' ? 'text-zinc-300 text-lg' : 'text-zinc-500 text-sm italic'}`}>{lang === 'PL' ? item.descPL : `„${item.descPL}”`}</p>}
-
-          <div className="flex flex-wrap items-end justify-between gap-4 py-6 border-y border-white/10 mb-8">
-            <div>
-              {price > 0
-                ? <><p className="font-display text-5xl bb-text-gold leading-none">{euro(price)}</p><p className="text-white/55 text-sm mt-1">{t(UI.from)} · {t(UI.inclVat)}</p></>
-                : <p className="font-display text-4xl bb-text-gold leading-none">{t(TX.onRequest)}</p>}
-              {label && <p className="text-white/45 text-xs mt-2">{t(TX.chosen)}: <span className="text-amber-200">{label}</span></p>}
-            </div>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <button onClick={add} className={`inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full font-bold transition-colors ${done ? 'bg-amber-200 text-black' : 'bg-amber-500 hover:bg-amber-400 text-black'}`}>
-                {done ? <Check className="w-5 h-5" /> : <Plus className="w-5 h-5" />} {t(done ? UI.added : UI.addToQuote)}
-              </button>
-              <Link to="/offertelijst" onClick={onClose} className="inline-flex items-center justify-center px-6 py-3.5 rounded-full border border-zinc-700 hover:border-amber-500 text-white font-bold transition-colors">{t(TX.ask)}</Link>
-            </div>
-          </div>
-
-          <h3 className="text-[11px] uppercase tracking-[0.4em] text-white/45 mb-4">{t(TX.facts)}</h3>
-          <dl className="grid grid-cols-2 gap-px bg-white/10 rounded-2xl overflow-hidden mb-8">
-            <Fact label={t(TX.maker)}>{item.brand}</Fact>
-            <Fact label={t(TX.type)}>{t(groupLabel(item.group))}</Fact>
-            {n > 0 && <Fact label={t(TX.nVariants)}>{n}</Fact>}
-            {item.widths && <Fact label={t(TX.widths)}>{item.widths[0]}–{item.widths[1]} {t(TX.cm)}</Fact>}
-            {item.brand === 'Invado' && item.cat === 'binnen' && <Fact label={t(TX.fit)}>{t(f.flush ? TX.fitBoth : TX.fitRebated)}</Fact>}
-            {f.double && <Fact label={t(TX.double)}>{t(TX.yes)}</Fact>}
-            {f.sliding && <Fact label={t(TX.sliding)}>{t(TX.yes)}</Fact>}
-            {f.vent && <Fact label={t(TX.vent)}>{t(TX.yes)}</Fact>}
-          </dl>
-
-          {item.coats.length > 0 && (
-            <div className="mb-8">
-              <h3 className="text-[11px] uppercase tracking-[0.4em] text-white/45 mb-4">{t(TX.colours)} · {item.coats.length}</h3>
-              <div className="flex flex-wrap gap-1.5">
-                {item.coats.map((c) => <span key={c} lang="pl" className="px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-300 text-xs">{c}</span>)}
-              </div>
-            </div>
-          )}
-
-          {showOriginal && <p className="text-white/40 text-xs mb-2">{t(TX.original)}</p>}
-          <div className="border-t border-white/10">
-            <Section title={t(TX.constr)} items={item.constr} open />
-            <Section title={t(TX.equip)} items={item.equip} />
-            <Section title={t(TX.equip2)} items={item.equip2} />
-            <Section title={t(TX.frame)} items={item.frame} />
-            <Section title={t(TX.opts)} items={item.opts} />
-            <Section title={t(TX.notes)} items={item.notes} />
-          </div>
-          <p className="text-white/35 text-xs mt-6">{t(TX.source)} {item.brand} {item.brand === 'Invado' ? '2/2021' : '2/2013'}, p. {item.page}. {t(UI.indicative)}</p>
-        </div>
+        <CatBody item={item} start={start} onNavigate={onClose} />
       </div>
       <style>{`@keyframes sd-sheet{from{opacity:0;transform:translateY(40px) scale(.98)}to{opacity:1;transform:none}}`}</style>
     </div>

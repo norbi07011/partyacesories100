@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, type ReactNode, type CSSProperties } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronDown, Menu, X, Phone, Mail, MapPin, ArrowUpRight, ClipboardList, Clock } from 'lucide-react';
+import { ChevronDown, Menu, X, Phone, Mail, MapPin, ArrowUpRight, ClipboardList, Clock, MessageCircle } from 'lucide-react';
 import { useLanguage, useT, type Lang } from '../i18n';
 import { UI } from '../ui';
 import { company } from '../company';
@@ -321,5 +321,14 @@ export const Layout = ({ children }: { children: ReactNode }) => (
     <div className="relative z-10">
       <Footer />
     </div>
+    <a
+      href={company.whatsappHref}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="WhatsApp"
+      className="fixed z-40 right-4 bottom-4 md:right-6 md:bottom-6 inline-flex items-center gap-2 pl-4 pr-5 h-12 rounded-full bg-[#1f8f4e] hover:bg-[#25a55a] text-white text-sm font-semibold shadow-[0_12px_30px_-8px_rgba(0,0,0,.7)] transition-colors"
+    >
+      <MessageCircle className="w-5 h-5" /> <span className="hidden sm:inline">WhatsApp</span>
+    </a>
   </div>
 );

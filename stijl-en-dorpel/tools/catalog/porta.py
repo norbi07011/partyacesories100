@@ -36,9 +36,10 @@ for p in range(9,158):
     top=sorted([w for w in words if w['y']<H*0.075],key=lambda w:w['x'])
     ttxt=' '.join(w['t'] for w in top if 14<=w['h']<=24)
     m=PRICE.search(ttxt)
-    if not m: continue
-    net=int(m.group(1).replace(' ','')); gross=float(m.group(2).replace(' ','').replace(',','.'))
+    if not m and p!=112: continue
+    net,gross=(3299,4057.77) if p==112 else (int(m.group(1).replace(' ','')),float(m.group(2).replace(' ','').replace(',','.')))
     tw=[w for w in top if w['h']>26 and w['x']<W*0.62]
+    if p==112: tw=[dict(t='Eco NORD')]
     if not tw: continue
     name=re.sub(r'\s+',' ',' '.join(w['t'] for w in tw)).strip(' ,')
     name=re.sub(r'^(NOWOŚĆ|NOWE MODELE)\s*','',name)
@@ -73,7 +74,7 @@ for p in range(9,158):
         t=' '.join(q['t'] for q in ws).replace('*','').strip()
         return re.sub(r'\s+',' ',t)[:48]
     # right page
-    w2,W2,H2=tsv(PDF,p+1)
+    w2,W2,H2=(words,W,H) if 120<=p<=131 else tsv(PDF,p+1)
     secs={}
     if w2:
         for hm,col in ((8.9,lambda w:w['x']<W2*0.5),(7.5,lambda w:w['x']>=W2*0.5)):
@@ -90,7 +91,13 @@ for p in range(9,158):
             constr=secs.get('constr',[]),equip=secs.get('equip',[]),frame=secs.get('frame',[]),notes=secs.get('notes',[]),opts=secs.get('opts',[]),coats=coats,widths=widths,dir=f'fabriek/porta/{cid}')
     if scene: it['scene']=list(save(crop(scene),f'{d}/scene.jpg',760))
     if hero: it['hero']=list(save(crop(hero),f'{d}/hero.jpg',900))
-    vars_=vars_[:14]
+    if not scene and not hero:
+        cand=[r for r in big_imgs if r not in vars_ and r[2]*r[3]>PW*PW*0.05]
+        if cand: scene=max(cand,key=lambda r:r[2]*r[3])
+    if not vars_:
+        vars_=loose_gallery(imgs,PW,PW*1.415,exclude=(scene,hero))
+        if len(vars_)<2: vars_=[]
+    vars_=vars_[:30]
     if vars_:
         it['strip']=strip([crop(r) for r in vars_],f'{d}/strip.jpg')
         it['labels']=[label(r) for r in vars_]

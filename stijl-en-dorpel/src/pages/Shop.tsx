@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { ArrowRight, Check, CheckCircle2, Expand, Plus, SlidersHorizontal, X } from 'lucide-react';
+import { ArrowRight, Check, CheckCircle2, Expand, Plus, Search, SlidersHorizontal, X } from 'lucide-react';
 import { useT, euro, type L } from '../i18n';
 import { UI, useDocumentTitle } from '../ui';
 import {
@@ -11,7 +11,7 @@ import { Door, DoorVisual, Plate, ProductArt, asset } from '../components/Door';
 import { PageHero, Badge } from '../components/PageHero';
 import { flyTo, lockScroll } from '../fx/core';
 import { CTA } from './Home';
-import { useCatalog, CatCard, CatDialog, groupLabel, type CatItem } from '../catalog';
+import { useCatalog, CatCard, CatDialog, groupLabel, guidePrice, type CatItem } from '../catalog';
 
 type Cat = 'all' | 'binnen' | 'buiten' | 'schuif' | 'technisch' | 'kozijn' | 'systeem' | 'beslag';
 type Brand = 'all' | 'Invado' | 'Porta' | 'huis';
@@ -34,6 +34,15 @@ const TX = {
   sliding: ['Schuif & vouw', 'Sliding & folding', 'Przesuwne i łamane'],
   technical: ['Technisch', 'Technical', 'Techniczne'],
   allBrands: ['Alle merken', 'All brands', 'Wszystkie marki'],
+  search: ['Zoek op naam, bijvoorbeeld Corato of klamka', 'Search by name, for example Corato', 'Szukaj po nazwie, np. Corato lub klamka'],
+  sortCat: ['Catalogusvolgorde', 'Catalogue order', 'Kolejność katalogowa'],
+  sortName: ['Naam A–Z', 'Name A–Z', 'Nazwa A–Z'],
+  sortLow: ['Prijs laag–hoog', 'Price low–high', 'Cena rosnąco'],
+  sortHigh: ['Prijs hoog–laag', 'Price high–low', 'Cena malejąco'],
+  sort: ['Sorteren', 'Sort', 'Sortuj'],
+  none: ['Niets gevonden. Probeer een andere zoekterm of filter.', 'Nothing found. Try another search term or filter.', 'Nic nie znaleziono. Spróbuj innej frazy lub filtra.'],
+  results: ['Zoekresultaten', 'Search results', 'Wyniki wyszukiwania'],
+  quoteShort: ['Offerte', 'Quote', 'Wycena'],
   house: ['Huiscollectie', 'House collection', 'Kolekcja własna'],
   houseTitle: ['Huiscollectie · zelf samen te stellen', 'House collection · configure it yourself', 'Kolekcja własna · do samodzielnej konfiguracji'],
   double: ['dubbel', 'double', 'podwójne'],
@@ -243,8 +252,8 @@ const DoorCard = ({ m, open }: { m: DoorModel; open: (d: Detail) => void }) => {
           <Link to={`/configurator?model=${m.id}&finish=${finish}`} className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-full bg-amber-500 hover:bg-amber-400 text-black text-sm font-bold transition-colors">
             <SlidersHorizontal className="w-4 h-4" /> {t(UI.configure)}
           </Link>
-          <button onClick={add} aria-label={t(UI.addToQuote)} title={t(UI.addToQuote)} className={`w-12 h-12 shrink-0 rounded-full border flex items-center justify-center transition-colors ${done ? 'bg-amber-200 text-black border-amber-200' : 'border-zinc-700 hover:border-amber-500 text-white'}`}>
-            {done ? <Check className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+          <button onClick={add} aria-label={t(UI.addToQuote)} title={t(UI.addToQuote)} className={`shrink-0 inline-flex items-center gap-1.5 px-4 h-12 rounded-full border text-sm font-medium transition-colors ${done ? 'bg-amber-200 text-black border-amber-200' : 'border-zinc-700 hover:border-amber-500 text-white'}`}>
+            {done ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />} {t(TX.quoteShort)}
           </button>
         </div>
       </div>
@@ -282,8 +291,8 @@ const ProductCard = ({ p, open }: { p: Product; open: (d: Detail) => void }) => 
         <p className="text-zinc-400 text-sm leading-relaxed mb-5 flex-1">{t(p.desc)}</p>
         <div className="flex items-center justify-between gap-3">
           <p className="text-amber-200"><span className="text-white/45 text-xs mr-1">{t(UI.from)}</span>{euro(p.price)} <span className="text-white/45 text-xs">{t(p.unit)}</span></p>
-          <button onClick={add} aria-label={t(UI.addToQuote)} title={t(UI.addToQuote)} className={`w-11 h-11 shrink-0 rounded-full border flex items-center justify-center transition-colors ${done ? 'bg-amber-200 text-black border-amber-200' : 'border-zinc-700 hover:border-amber-500 text-white'}`}>
-            {done ? <Check className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+          <button onClick={add} aria-label={t(UI.addToQuote)} title={t(UI.addToQuote)} className={`shrink-0 inline-flex items-center gap-1.5 px-4 h-11 rounded-full border text-sm font-medium transition-colors ${done ? 'bg-amber-200 text-black border-amber-200' : 'border-zinc-700 hover:border-amber-500 text-white'}`}>
+            {done ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />} {t(TX.quoteShort)}
           </button>
         </div>
       </div>
@@ -298,6 +307,8 @@ const Shop = () => {
   const [params, setParams] = useSearchParams();
   const [detail, setDetail] = useState<Detail | null>(null);
   const [cat, setCat] = useState<{ item: CatItem; index: number } | null>(null);
+  const [query, setQuery] = useState('');
+  const [sort, setSort] = useState<'cat' | 'name' | 'low' | 'high'>('cat');
   const raw = params.get('cat') as Cat | null;
   const tab: Cat = raw && ['binnen', 'buiten', 'schuif', 'technisch', 'kozijn', 'systeem', 'beslag'].includes(raw) ? raw : 'all';
   const rawBrand = params.get('merk') as Brand | null;
@@ -314,9 +325,20 @@ const Shop = () => {
   };
 
   const inTab = (c: string) => tab === 'all' || c === tab || (tab === 'buiten' && c === 'entree');
-  const factory = catalog.filter((it) => inTab(it.cat) && (brand === 'all' || brand === it.brand));
-  const doors = brand === 'all' || brand === 'huis' ? MODELS.filter((m) => inTab(m.cat)) : [];
-  const products = PRODUCTS.filter((p) => inTab(p.cat) && (brand === 'all' || (brand === 'huis' ? !p.brand : p.brand === brand)));
+  const q = query.trim().toLowerCase();
+  const hit = (...texts: (string | undefined)[]) => !q || texts.some((x) => x?.toLowerCase().includes(q));
+  const factory = catalog.filter((it) => inTab(it.cat) && (brand === 'all' || brand === it.brand) && hit(it.name, it.brand, it.tagline, t(groupLabel(it.group)), ...(it.labels ?? [])));
+  const doors = brand === 'all' || brand === 'huis' ? MODELS.filter((m) => inTab(m.cat) && hit(m.name, t(m.style), t(m.desc))) : [];
+  const products = PRODUCTS.filter((p) => inTab(p.cat) && (brand === 'all' || (brand === 'huis' ? !p.brand : p.brand === brand)) && hit(t(p.name), t(p.desc), p.brand));
+  const flat = sort !== 'cat' || !!q;
+  if (sort === 'name') factory.sort((a, b) => a.name.localeCompare(b.name));
+  if (sort === 'low' || sort === 'high') {
+    const dir = sort === 'low' ? 1 : -1;
+    // items without a guide price go last
+    factory.sort((a, b) => ((guidePrice(a) || (dir > 0 ? 1e9 : -1)) - (guidePrice(b) || (dir > 0 ? 1e9 : -1))) * dir);
+    doors.sort((a, b) => (a.price - b.price) * dir);
+    products.sort((a, b) => (a.price - b.price) * dir);
+  }
   const productGroups = ([
     [UI.frames, products.filter((p) => p.cat === 'kozijn')],
     [TX.systems, products.filter((p) => p.cat === 'systeem')],
@@ -325,9 +347,9 @@ const Shop = () => {
   // factory items grouped by brand + range, in catalogue order
   const factoryGroups: { key: string; brand: string; label: L; items: CatItem[] }[] = [];
   factory.forEach((it) => {
-    const key = `${it.brand}-${it.group}`;
+    const key = flat ? 'all' : `${it.brand}-${it.group}`;
     let g = factoryGroups.find((x) => x.key === key);
-    if (!g) { g = { key, brand: it.brand, label: groupLabel(it.group), items: [] }; factoryGroups.push(g); }
+    if (!g) { g = { key, brand: flat ? '' : it.brand, label: flat ? TX.results : groupLabel(it.group), items: [] }; factoryGroups.push(g); }
     g.items.push(it);
   });
   const total = factory.length + doors.length + products.length;
@@ -374,11 +396,34 @@ const Shop = () => {
               </div>
               <span className="hidden md:block text-white/45 text-[11px] uppercase tracking-[0.3em] whitespace-nowrap">{total} {t(TX.count)}</span>
             </div>
+            <div className="flex flex-col sm:flex-row gap-3 pt-1">
+              <label className="relative flex-1">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+                <input
+                  type="search"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder={t(TX.search)}
+                  aria-label={t(TX.search)}
+                  className="w-full bg-zinc-900/60 border border-zinc-800 rounded-full pl-11 pr-4 py-3 text-white text-sm placeholder:text-zinc-600 outline-none focus:border-amber-500"
+                />
+              </label>
+              <label className="flex items-center gap-3 text-white/45 text-[11px] uppercase tracking-[0.25em]">
+                {t(TX.sort)}
+                <select value={sort} onChange={(e) => setSort(e.target.value as typeof sort)} className="bg-zinc-900 border border-zinc-800 rounded-full px-4 py-3 text-white text-sm normal-case tracking-normal outline-none focus:border-amber-500">
+                  <option value="cat">{t(TX.sortCat)}</option>
+                  <option value="name">{t(TX.sortName)}</option>
+                  <option value="low">{t(TX.sortLow)}</option>
+                  <option value="high">{t(TX.sortHigh)}</option>
+                </select>
+              </label>
+            </div>
           </div>
+          {total === 0 && <p className="text-center text-zinc-400 text-lg py-24">{t(TX.none)}</p>}
 
           {factoryGroups.map((g) => (
             <div key={g.key}>
-              {heading(t(g.label), g.items.length, g.brand)}
+              {heading(t(g.label), g.items.length, g.brand || undefined)}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {g.items.map((it) => <CatCard key={it.id} item={it} open={(item, index) => setCat({ item, index })} />)}
               </div>

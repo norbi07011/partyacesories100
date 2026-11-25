@@ -17,6 +17,7 @@ const Router = import.meta.env.VITE_PREVIEW ? MemoryRouter : BrowserRouter;
 
 const Configurator = lazy(() => import('./pages/Configurator'));
 const Legal = lazy(() => import('./pages/Legal'));
+const Product = lazy(() => import('./pages/Product'));
 
 const PageFallback = () => (
   <div className="min-h-screen flex items-center justify-center">
@@ -34,6 +35,7 @@ export default function App() {
               <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/deuren" element={<Shop />} />
+                <Route path="/product/:id" element={<Product />} />
                 <Route path="/configurator" element={<Configurator />} />
                 <Route path="/diensten" element={<Services />} />
                 <Route path="/inmeten" element={<Measure />} />

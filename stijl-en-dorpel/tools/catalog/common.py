@@ -77,3 +77,24 @@ def ylines(words,hmin=0,hmax=999,tol=2.6):
         g.sort(key=lambda w:w['x'])
         out.append(dict(t=' '.join(w['t'] for w in g),x=g[0]['x'],y=g[0]['y'],h=max(w['h'] for w in g),x2=g[-1]['x']+g[-1]['w']))
     return out
+
+import xml.etree.ElementTree as _ET, shutil as _sh
+def pdf_images(pdf,p,tmp):
+    d=f'{tmp}/x{p}'; os.makedirs(d,exist_ok=True)
+    subprocess.run(['pdftohtml','-xml','-f',str(p),'-l',str(p),'-q','-nodrm',pdf,f'{d}/t'],capture_output=True)
+    try: pg=_ET.parse(f'{d}/t.xml').getroot().find('page')
+    except Exception: return [],1,1
+    PW=float(pg.get('width')); PH=float(pg.get('height')); res=[]; seen=set()
+    for im in pg.findall('image'):
+        r=tuple(int(im.get(k)) for k in ('left','top','width','height'))
+        key=tuple(round(v/5) for v in r)
+        if key in seen: continue
+        seen.add(key); res.append(r)
+    _sh.rmtree(d,ignore_errors=True); return res,PW,PH
+def loose_gallery(imgs,PW,PH,exclude=(),limit=24):
+    big=[r for r in imgs if r not in exclude and r[2]>55 and r[3]>70 and r[2]*r[3]<PW*PH*0.4 and r[1]>PH*0.07]
+    keep=[]
+    for r in sorted(big,key=lambda r:-r[2]*r[3]):
+        if any(q[0]-3<=r[0] and q[1]-3<=r[1] and q[0]+q[2]+3>=r[0]+r[2] and q[1]+q[3]+3>=r[1]+r[3] for q in keep): continue
+        keep.append(r)
+    keep.sort(key=lambda r:(round(r[1]/60),r[0])); return keep[:limit]

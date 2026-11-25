@@ -71,7 +71,14 @@ for name,p,cat,grp in ALL:
             coats=[COL[c] for c in codes],widths=[int(mw.group(1)),int(mw.group(2))] if mw else None,dir=f'fabriek/invado/{cid}')
     op=render(PDF,p,CACHE)
     it['scene']=list(save(op.crop((0,int(op.height*0.16),op.width,int(op.height*0.862))),f'{d}/scene.jpg',760))
-    pick=pick[:14]
+    pick=pick[:30]
+    if not pick:
+        for q in (p+1,p):
+            imgs,PW,PH=pdf_images(PDF,q,CACHE); g=loose_gallery(imgs,PW,PH,limit=12)
+            if len(g)>=2:
+                pg=render(PDF,q,CACHE); s2=pg.width/PW
+                it['strip']=strip([pg.crop((round(r[0]*s2),round(r[1]*s2),round((r[0]+r[2])*s2),round((r[1]+r[3])*s2))) for r in g],f'{d}/strip.jpg',H=360)
+                it['labels']=[f'{name} {k+1}' for k in range(len(g))]; break
     if pick:
         it['strip']=strip([im.crop((ds[i][0]+3,ds[i][1]+3,ds[i][2]-3,ds[i][3]-3)) for i in pick],f'{d}/strip.jpg')
         it['labels']=[dl[i] for i in pick]

@@ -32,7 +32,7 @@ for brand,pdf,p,cat,name in PAGES:
     for r in sorted(big,key=lambda r:-r[2]*r[3]):
         if any(q[0]-3<=r[0] and q[1]-3<=r[1] and q[0]+q[2]+3>=r[0]+r[2] and q[1]+q[3]+3>=r[1]+r[3] for q in keep): continue
         keep.append(r)
-    keep.sort(key=lambda r:(round(r[1]/60),r[0])); keep=keep[:14]
+    keep.sort(key=lambda r:(round(r[1]/60),r[0])); keep=keep[:30]
     def label(r):
         x,y,w,h=[v/k for v in r]
         ws=[q for q in words if x-3<=q['x']+q['w']/2<=x+w+3 and y+h*0.55<=q['y']<=y+h+20 and q['h']<13]
