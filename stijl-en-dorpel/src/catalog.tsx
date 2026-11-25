@@ -16,11 +16,18 @@ import { lockScroll } from './fx/core';
  * house collection.
  * ───────────────────────────────────────────────────────────────────────── */
 
-export type CatCat = 'binnen' | 'entree' | 'buiten' | 'schuif' | 'technisch' | 'kozijn' | 'beslag';
+export type CatCat = 'ramen' | 'binnen' | 'entree' | 'buiten' | 'schuif' | 'technisch' | 'kozijn' | 'beslag' | 'zonwering' | 'garage' | 'glas';
 type Strip = { w: number; h: number; items: [number, number][] };
 export type CatItem = {
   id: string;
-  brand: 'Invado' | 'Porta';
+  brand: 'Invado' | 'Porta' | 'Eko-Okna';
+  /** Eko-Okna items: Dutch text from the manufacturer's Dutch site. */
+  descNL?: string;
+  features?: string[];
+  tech?: string[];
+  nl?: boolean; // system made for the Dutch market (block profile)
+  gallery?: number; // extra photos g1.jpg … gN.jpg
+  url?: string;
   cat: CatCat;
   group: string;
   name: string;
@@ -67,7 +74,7 @@ export function useCatalog() {
 /** Guide price in euro derived from the factory list price (see PRICING in company.ts). */
 export const guidePrice = (it: CatItem) =>
   // The Porta catalogue is from 2013: its prices are too old to derive a guide price from.
-  it.net && it.brand !== 'Porta' ? Math.ceil((it.net / PRICING.plnPerEur) * PRICING.markup / 10) * 10 - 1 : 0;
+  it.net && it.brand === 'Invado' ? Math.ceil((it.net / PRICING.plnPerEur) * PRICING.markup / 10) * 10 - 1 : 0;
 
 const GROUPS: Record<string, L> = {
   'Binnendeuren · modulair': ['Binnendeuren · modulair', 'Interior doors · modular', 'Drzwi wewnętrzne · modułowe'],
@@ -118,6 +125,9 @@ const TX = {
   ask: ['Offerte aanvragen', 'Request a quote', 'Poproś o wycenę'],
   onRequest: ['Prijs op aanvraag', 'Price on request', 'Cena na zapytanie'],
   custom: ['Maatwerk', 'Custom', 'Na wymiar'],
+  bespoke: ['Volledig op maat gemaakt. Afmetingen, indeling, kleur en glas leggen we samen vast bij het inmeten.', 'Fully made to measure. We settle sizes, layout, colour and glass together at the survey.', 'W całości na wymiar. Wymiary, podział, kolor i szkło ustalamy wspólnie przy pomiarze.'],
+  features: ['Eigenschappen', 'Features', 'Cechy'],
+  nlMarket: ['Voor de Nederlandse markt', 'Made for the Dutch market', 'Na rynek holenderski'],
   left: ['Linksdraaiend', 'Left-hung', 'Lewe'],
   right: ['Rechtsdraaiend', 'Right-hung', 'Prawe'],
   widthCm: ['Breedte (cm)', 'Width (cm)', 'Szerokość (cm)'],
@@ -131,6 +141,7 @@ const TX = {
 
 /** One generated sentence per item, so NL/EN visitors get a readable intro. */
 export const intro = (it: CatItem, t: (l: L) => string, lang: string) => {
+  if (it.descNL) return it.descNL;
   const n = it.labels?.length ?? 0;
   const g = t(groupLabel(it.group)).toLowerCase();
   const f = it.flags;
@@ -194,6 +205,7 @@ export function CatCard({ item, open }: { item: CatItem; open: (it: CatItem, ind
           )}
           <span className={`absolute top-4 left-4 ${hasLead ? tag : chipDark}`}>{item.brand}</span>
           {n > 1 && <span className={`absolute top-4 right-4 ${hasLead ? tag : chipDark}`}>{n} {t(TX.variants)}</span>}
+          {item.nl && <span className="absolute top-4 right-4 px-2 py-1 rounded-full bg-[#1d1a17] text-white text-[9px] font-semibold uppercase tracking-[0.2em]">NL-profiel</span>}
           <span className="absolute bottom-3 right-3 w-9 h-9 rounded-full bg-[#1d1a17] text-white flex items-center justify-center opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-500">
             <Expand className="w-4 h-4" />
           </span>
@@ -286,7 +298,7 @@ export function CatBody({ item, start, onNavigate, page = false }: BodyProps) {
   const [done, setDone] = useState(false);
   const price = guidePrice(item);
   const label = n > 0 ? item.labels?.[variant] : undefined;
-  const isDoor = item.cat !== 'kozijn' && item.cat !== 'beslag';
+  const isDoor = ['binnen', 'entree', 'buiten', 'technisch', 'schuif'].includes(item.cat) && item.brand !== 'Eko-Okna';
   const pick = (i: number) => { setView(i); setVariant(i); setDone(false); };
 
   const add = () => {
@@ -302,7 +314,7 @@ export function CatBody({ item, start, onNavigate, page = false }: BodyProps) {
   };
 
   const f = item.flags;
-  const showOriginal = lang !== 'PL' && (item.constr.length + item.equip.length + item.opts.length + item.notes.length + item.frame.length > 0);
+  const showOriginal = lang !== 'PL' && item.brand !== 'Eko-Okna' && (item.constr.length + item.equip.length + item.opts.length + item.notes.length + item.frame.length > 0);
   const opt = (on: boolean) => `px-3.5 py-2 rounded-full text-sm border transition-all ${on ? 'bg-amber-500 text-black border-amber-500 font-semibold' : 'bg-zinc-900/60 text-zinc-300 border-zinc-800 hover:border-amber-500/50'}`;
   const optLabel = 'text-[10px] uppercase tracking-[0.28em] text-white/45 mb-2.5';
 
@@ -313,10 +325,12 @@ export function CatBody({ item, start, onNavigate, page = false }: BodyProps) {
         <Plate className={`${page ? 'h-[56svh] min-h-[360px]' : 'flex-1 min-h-[34svh] md:min-h-0'} flex items-end justify-center ${view === -1 ? '' : 'pt-10 px-8 pb-[4%]'}`}>
           {view === -1 && item.scene
             ? <img src={asset(`${item.dir}/scene.jpg`)} alt={item.name} className="absolute inset-0 w-full h-full object-cover" />
-            : <Lead item={item} index={view} className="h-full max-h-full w-auto max-w-full" />}
+            : view >= 100
+              ? <img src={asset(`${item.dir}/g${view - 99}.jpg`)} alt={item.name} className="max-h-full max-w-full object-contain mix-blend-multiply" />
+              : <Lead item={item} index={view} className="h-full max-h-full w-auto max-w-full" />}
           {view >= 0 && item.labels?.[view] && <span className={`absolute top-3 left-3 ${chipDark}`}>{item.labels[view]}</span>}
         </Plate>
-        {(n > 1 || item.hero || item.scene) && (n + (item.hero ? 1 : 0) + (item.scene ? 1 : 0) > 1) && (
+        {(n + (item.hero ? 1 : 0) + (item.scene ? 1 : 0) + (item.gallery ?? 0) > 1) && (
           <div className="flex gap-2 mt-3 overflow-x-auto no-scrollbar pb-1 shrink-0">
             {item.scene && (
               <button onClick={() => setView(-1)} aria-label={t(TX.inRoom)} aria-pressed={view === -1} className={`shrink-0 w-24 h-20 rounded-lg overflow-hidden border-2 transition-all ${view === -1 ? 'border-amber-400' : 'border-transparent opacity-70 hover:opacity-100'}`}>
@@ -328,6 +342,11 @@ export function CatBody({ item, start, onNavigate, page = false }: BodyProps) {
                 <img src={asset(`${item.dir}/hero.jpg`)} alt="" className="w-full h-full object-contain mix-blend-multiply p-1" />
               </button>
             )}
+            {Array.from({ length: item.gallery ?? 0 }, (_, i) => (
+              <button key={`g${i}`} onClick={() => setView(100 + i)} aria-pressed={view === 100 + i} className={`shrink-0 w-20 h-20 rounded-lg overflow-hidden bg-[#f4f2ee] border-2 transition-all ${view === 100 + i ? 'border-amber-400' : 'border-transparent opacity-70 hover:opacity-100'}`}>
+                <img src={asset(`${item.dir}/g${i + 1}.jpg`)} alt="" loading="lazy" className="w-full h-full object-contain mix-blend-multiply p-1" />
+              </button>
+            ))}
             {item.strip?.items.map((_, i) => (
               <button key={i} onClick={() => pick(i)} aria-label={item.labels?.[i] ?? `${i + 1}`} title={item.labels?.[i]} aria-pressed={view === i} className={`shrink-0 w-14 h-20 rounded-lg overflow-hidden bg-[#f4f2ee] border-2 flex items-end justify-center pt-1 transition-all ${view === i ? 'border-amber-400' : 'border-transparent opacity-70 hover:opacity-100'}`}>
                 <Sprite item={item} index={i} className="h-full w-auto" />
@@ -395,6 +414,7 @@ export function CatBody({ item, start, onNavigate, page = false }: BodyProps) {
               <p className="text-white/40 text-xs">{t(TX.sizeNote)}</p>
             </>
           )}
+          {item.brand === 'Eko-Okna' && <p className="text-white/55 text-sm">{t(TX.bespoke)}</p>}
           <div className="flex flex-wrap items-end justify-between gap-4 pt-5 border-t border-white/10">
             <div>
               {price > 0
@@ -420,6 +440,8 @@ export function CatBody({ item, start, onNavigate, page = false }: BodyProps) {
         <h3 className="text-[11px] uppercase tracking-[0.4em] text-white/45 mt-10 mb-4">{t(TX.facts)}</h3>
         <dl className="grid grid-cols-2 gap-px bg-white/10 rounded-2xl overflow-hidden mb-8">
           <Fact label={t(TX.maker)}>{item.brand}</Fact>
+          {item.nl && <Fact label="NL">{t(TX.nlMarket)}</Fact>}
+          {(item.tech ?? []).map((x) => { const m = x.match(/^(\S+)\s+(.*)$/); return m ? <Fact key={x} label={m[2]}>{m[1]}</Fact> : null; })}
           <Fact label={t(TX.type)}>{t(groupLabel(item.group))}</Fact>
           {n > 0 && <Fact label={t(TX.nVariants)}>{n}</Fact>}
           {item.widths && <Fact label={t(TX.widths)}>{item.widths[0]}–{item.widths[1]} {t(TX.cm)}</Fact>}
@@ -431,6 +453,7 @@ export function CatBody({ item, start, onNavigate, page = false }: BodyProps) {
 
         {showOriginal && <p className="text-white/40 text-xs mb-2">{t(TX.original)}</p>}
         <div className="border-t border-white/10">
+          <Section title={t(TX.features)} items={item.features ?? []} open />
           <Section title={t(TX.constr)} items={item.constr} open />
           <Section title={t(TX.equip)} items={item.equip} open={page} />
           <Section title={t(TX.equip2)} items={item.equip2} />
@@ -438,7 +461,7 @@ export function CatBody({ item, start, onNavigate, page = false }: BodyProps) {
           <Section title={t(TX.opts)} items={item.opts} />
           <Section title={t(TX.notes)} items={item.notes} />
         </div>
-        <p className="text-white/35 text-xs mt-6">{t(TX.source)} {item.brand} {item.brand === 'Invado' ? '2/2021' : '2/2013'}, p. {item.page}. {t(UI.indicative)}</p>
+        <p className="text-white/35 text-xs mt-6">{item.brand === 'Eko-Okna' ? 'Bron: ekookna.nl.' : `${t(TX.source)} ${item.brand} ${item.brand === 'Invado' ? '2/2021' : '2/2013'}, p. ${item.page}.`} {t(UI.indicative)}</p>
       </div>
     </div>
   );
@@ -469,9 +492,10 @@ export function CatDialog({ item, start, onClose }: { item: CatItem; start: numb
 }
 
 /** A catalogue cover photo on a studio plate, for page headers. Renders nothing without the catalogue. */
-export function CatPhoto({ id, className = '' }: { id: string; className?: string }) {
+export function CatPhoto({ id, className = '', bare = false }: { id: string; className?: string; bare?: boolean }) {
   const item = useCatalog().find((c) => c.id === id);
   if (!item || !(item.hero || item.strip)) return null;
+  if (bare) return <Lead item={item} index={-2} className={className} />;
   return (
     <Plate className={`flex items-end justify-center pt-8 pb-[4%] px-6 ${className}`}>
       <Lead item={item} index={-2} className="h-full w-auto max-w-full" />

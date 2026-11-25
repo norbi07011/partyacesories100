@@ -13,15 +13,22 @@ import { flyTo, lockScroll } from '../fx/core';
 import { CTA } from './Home';
 import { useCatalog, CatCard, CatDialog, CatPhoto, groupLabel, guidePrice, type CatItem } from '../catalog';
 
-type Cat = 'all' | 'binnen' | 'buiten' | 'schuif' | 'technisch' | 'kozijn' | 'systeem' | 'beslag';
-type Brand = 'all' | 'Invado' | 'Porta' | 'huis';
+type Cat = 'all' | 'ramen' | 'binnen' | 'buiten' | 'schuif' | 'kozijn' | 'zonwering' | 'garage' | 'glas' | 'technisch' | 'systeem' | 'beslag';
+type Brand = 'all' | 'Eko-Okna' | 'Invado' | 'Porta' | 'huis';
+const CATS: Cat[] = ['ramen', 'binnen', 'buiten', 'schuif', 'kozijn', 'zonwering', 'garage', 'glas', 'technisch', 'systeem', 'beslag'];
 
 const TX = {
-  title: ['Deuren & kozijnen', 'Doors & frames', 'Drzwi i futryny'],
+  title: ['Ramen, deuren & kozijnen', 'Windows, doors & frames', 'Okna, drzwi i futryny'],
+  windows: ['Ramen', 'Windows', 'Okna'],
+  shading: ['Rolluiken & horren', 'Shutters & insect screens', 'Rolety i moskitiery'],
+  garage: ['Garagedeuren', 'Garage doors', 'Bramy garażowe'],
+  glass: ['Glas', 'Glazing', 'Szyby'],
+  pick: ['Kies een categorie', 'Choose a category', 'Wybierz kategorię'],
+  products: ['producten', 'products', 'produktów'],
   sub: [
-    'Fabriekscollectie en eigen modellen, elk op maat te maken. Zet je favorieten op de offertelijst of stel ze eerst helemaal samen.',
-    'Factory collection and our own models, each made to measure. Put your favourites on the quote list, or configure them fully first.',
-    'Kolekcja fabryczna i modele własne, każdy na wymiar. Dodaj ulubione do listy wyceny albo najpierw je skonfiguruj.',
+    'Ramen, binnen- en buitendeuren, schuifpuien, kozijnen en beslag van drie fabrikanten, elk op maat te maken. Zet je favorieten op de offertelijst.',
+    'Windows, interior and exterior doors, sliding systems, frames and hardware from three manufacturers, each made to measure. Put your favourites on the quote list.',
+    'Okna, drzwi wewnętrzne i zewnętrzne, systemy przesuwne, futryny i okucia trzech producentów, wszystko na wymiar. Dodaj ulubione do listy wyceny.',
   ],
   badge: ['Collectie', 'Collection', 'Kolekcja'],
   kinds: {
@@ -310,14 +317,14 @@ const Shop = () => {
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<'cat' | 'name' | 'low' | 'high'>('cat');
   const raw = params.get('cat') as Cat | null;
-  const tab: Cat = raw && ['binnen', 'buiten', 'schuif', 'technisch', 'kozijn', 'systeem', 'beslag'].includes(raw) ? raw : 'all';
+  const tab: Cat = raw && CATS.includes(raw) ? raw : 'all';
   const rawBrand = params.get('merk') as Brand | null;
-  const brand: Brand = rawBrand && ['Invado', 'Porta', 'huis'].includes(rawBrand) ? rawBrand : 'all';
+  const brand: Brand = rawBrand && ['Eko-Okna', 'Invado', 'Porta', 'huis'].includes(rawBrand) ? rawBrand : 'all';
   const tabs: [Cat, L][] = [
-    ['all', UI.all], ['binnen', UI.interior], ['buiten', TX.entrance], ['schuif', TX.sliding], ['technisch', TX.technical],
-    ['kozijn', UI.frames], ['systeem', TX.systems], ['beslag', UI.hardware],
+    ['all', UI.all], ['ramen', TX.windows], ['binnen', UI.interior], ['buiten', TX.entrance], ['schuif', TX.sliding], ['kozijn', UI.frames],
+    ['zonwering', TX.shading], ['garage', TX.garage], ['glas', TX.glass], ['technisch', TX.technical], ['systeem', TX.systems], ['beslag', UI.hardware],
   ];
-  const brands: [Brand, string][] = [['all', t(TX.allBrands)], ['Invado', 'Invado'], ['Porta', 'Porta'], ['huis', t(TX.house)]];
+  const brands: [Brand, string][] = [['all', t(TX.allBrands)], ['Eko-Okna', 'Eko-Okna'], ['Invado', 'Invado'], ['Porta', 'Porta'], ['huis', t(TX.house)]];
   const go = (next: { cat?: Cat; merk?: Brand }) => {
     const c = next.cat ?? tab;
     const b = next.merk ?? brand;
@@ -354,6 +361,14 @@ const Shop = () => {
     g.items.push(it);
   });
   const total = factory.length + doors.length + products.length;
+  // the unfiltered start view shows category tiles instead of several hundred cards
+  const overview = tab === 'all' && brand === 'all' && !q && sort === 'cat' && catalog.length > 0;
+  const tiles = tabs.filter(([id]) => id !== 'all').map(([id, label]) => {
+    const inCat = (c: string) => c === id || (id === 'buiten' && c === 'entree');
+    const list = catalog.filter((it) => inCat(it.cat));
+    const sample = (list.find((it) => it.nl && (it.hero || it.strip)) ?? list.find((it) => it.hero || it.strip))?.id;
+    return { id, label, count: list.length + PRODUCTS.filter((p) => p.photos && inCat(p.cat)).length, sample };
+  }).filter((x) => x.count > 0);
   const chip = (on: boolean) => `shrink-0 px-5 py-2.5 rounded-full text-sm font-medium border transition-all ${on ? 'bg-amber-500 text-black border-amber-500' : 'bg-zinc-900/60 text-zinc-400 border-zinc-800 hover:border-amber-500/50 hover:text-white'}`;
   const heading = (label: string, count: number, kicker?: string) => (
     <div className="flex items-end justify-between gap-6 mt-24 mb-10 pb-5 border-b border-white/10">
@@ -422,7 +437,27 @@ const Shop = () => {
           </div>
           {total === 0 && <p className="text-center text-zinc-400 text-lg py-24">{t(TX.none)}</p>}
 
-          {factoryGroups.map((g) => (
+          {overview && (
+            <div>
+              {heading(t(TX.pick), tiles.length)}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-12">
+                {tiles.map(({ id, label, count, sample }) => (
+                  <button key={id} onClick={() => go({ cat: id })} className="group text-left">
+                    <Plate className="h-56 md:h-72 transition-shadow duration-500 group-hover:shadow-[0_30px_60px_-30px_rgba(203,176,132,.55)]">
+                      {sample && <div className="absolute inset-x-0 top-8 bottom-[5%] flex items-end justify-center"><CatPhoto id={sample} bare className="h-full w-auto max-w-[78%] transition-transform duration-700 ease-out group-hover:scale-[1.04]" /></div>}
+                    </Plate>
+                    <span className="flex items-baseline justify-between gap-3 pt-4">
+                      <span className="font-display text-2xl md:text-3xl text-white">{t(label)}</span>
+                      <span className="text-white/45 text-xs whitespace-nowrap">{count} {t(TX.products)}</span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+
+          {!overview && factoryGroups.map((g) => (
             <div key={g.key}>
               {heading(t(g.label), g.items.length, g.brand || undefined)}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-14">
@@ -431,7 +466,7 @@ const Shop = () => {
             </div>
           ))}
 
-          {doors.length > 0 && (
+          {!overview && doors.length > 0 && (
             <div>
               {heading(t(TX.houseTitle), doors.length, 'Stijl & Dorpel')}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-14">
@@ -440,7 +475,7 @@ const Shop = () => {
             </div>
           )}
 
-          {productGroups.map(([label, list], gi) => (
+          {!overview && productGroups.map(([label, list], gi) => (
             <div key={`${tab}-${gi}`}>
               {heading(t(label), list.length)}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-14">

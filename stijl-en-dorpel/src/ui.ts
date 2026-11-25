@@ -5,7 +5,7 @@ import { company } from './company';
 /** Shared interface strings: [NL, EN, PL]. */
 export const UI = {
   nav: {
-    doors: ['Deuren', 'Doors', 'Drzwi'],
+    doors: ['Producten', 'Products', 'Produkty'],
     configurator: ['Configurator', 'Configurator', 'Konfigurator'],
     services: ['Diensten', 'Services', 'Usługi'],
     measure: ['Inmeten', 'Measuring', 'Pomiar'],
