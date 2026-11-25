@@ -37,7 +37,7 @@ SPEC = [
  dict(id='eko-deurbeslag-infinity', name='Deurkrukken Infinity Line', cat='beslag', group='Beslag · deurkrukken', scene=112, pages=range(128,134), size=(120,260,60,130), lab='above', H=300,
       desc='Deurkrukken uit de Infinity Line voor vlakke deuren en stijldeuren. Leverbaar met rozetten voor sleutel, cilinder of wc-sluiting.',
       feat=['afwerkingen: zwart, chroom, mat chroom, goud, koper, titanium, patina','rozet rond of vierkant','uitvoering BB (sleutel), PZ (cilinder) of WC']),
- dict(id='eko-deurbeslag-metal-bud', name='Deurkrukken Metal-Bud', cat='beslag', group='Beslag · deurkrukken', scene=134, pages=range(135,138), size=(120,260,60,130), lab='above', H=300,
+ dict(id='eko-deurbeslag-metal-bud', name='Deurkrukken Metal-Bud', cat='beslag', group='Beslag · deurkrukken', scene=134, pages=range(135,138), size=(95,260,60,215), lab='above', H=300,
       desc='Deurkrukken van Metal-Bud voor vlakke deuren en stijldeuren, op rozet of op langschild.',
       feat=['afwerkingen: rvs, zwart, nikkel, chroom, patina, mat goud en houtdecor','op rozet of langschild','uitvoering BB (sleutel), PZ (cilinder) of WC']),
 ]
@@ -63,13 +63,13 @@ for s in SPEC:
             im = im.resize((round(im.width*H/im.height), H), Image.LANCZOS).filter(ImageFilter.UnsharpMask(1.5,80,2))
             lab=''
             if s['lab']=='above':
-                c2 = [t for t in tx if -22 <= i[0]-t[0] <= 22 and abs(t[1]-i[1]) < 60 and re.search('[a-z]', t[4]) and len(t[4])<40]
-                if c2: lab = min(c2, key=lambda t: abs(t[1]-i[1])+abs(t[0]-i[0]))[4]
+                c2 = sorted([t for t in tx if 12 <= i[0]-t[0] <= 50 and -30 <= t[1]-i[1] <= i[2] and re.search('[a-z]', t[4]) and len(t[4])<40], key=lambda t:(-t[0], t[1]))
+                if c2: lab = re.sub(r'\s+',' ',' '.join(t[4] for t in c2 if t[0]==c2[0][0])).strip()
             elif s['lab']:
                 c2 = [t for t in tx if re.match(s['lab'], t[4]) and 0 <= t[0]-(i[0]+i[3]) < 30 and abs((t[1]+t[2]/2)-(i[1]+i[2]/2)) < 60]
                 if c2: lab = min(c2, key=lambda t: abs((t[1]+t[2]/2)-(i[1]+i[2]/2)))[4].title()
             tiles.append(im); labels.append(lab)
-    tiles, labels = tiles[:40], labels[:40]
+    tiles, labels = tiles[:200], labels[:200]
     if tiles:
         gap=4; W=sum(t.width for t in tiles)+gap*(len(tiles)-1); st=Image.new('RGB',(W,s['H']),'white'); x=0; pos=[]
         for t in tiles: st.paste(t,(x,0)); pos.append([x,t.width]); x+=t.width+gap
