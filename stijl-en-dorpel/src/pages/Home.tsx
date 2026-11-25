@@ -10,6 +10,7 @@ import { Picture, MEDIA, type MediaName } from '../components/Media';
 import { asset } from '../components/Door';
 import { Kicker } from '../components/PageHero';
 import { SplitText, Reveal } from '../fx/components';
+import { Motion, type MotionKind } from '../components/Motion';
 
 export const SERVICE_ICONS: Record<ServiceIcon, typeof DoorOpen> = {
   door: DoorOpen, home: HomeIcon, frame: Frame, ruler: Ruler, wrench: Wrench, layers: Layers, lock: Lock, wind: Wind, recycle: Recycle,
@@ -29,6 +30,9 @@ const TX = {
   rowWindowsTitle: ['Ramen en voordeuren', 'Windows and front doors', 'Okna i drzwi wejściowe'],
   rowWindows: ['Kunststof, aluminium en hout, met profielen die voor Nederlandse kozijnen zijn gemaakt. Voordeur, ramen en garagedeur in één lijn.', 'uPVC, aluminium and timber, with profiles made for Dutch frames. Front door, windows and garage door in one line.', 'PVC, aluminium i drewno, z profilami na rynek holenderski. Drzwi, okna i brama w jednej linii.'],
   rowFrames: ['Een deur is zo goed als het kozijn waarin hij hangt. Vast, verstelbaar of volledig onzichtbaar in de wand.', 'A door is only as good as the frame it hangs in. Fixed, adjustable or fully concealed in the wall.', 'Drzwi są tak dobre, jak ościeżnica, w której wiszą. Stała, regulowana lub całkowicie ukryta w ścianie.'],
+  moveKicker: ['Zo werkt het', 'How it moves', 'Jak to działa'],
+  moveTitle: ['Zie hoe het opent', 'See how it opens', 'Zobacz, jak się otwiera'],
+  moveText: ['Kiepen, draaien, schuiven of vouwen: elke opening vraagt om een andere beweging. Kies wat bij je ruimte past.', 'Tilt, turn, slide or fold: every opening asks for a different movement. Pick what suits your space.', 'Uchylanie, otwieranie, przesuwanie czy składanie: każdy otwór wymaga innego ruchu. Wybierz to, co pasuje do twojej przestrzeni.'],
   scroll: ['Scroll om de deur te openen', 'Scroll to open the door', 'Przewiń, aby otworzyć drzwi'],
   outroKicker: ['Stap binnen', 'Step inside', 'Wejdź do środka'],
   outroTitle: ['Welkom thuis.', 'Welcome home.', 'Witaj w domu.'],
@@ -148,6 +152,44 @@ const Editorial = () => {
             </div>
           </Reveal>
         ))}
+      </div>
+    </section>
+  );
+};
+
+/* ═════════════════════════════  MOVEMENT — how each product opens, as small looping drawings  ═════════════════════════════ */
+
+const MOVES: { kind: MotionKind; to: string; title: L; text: L }[] = [
+  { kind: 'draaikiep', to: '/producten?groep=ramen', title: ['Draai-kiepraam', 'Tilt & turn window', 'Okno rozwierno-uchylne'], text: ['Kiepen om te luchten, draaien om te wassen.', 'Tilt to air, turn to clean.', 'Uchyl, by wietrzyć, otwórz, by umyć.'] },
+  { kind: 'schuif', to: '/producten?groep=schuif', title: ['Schuifpui', 'Sliding door', 'Drzwi przesuwne'], text: ['Een glaswand die opzij glijdt, zonder ruimte te vragen.', 'A glass wall that glides aside without taking space.', 'Szklana ściana, która odsuwa się na bok.'] },
+  { kind: 'vouw', to: '/producten?groep=schuif', title: ['Vouwwand', 'Folding wall', 'Drzwi harmonijkowe'], text: ['De hele gevel open, vleugel na vleugel.', 'The whole facade open, leaf after leaf.', 'Cała ściana otwarta, skrzydło po skrzydle.'] },
+  { kind: 'deur', to: '/producten?groep=deuren&cat=buiten', title: ['Voordeur', 'Front door', 'Drzwi wejściowe'], text: ['Zwaar, stil en precies in het kozijn.', 'Heavy, quiet and exact in its frame.', 'Ciężkie, ciche i dokładnie spasowane.'] },
+  { kind: 'garage', to: '/producten?groep=garage', title: ['Sectionaaldeur', 'Sectional garage door', 'Brama segmentowa'], text: ['Loopt recht omhoog en verdwijnt onder het plafond.', 'Runs straight up and disappears under the ceiling.', 'Jedzie pionowo w górę i chowa się pod sufitem.'] },
+  { kind: 'rolluik', to: '/producten?groep=zon', title: ['Rolluik', 'Roller shutter', 'Roleta zewnętrzna'], text: ['Donker, koel en veilig met één druk op de knop.', 'Dark, cool and secure at the press of a button.', 'Ciemno, chłodno i bezpiecznie jednym przyciskiem.'] },
+];
+
+const Movement = () => {
+  const t = useT();
+  const { lang } = useLanguage();
+  return (
+    <section className="py-32 md:py-48 border-t border-white/10">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="max-w-3xl mb-16 md:mb-24">
+          <p className="sd-label mb-6">{t(TX.moveKicker)}</p>
+          <SplitText key={`${lang}-move`} as="h2" mode="words" text={t(TX.moveTitle)} className="font-display text-5xl md:text-7xl text-white leading-[0.98] mb-7" />
+          <p className="text-white/60 font-light text-lg leading-relaxed max-w-xl">{t(TX.moveText)}</p>
+        </div>
+        <Reveal stagger={0.07} className="grid grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-16">
+          {MOVES.map((m) => (
+            <Link key={m.kind} to={m.to} className="group block">
+              <span className="flex items-center justify-center h-52 sm:h-72 bg-white/[0.025] border border-white/10 group-hover:border-amber-200/50 transition-colors">
+                <Motion kind={m.kind} className="h-[72%]" />
+              </span>
+              <span className="block font-display text-2xl md:text-3xl text-white mt-5 mb-1.5">{t(m.title)}</span>
+              <span className="block text-white/50 font-light text-sm leading-relaxed max-w-xs">{t(m.text)}</span>
+            </Link>
+          ))}
+        </Reveal>
       </div>
     </section>
   );
@@ -290,6 +332,7 @@ const Home = () => {
       <Hero />
       <Editorial />
       <Recommended />
+      <Movement />
       <Process />
       <Services />
       <Faq />

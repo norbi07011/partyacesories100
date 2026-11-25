@@ -29,6 +29,8 @@ export type CatItem = {
   features?: string[];
   tech?: string[];
   nl?: boolean; // system made for the Dutch market (block profile)
+  /** id of the manufacturer's own product film on YouTube */
+  video?: string;
   gallery?: number; // extra photos g1.webp … gN.webp
   url?: string;
   cat: CatCat;
@@ -153,6 +155,7 @@ const TX = {
   swing: ['Draairichting', 'Swing direction', 'Kierunek'],
   choose: ['Kies in overleg', 'Decide together later', 'Do ustalenia'],
   sizeNote: ['Nederlandse standaardmaten. De exacte maat leggen we vast bij het inmeten.', 'Dutch standard sizes. The exact size is fixed at the survey.', 'Holenderskie wymiary standardowe. Dokładny wymiar ustalamy przy pomiarze.'],
+  film: ['Bekijk de film van de fabrikant', 'Watch the manufacturer’s film', 'Zobacz film producenta'],
   openPage: ['Open productpagina', 'Open product page', 'Otwórz stronę produktu'],
   toList: ['Naar de offertelijst', 'Go to quote list', 'Przejdź do listy wyceny'],
 } satisfies Record<string, L>;
@@ -461,6 +464,15 @@ export function CatBody({ item, start, onNavigate, page = false }: BodyProps) {
           )}
         </div>
 
+        {item.video && (
+          <a href={`https://www.youtube.com/watch?v=${item.video}`} target="_blank" rel="noreferrer" className="group relative block mt-14 aspect-video overflow-hidden bg-black">
+            <img src={`https://i.ytimg.com/vi/${item.video}/hqdefault.jpg`} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover opacity-70 group-hover:opacity-90 transition-opacity" />
+            <span className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-white">
+              <span className="w-16 h-16 border border-white/70 flex items-center justify-center sd-round"><span className="ml-1 border-y-[9px] border-y-transparent border-l-[15px] border-l-white" /></span>
+              <span className="sd-label !text-white">{t(TX.film)}</span>
+            </span>
+          </a>
+        )}
         <h3 className="sd-label mt-14 mb-5">{t(TX.facts)}</h3>
         <dl className="grid grid-cols-2 gap-x-10 border-t border-white/10 mb-10">
           <Fact label={t(TX.maker)}>{item.brand}</Fact>
