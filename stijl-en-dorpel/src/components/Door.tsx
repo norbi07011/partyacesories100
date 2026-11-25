@@ -27,8 +27,9 @@ const mirror = (p: Part): Part => {
 };
 
 export function Door({
-  model, finish, glass = 'helder', handle = 'rvs', hinge = 'L', frame = true, wire = false, className = '', style, title,
+  model, finish, glass: glassProp, handle = 'rvs', hinge = 'L', frame = true, wire = false, className = '', style, title,
 }: Props) {
+  const glass = glassProp ?? model.glassDefault ?? 'helder';
   const uid = useId().replace(/:/g, '');
   const fin = finishById(finish ?? model.finish);
   const hw = HANDLES.find((h) => h.id === handle)?.hex ?? '#c4c8cc';

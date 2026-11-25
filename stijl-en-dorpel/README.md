@@ -27,7 +27,7 @@ npm run lint     # typecheck
 | Privacy, voorwaarden, cookies (basisteksten, laat juridisch nakijken) | `src/pages/Legal.tsx` |
 | Titel, beschrijving, social-preview | `index.html` |
 
-Alle deuren worden getekend als SVG uit de data in `src/data/doors.ts` — er zijn geen
+De Invado-modellen (12) zijn eigen tekeningen naar de catalogus 2/2021; zet `photo` in het model zodra de fabrikant foto's vrijgeeft. Alle deuren worden getekend als SVG uit de data in `src/data/doors.ts` — er zijn geen
 foto's nodig. Een nieuw model toevoegen is één object in de `MODELS`-lijst.
 
 ## Formulieren

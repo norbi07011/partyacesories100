@@ -16,9 +16,9 @@ type Cat = 'all' | 'binnen' | 'buiten' | 'kozijn' | 'beslag';
 const TX = {
   title: ['Deuren & kozijnen', 'Doors & frames', 'Drzwi i futryny'],
   sub: [
-    'Zestien modellen, elk op maat te maken en in elke kleur af te lakken. Zet je favorieten op de offertelijst of stel ze eerst helemaal samen.',
-    'Sixteen models, each made to measure and finished in any colour. Put your favourites on the quote list, or configure them fully first.',
-    'Szesnaście modeli, każdy na wymiar i w dowolnym kolorze. Dodaj ulubione do listy wyceny albo najpierw je skonfiguruj.',
+    'Fabriekscollectie en eigen modellen, elk op maat te maken. Zet je favorieten op de offertelijst of stel ze eerst helemaal samen.',
+    'Factory collection and our own models, each made to measure. Put your favourites on the quote list, or configure them fully first.',
+    'Kolekcja fabryczna i modele własne, każdy na wymiar. Dodaj ulubione do listy wyceny albo najpierw je skonfiguruj.',
   ],
   badge: ['Collectie', 'Collection', 'Kolekcja'],
   kinds: {
@@ -42,7 +42,7 @@ const DoorCard = ({ m }: { m: DoorModel }) => {
   const [finish, setFinish] = useState(m.finish);
   const [done, setDone] = useState(false);
   const art = useRef<HTMLDivElement>(null);
-  const swatches = FINISHES.filter((f) => f.id === m.finish || ['9010', '7016', '9005', 'salie', 'eiken'].includes(f.id)).slice(0, 5);
+  const swatches = FINISHES.filter((f) => f.id === m.finish || (m.brand ? ['naturo', 'sneeuweik', 'antracieteik', 'noten', '9010'] : ['9010', '7016', '9005', 'salie', 'eiken']).includes(f.id)).slice(0, 5);
 
   const add = async () => {
     if (art.current) await flyTo(art.current);
@@ -56,11 +56,14 @@ const DoorCard = ({ m }: { m: DoorModel }) => {
       <article className="group h-full flex flex-col bb-glass-card rounded-3xl overflow-hidden hover:border-amber-500/60 transition-colors">
         <Link to={`/configurator?model=${m.id}&finish=${finish}`} className="relative block h-80 bg-[radial-gradient(70%_70%_at_50%_25%,rgba(230,217,189,.18),transparent)]" aria-label={`${m.name} — ${t(UI.configure)}`}>
           <div ref={art} className="absolute inset-x-0 top-6 bottom-0 flex items-end justify-center">
-            <Door model={m} finish={finish} className="h-full w-auto max-w-[86%] drop-shadow-[0_20px_30px_rgba(0,0,0,.65)] transition-transform duration-700 group-hover:scale-[1.03]" />
+            {m.photo
+              ? <img src={m.photo} alt={m.name} loading="lazy" className="h-full w-auto max-w-[86%] object-contain transition-transform duration-700 group-hover:scale-[1.03]" />
+              : <Door model={m} finish={finish} className="h-full w-auto max-w-[86%] drop-shadow-[0_20px_30px_rgba(0,0,0,.65)] transition-transform duration-700 group-hover:scale-[1.03]" />}
           </div>
           <span className="absolute top-4 left-4 px-3 py-1 rounded-full bg-black/60 border border-white/10 text-[10px] uppercase tracking-[0.25em] text-white/70">
             {t(TX.kinds[m.kind])}{m.leaves === 2 ? ` · ${t(TX.double)}` : ''}
           </span>
+          {m.brand && <span className="absolute top-4 right-4 px-3 py-1 rounded-full bg-amber-200 text-black text-[10px] font-bold uppercase tracking-[0.2em]">{m.brand}</span>}
         </Link>
         <div className="flex-1 flex flex-col p-6 border-t border-white/10">
           <div className="flex items-baseline justify-between gap-4 mb-1">

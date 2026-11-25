@@ -27,6 +27,9 @@ export type DoorModel = {
   parts: Part[];
   steel?: boolean; // slank staallook-profiel
   pull?: boolean; // lange greep i.p.v. kruk
+  brand?: string; // fabrikant, als het model uit een fabriekscollectie komt
+  glassDefault?: GlassId;
+  photo?: string; // pad naar een productfoto (public/); vervangt de tekening in de winkel
   price: number;
   finish: string; // standaardkleur
   specs: L[];
@@ -47,7 +50,148 @@ const EXT: L[] = [
   ['Tochtprofielen rondom', 'Draught seals all round', 'Uszczelki na całym obwodzie'],
 ];
 
-export const MODELS: DoorModel[] = [
+/* Invado (modulaire en vlakke collecties, catalogus 2/2021). Tekeningen zijn eigen
+ * weergaven van het ontwerp; zet `photo` zodra de fabrikant beeldmateriaal vrijgeeft. */
+const INV: L[] = [
+  ['Modulaire opbouw met panelen van 22 mm', 'Modular build with 22 mm panels', 'Konstrukcja modułowa, płyciny 22 mm'],
+  ['Gehard satinato-glas van 4 mm', '4 mm toughened satin glass', 'Szkło hartowane satinato 4 mm'],
+  ['Opdek of stomp, afgeronde kanten', 'Rebated or flush, rounded edges', 'Przylgowe lub bezprzylgowe, zaokrąglone krawędzie'],
+];
+const INV_FLAT: L[] = [
+  ['Vlakke opbouw, licht en vormvast', 'Flat construction, light and stable', 'Konstrukcja płaska, lekka i stabilna'],
+  ['Slijtvast decorfolie zonder naden op de kanten', 'Hard-wearing foil with seamless edges', 'Trwała okleina bez łączeń na krawędziach'],
+  ['Opdek of stomp leverbaar', 'Rebated or flush fit', 'Wersja przylgowa lub bezprzylgowa'],
+];
+const MOD: Part[] = [Gr(10, 0, 10, 240), Gr(90, 0, 90, 240)];
+const strips = (ys: number[], h = 8): Part[] => ys.map((y) => G(10, y, 80, h));
+const inv = (m: Omit<DoorModel, 'cat' | 'kind' | 'leaves' | 'brand' | 'glassDefault' | 'specs'> & { specs?: L[] }): DoorModel => ({
+  cat: 'binnen', kind: 'draai', leaves: 1, brand: 'Invado', glassDefault: 'mat', specs: INV, ...m,
+});
+
+const INVADO: DoorModel[] = [
+  inv({
+    id: 'corato', name: 'Corato', price: 289, finish: 'naturo',
+    style: ['Modulair · modern', 'Modular · modern', 'Modułowe · nowoczesne'],
+    desc: [
+      'Liggende houtmodules met twee smalle glasstroken. Warm hout, strak lijnenspel — de blikvanger van de collectie.',
+      'Horizontal timber modules with two slim glass strips. Warm wood, crisp lines — the eye-catcher of the collection.',
+      'Poziome moduły z dwoma wąskimi przeszkleniami. Ciepłe drewno i czysta linia — ozdoba kolekcji.',
+    ],
+    parts: [...MOD, ...strips([58, 104]), Gr(10, 150, 90, 150), Gr(10, 196, 90, 196)],
+  }),
+  inv({
+    id: 'corato-5', name: 'Corato 5', price: 309, finish: 'naturo',
+    style: ['Modulair · veel licht', 'Modular · more light', 'Modułowe · więcej światła'],
+    desc: [
+      'Dezelfde opbouw als Corato, met vier glasstroken verdeeld over de hele hoogte.',
+      'The same build as Corato, with four glass strips spread over the full height.',
+      'Ta sama konstrukcja co Corato, z czterema przeszkleniami na całej wysokości.',
+    ],
+    parts: [...MOD, ...strips([40, 86, 132, 178])],
+  }),
+  inv({
+    id: 'artano', name: 'Artano', price: 299, finish: 'eiken',
+    style: ['Modulair · verticaal glas', 'Modular · vertical glass', 'Modułowe · pionowa szyba'],
+    desc: [
+      'Eén hoge glasstrook naast het midden. Laat daglicht door en houdt de deur toch rustig en gesloten.',
+      'One tall glass strip just off centre. Lets daylight through while the door stays calm and closed.',
+      'Jedno wysokie przeszklenie obok środka. Wpuszcza światło, a drzwi pozostają spokojne.',
+    ],
+    parts: [...MOD, G(54, 20, 14, 190)],
+  }),
+  inv({
+    id: 'aversa', name: 'Aversa', price: 295, finish: 'naturo',
+    style: ['Modulair · minimalistisch', 'Modular · minimalist', 'Modułowe · minimalistyczne'],
+    desc: [
+      'Verticale houtmodules met een smalle glaslijn langs de rand. Minimalistisch, met net genoeg licht.',
+      'Vertical timber modules with a narrow line of glass along the edge. Minimalist, with just enough light.',
+      'Pionowe moduły z wąską linią szkła przy krawędzi. Minimalizm z odrobiną światła.',
+    ],
+    parts: [...MOD, G(76, 18, 9, 204), Gr(40, 0, 40, 240)],
+  }),
+  inv({
+    id: 'lago', name: 'Lago', price: 319, finish: 'sneeuweik',
+    style: ['Modulair · lamellen', 'Modular · slatted', 'Modułowe · lamele'],
+    desc: [
+      'Fijne lamellen met dunne glaslijnen en één breed glasvlak in het midden. Licht en luchtig.',
+      'Fine slats with thin glass lines and one wide pane in the middle. Light and airy.',
+      'Drobne lamele z cienkimi liniami szkła i jednym szerokim przeszkleniem pośrodku. Lekko i jasno.',
+    ],
+    parts: [...MOD, ...strips([24, 42, 60], 3), G(10, 84, 80, 46), ...strips([152, 170, 188, 206], 3)],
+  }),
+  inv({
+    id: 'vinadio', name: 'Vinadio', price: 329, finish: 'sneeuweik',
+    style: ['Modulair · glasdeur', 'Modular · glazed', 'Modułowe · przeszklone'],
+    desc: [
+      'Drie grote vlakken matglas in een slank houten raamwerk. Maximaal licht voor gang en overloop.',
+      'Three large frosted panes in a slender timber frame. Maximum light for hallway and landing.',
+      'Trzy duże tafle matowego szkła w smukłej ramie. Maksimum światła do korytarza.',
+    ],
+    parts: [...MOD, G(10, 22, 80, 56), G(10, 92, 80, 56), G(10, 162, 80, 56)],
+  }),
+  inv({
+    id: 'linea-forte', name: 'Linea Forte', price: 299, finish: 'sneeuweik',
+    style: ['Modulair · lijnen', 'Modular · lines', 'Modułowe · linie'],
+    desc: [
+      'Vijf haarfijne glaslijnen over een rustig deurblad. Subtiel detail dat pas van dichtbij opvalt.',
+      'Five hair-thin glass lines across a calm leaf. A subtle detail you notice up close.',
+      'Pięć cieniutkich linii szkła na spokojnym skrzydle. Subtelny detal widoczny z bliska.',
+    ],
+    parts: [...MOD, ...strips([40, 80, 120, 160, 200], 3)],
+  }),
+  inv({
+    id: 'tamparo', name: 'Tamparo', price: 275, finish: 'sneeuweik',
+    style: ['Modulair · dicht', 'Modular · solid', 'Modułowe · pełne'],
+    desc: [
+      'Volledig dichte deur van zes liggende modules. Voor slaapkamer en badkamer, waar je privacy wilt.',
+      'A fully solid door of six horizontal modules. For bedroom and bathroom, where you want privacy.',
+      'Pełne drzwi z sześciu poziomych modułów. Do sypialni i łazienki, gdzie liczy się prywatność.',
+    ],
+    parts: [...MOD, ...[40, 80, 120, 160, 200].map((y) => Gr(10, y, 90, y))],
+  }),
+  inv({
+    id: 'larina', name: 'Larina', price: 309, finish: 'naturo',
+    style: ['Modulair · landelijk', 'Modular · country', 'Modułowe · rustykalne'],
+    desc: [
+      'Glasvak boven twee panelen. Een landelijke deur in moderne uitvoering, mooi in keuken en hal.',
+      'A glazed section over two panels. A country door in a modern finish, lovely in kitchen and hall.',
+      'Szyba nad dwiema płycinami. Wiejski charakter w nowoczesnym wydaniu — do kuchni i holu.',
+    ],
+    parts: [G(16, 16, 68, 58), P(16, 86, 68, 62), P(16, 160, 68, 64)],
+  }),
+  inv({
+    id: 'bianco', name: 'Bianco', price: 319, finish: '9010',
+    style: ['Modulair · wit', 'Modular · white', 'Modułowe · białe'],
+    desc: [
+      'Witte deur met twee grote vlakken matglas. Fris, licht en passend bij vrijwel elk interieur.',
+      'A white door with two large frosted panes. Fresh, bright and at home in almost any interior.',
+      'Białe drzwi z dwiema dużymi taflami matowego szkła. Świeże, jasne, pasują niemal wszędzie.',
+    ],
+    parts: [G(16, 16, 68, 98), G(16, 128, 68, 96)],
+  }),
+  inv({
+    id: 'strada', name: 'Strada', price: 259, finish: '9010', specs: INV_FLAT,
+    style: ['Vlak · design', 'Flat · design', 'Płaskie · design'],
+    desc: [
+      'Vlakke deur met twee versprongen verticale glasstroken. Speels accent voor een strakke wand.',
+      'A flat door with two offset vertical glass strips. A playful accent on a plain wall.',
+      'Płaskie drzwi z dwoma przesuniętymi pionowymi przeszkleniami. Lekki akcent na gładkiej ścianie.',
+    ],
+    parts: [G(40, 34, 8, 104), G(54, 96, 8, 104)],
+  }),
+  inv({
+    id: 'taurus', name: 'Taurus', price: 229, finish: 'noten', specs: INV_FLAT,
+    style: ['Vlak · houtdecor', 'Flat · wood decor', 'Płaskie · dekor drewna'],
+    desc: [
+      'Volledig vlakke deur in houtdecor. Tijdloos en de voordeligste keuze binnen de fabriekscollectie.',
+      'A fully flat door in wood decor. Timeless and the most affordable choice in the factory collection.',
+      'Całkowicie płaskie drzwi w dekorze drewna. Ponadczasowe i najtańsze w kolekcji fabrycznej.',
+    ],
+    parts: [],
+  }),
+];
+
+const OWN: DoorModel[] = [
   {
     id: 'linde', name: 'Linde', cat: 'binnen', kind: 'draai', leaves: 1, price: 189, finish: '9010',
     style: ['Vlak · modern', 'Flush · modern', 'Gładkie · nowoczesne'],
@@ -223,6 +367,8 @@ export const MODELS: DoorModel[] = [
   },
 ];
 
+export const MODELS: DoorModel[] = [...INVADO, ...OWN];
+
 export const modelById = (id: string | null | undefined) => MODELS.find((m) => m.id === id) ?? MODELS[0];
 
 /* ───────────── Opties ───────────── */
@@ -238,6 +384,9 @@ export const FINISHES: Finish[] = [
   { id: 'duifblauw', name: ['Duifblauw', 'Dove blue', 'Gołębi błękit'], hex: '#5b7084', price: 45 },
   { id: 'eiken', name: ['Eiken naturel', 'Natural oak', 'Dąb naturalny'], hex: '#b58a57', wood: true, price: 140 },
   { id: 'noten', name: ['Noten', 'Walnut', 'Orzech'], hex: '#5d3f2a', wood: true, price: 180 },
+  { id: 'naturo', name: ['Eiken naturo', 'Naturo oak', 'Dąb naturo'], hex: '#c9a273', wood: true, price: 0 },
+  { id: 'sneeuweik', name: ['Sneeuweiken', 'Snow oak', 'Dąb śnieżny'], hex: '#d8d2c6', wood: true, price: 0 },
+  { id: 'antracieteik', name: ['Antraciet eiken', 'Anthracite oak', 'Dąb antracyt'], hex: '#45423f', wood: true, price: 0 },
 ];
 export const finishById = (id: string) => FINISHES.find((f) => f.id === id) ?? FINISHES[0];
 
@@ -307,7 +456,7 @@ export type DoorConfig = {
 };
 
 export const defaultConfig = (m: DoorModel): DoorConfig => ({
-  model: m.id, finish: m.finish, glass: 'helder', handle: m.finish === '9005' || m.finish === '7016' ? 'rvs' : 'zwart',
+  model: m.id, finish: m.finish, glass: m.glassDefault ?? 'helder', handle: m.finish === '9005' || m.finish === '7016' ? 'rvs' : 'zwart',
   frame: 'behouden', width: 83, height: 201.5, hinge: 'L', service: 'montage',
 });
 
