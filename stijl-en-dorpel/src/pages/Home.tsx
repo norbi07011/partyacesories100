@@ -10,6 +10,7 @@ import { MODELS, FINISHES, GLASS, defaultConfig, modelById } from '../data/doors
 import { STEPS, WHY, SERVICES, FAQ, type ServiceIcon } from '../data/content';
 import { useQuote } from '../quote';
 import { useCatalog } from '../catalog';
+import { Recommended, Showcase3D } from './HomeShowcase';
 import { Door, DoorVisual, Plate } from '../components/Door';
 import { Kicker } from '../components/PageHero';
 import { gsap, reducedMotion, isMobile, flyTo } from '../fx/core';
@@ -613,6 +614,8 @@ const Home = () => {
       <Hero />
       <Marquee />
       <Facts />
+      <Recommended />
+      <Showcase3D />
       <ModelCarousel />
       <ProcessStory />
       <Anatomy />

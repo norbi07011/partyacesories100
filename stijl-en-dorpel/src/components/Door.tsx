@@ -278,7 +278,7 @@ export function ProductArt({ art, className = '' }: { art: NonNullable<Product['
  * blended (multiply) into a warm ivory ground and read as one framed object. */
 export function Plate({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
-    <div className={`relative overflow-hidden rounded-[1.4rem] bg-[linear-gradient(180deg,#f6f1e8_0%,#ebe3d4_62%,#d9cfbc_62%,#cfc4b0_100%)] shadow-[inset_0_0_0_1px_rgba(255,255,255,.55),inset_0_-30px_50px_rgba(120,98,64,.12)] ${className}`}>
+    <div className={`${/\babsolute\b/.test(className) ? '' : 'relative'} overflow-hidden rounded-[1.4rem] bg-[linear-gradient(180deg,#f6f1e8_0%,#ebe3d4_62%,#d9cfbc_62%,#cfc4b0_100%)] shadow-[inset_0_0_0_1px_rgba(255,255,255,.55),inset_0_-30px_50px_rgba(120,98,64,.12)] ${className}`}>
       {children}
     </div>
   );

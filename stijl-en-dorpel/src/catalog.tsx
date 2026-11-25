@@ -16,7 +16,7 @@ import { lockScroll } from './fx/core';
  * house collection.
  * ───────────────────────────────────────────────────────────────────────── */
 
-export type CatCat = 'binnen' | 'entree' | 'buiten' | 'schuif' | 'technisch' | 'kozijn';
+export type CatCat = 'binnen' | 'entree' | 'buiten' | 'schuif' | 'technisch' | 'kozijn' | 'beslag';
 type Strip = { w: number; h: number; items: [number, number][] };
 export type CatItem = {
   id: string;
@@ -81,6 +81,7 @@ const GROUPS: Record<string, L> = {
   Buitendeuren: ['Buitendeuren', 'Exterior doors', 'Drzwi zewnętrzne'],
   'Technische deuren': ['Technische deuren', 'Technical doors', 'Drzwi techniczne'],
   Kozijnen: ['Kozijnen', 'Frames', 'Ościeżnice'],
+  'Beslag & toebehoren': ['Beslag & toebehoren', 'Hardware & accessories', 'Okucia i akcesoria'],
 };
 export const groupLabel = (g: string): L => GROUPS[g] ?? [g, g, g];
 
@@ -119,7 +120,7 @@ const TX = {
 } satisfies Record<string, L>;
 
 /** One generated sentence per item, so NL/EN visitors get a readable intro. */
-const intro = (it: CatItem, t: (l: L) => string, lang: string) => {
+export const intro = (it: CatItem, t: (l: L) => string, lang: string) => {
   const n = it.labels?.length ?? 0;
   const g = t(groupLabel(it.group)).toLowerCase();
   const f = it.flags;
