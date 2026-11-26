@@ -4,7 +4,7 @@ import {
 } from './data/doors';
 import type { L } from './i18n';
 import { specFactory, type Spec } from './spec';
-import { company } from './company';
+import { company, DISCOUNT_CODES } from './company';
 
 /* The "offertelijst" — a cart without payment. Doors are made to measure, so
  * the list is sent as a quote request instead of being paid online. */
@@ -24,6 +24,11 @@ type Ctx = {
   setQty: (key: string, qty: number) => void;
   remove: (key: string) => void;
   clear: () => void;
+  /** applied discount code (upper case) and its percentage; empty / 0 when none */
+  code: string;
+  discount: number;
+  /** returns false when the code does not exist */
+  applyCode: (code: string) => boolean;
 };
 
 const QuoteCtx = createContext<Ctx | undefined>(undefined);
@@ -46,6 +51,15 @@ export const QuoteProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     try { localStorage.setItem(KEY, JSON.stringify(items)); } catch { /* ignore */ }
   }, [items]);
+
+  const [code, setCode] = useState(() => { try { const c = localStorage.getItem('sd-code') ?? ''; return DISCOUNT_CODES[c] ? c : ''; } catch { return ''; } });
+  const applyCode = useCallback((raw: string) => {
+    const c = raw.trim().toUpperCase();
+    if (c && !DISCOUNT_CODES[c]) return false;
+    setCode(c);
+    try { if (c) localStorage.setItem('sd-code', c); else localStorage.removeItem('sd-code'); } catch { /* ignore */ }
+    return true;
+  }, []);
 
   const addDoor = useCallback((config: DoorConfig, qty = 1) => {
     setItems((l) => [...l, { key: `d-${Date.now()}-${Math.round(Math.random() * 1e4)}`, type: 'door', config, qty }]);
@@ -76,7 +90,8 @@ export const QuoteProvider = ({ children }: { children: ReactNode }) => {
     count: items.reduce((n, i) => n + i.qty, 0),
     total: items.reduce((n, i) => n + itemPrice(i) * i.qty, 0),
     addDoor, addProduct, addCatalog, setQty, remove, clear,
-  }), [items, addDoor, addProduct, addCatalog, setQty, remove, clear]);
+    code, discount: DISCOUNT_CODES[code] ?? 0, applyCode,
+  }), [items, addDoor, addProduct, addCatalog, setQty, remove, clear, code, applyCode]);
 
   return <QuoteCtx.Provider value={value}>{children}</QuoteCtx.Provider>;
 };

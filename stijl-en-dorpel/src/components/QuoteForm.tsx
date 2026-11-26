@@ -59,7 +59,7 @@ const label = 'block text-[11px] uppercase tracking-[0.3em] text-white/55 mb-2';
 
 export function QuoteForm({ defaultKind = 'offerte', includeList = true, prefill = '' }: { defaultKind?: RequestKind; includeList?: boolean; prefill?: string }) {
   const t = useT();
-  const { items, clear } = useQuote();
+  const { items, clear, code, discount } = useQuote();
   const [kind, setKind] = useState<RequestKind>(defaultKind);
   const [state, setState] = useState<'idle' | 'sending' | 'sent' | 'mail'>('idle');
   const withList = includeList && items.length > 0;
@@ -74,7 +74,7 @@ export function QuoteForm({ defaultKind = 'offerte', includeList = true, prefill
     const data = new FormData(form);
     if (data.get('bot-field')) return; // honeypot
     setState('sending');
-    const fields: Record<string, string> = { 'form-name': 'offerte', soort: kind, offertelijst: listText, bericht_fabriek: factoryText };
+    const fields: Record<string, string> = { 'form-name': 'offerte', soort: kind, offertelijst: listText, bericht_fabriek: factoryText, kortingscode: code ? `${code} (${discount}%)` : '' };
     data.forEach((v, k) => { if (typeof v === 'string') fields[k] = v; });
 
     setWa([`${t(TX.kinds[kind])} — ${fields.naam ?? ''}`, fields.telefoon ?? '', `${fields.postcode ?? ''} ${fields.plaats ?? ''}`.trim(), fields.bericht ?? '', listText].filter(Boolean).join('\n'));
@@ -110,6 +110,7 @@ export function QuoteForm({ defaultKind = 'offerte', includeList = true, prefill
       '',
       fields.bericht ?? '',
       listText ? `\n— ${t(TX.listIncluded)} —\n${listText}` : '',
+      code ? `\nKortingscode: ${code} (${discount}%)` : '',
       factoryText ? `\n— Bericht voor de fabriek / wiadomość do producenta —\n${factoryText}` : '',
     ].filter((l, i, a) => l !== '' || a[i - 1] !== '').join('\n');
     window.location.href = `mailto:${company.email}?subject=${encodeURIComponent(`${t(TX.kinds[kind])} — ${fields.naam ?? ''}`)}&body=${encodeURIComponent(body)}`;

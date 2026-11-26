@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ClipboardList, Minus, Plus, Trash2 } from 'lucide-react';
 import { useT, euro, type L } from '../i18n';
@@ -22,6 +23,12 @@ const TX = {
     'Wybierz drzwi z kolekcji albo skonfiguruj własne.',
   ],
   total: ['Richtprijs totaal', 'Guide price total', 'Cena orientacyjna łącznie'],
+  codeLabel: ['Kortingscode', 'Discount code', 'Kod rabatowy'],
+  codeApply: ['Toepassen', 'Apply', 'Zastosuj'],
+  codeBad: ['Deze code kennen we niet. Controleer de spelling.', 'We do not know this code. Please check the spelling.', 'Nie znamy tego kodu. Sprawdź pisownię.'],
+  codeOn: ['korting met code', 'discount with code', 'rabatu z kodem'],
+  codeRemove: ['Verwijderen', 'Remove', 'Usuń'],
+  codeNote: ['De korting wordt ook verwerkt in de prijzen op aanvraag.', 'The discount is also applied to prices on request.', 'Rabat obejmie też pozycje wyceniane indywidualnie.'],
   clear: ['Lijst leegmaken', 'Clear list', 'Wyczyść listę'],
   remove: ['Verwijderen', 'Remove', 'Usuń'],
   edit: ['Opnieuw samenstellen', 'Configure again', 'Skonfiguruj ponownie'],
@@ -37,7 +44,10 @@ const TX = {
 const QuoteList = () => {
   const t = useT();
   useDocumentTitle(t(UI.nav.quote));
-  const { items, total, setQty, remove, clear } = useQuote();
+  const { items, total, setQty, remove, clear, code, discount, applyCode } = useQuote();
+  const [entry, setEntry] = useState('');
+  const [bad, setBad] = useState(false);
+  const submitCode = () => { const ok = applyCode(entry); setBad(!ok); if (ok) setEntry(''); };
 
   return (
     <div className="pt-28 md:pt-36 pb-24">
@@ -99,7 +109,22 @@ const QuoteList = () => {
               <button onClick={clear} className="text-zinc-500 hover:text-white text-sm underline underline-offset-4">{t(TX.clear)}</button>
               <div className="text-right">
                 <p className="text-[11px] uppercase tracking-[0.3em] text-white/55 mb-1">{t(TX.total)}</p>
-                <p className="font-display text-6xl bb-text-gold leading-none">{euro(total)}</p>
+                {discount > 0 && total > 0 && <p className="text-white/45 text-xl line-through tabular-nums mb-1">{euro(total)}</p>}
+                <p className="font-display text-6xl bb-text-gold leading-none">{euro(Math.round(total * (1 - discount / 100)))}</p>
+                <div className="mt-6 max-w-sm ml-auto text-left">
+                  {discount > 0 ? (
+                    <p className="text-amber-100 text-sm">{discount}% {t(TX.codeOn)} <strong className="font-medium tracking-wider">{code}</strong> · <button onClick={() => applyCode('')} className="underline underline-offset-4 text-white/55 hover:text-white">{t(TX.codeRemove)}</button><span className="block text-white/45 mt-1">{t(TX.codeNote)}</span></p>
+                  ) : (
+                    <form onSubmit={(e) => { e.preventDefault(); submitCode(); }} className="flex items-end gap-4">
+                      <label className="flex-1">
+                        <span className="block text-[11px] uppercase tracking-[0.22em] text-white/50 mb-1">{t(TX.codeLabel)}</span>
+                        <input value={entry} onChange={(e) => { setEntry(e.target.value); setBad(false); }} autoCapitalize="characters" autoComplete="off" aria-invalid={bad} className="w-full py-2.5 text-white uppercase tracking-wider" />
+                      </label>
+                      <button type="submit" className="sd-link shrink-0 mb-2">{t(TX.codeApply)}</button>
+                    </form>
+                  )}
+                  {bad && <p role="alert" className="text-amber-200 text-sm mt-2">{t(TX.codeBad)}</p>}
+                </div>
                 <p className="text-white/40 text-xs mt-3 max-w-sm ml-auto">{t(UI.indicative)}</p>
               </div>
             </div>

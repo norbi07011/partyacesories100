@@ -25,3 +25,6 @@ export const PRICING = { plnPerEur: 4.3, markup: 1.8 };
 
 /** Alle prijzen in src/data/doors.ts zijn richtprijzen (placeholders). */
 export const PRICES_ARE_INDICATIVE = true;
+
+/** Kortingscodes: code (hoofdletters maken niet uit) → korting in procenten op de richtprijs. */
+export const DISCOUNT_CODES: Record<string, number> = { LEGGINS2: 2, OCTAGON20: 20, SUMMER30: 30 };
