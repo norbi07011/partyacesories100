@@ -6,7 +6,7 @@ import { useT, type L } from '../i18n';
  * roof and inside the cavity wall. Plain SVG moved with CSS; they run only while on screen
  * (same switch as the product animations) and stand still under reduced motion. */
 
-export type InsulationKind = 'vloer' | 'dak' | 'spouw';
+export type InsulationKind = 'vloer' | 'dak' | 'spouw' | 'gevel';
 
 const line = { fill: 'none', stroke: '#e6d9bd', strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
 const soft = { ...line, strokeWidth: 1, opacity: 0.45 };
@@ -71,6 +71,22 @@ export function InsulationMotion({ kind, className = '' }: { kind: InsulationKin
             <path d="M14 164 H226" {...line} />
           </>
         )}
+        {kind === 'gevel' && (
+          <>
+            <rect x={150} y={16} width={30} height={148} {...line} />
+            {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
+              <path key={i} d={`M150 ${34 + i * 18.5} h30 M${i % 2 ? 160 : 170} ${16 + i * 18.5} v18.5`} {...soft} />
+            ))}
+            <rect x={110} y={16} width={39} height={148} fill={fill} stroke="#e6d9bd" strokeWidth={1} className="sd-i-fill" />
+            {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
+              <rect key={i} x={97} y={18 + i * 18.5} width={11} height={15} fill="#a5673f" stroke="#e6d9bd" strokeWidth={1} className="sd-i-pop" style={{ animationDelay: `${(7 - i) * 0.18}s` }} />
+            ))}
+            <g className="sd-i-push">
+              {[52, 90, 128].map((y) => <path key={y} d={`M226 ${y} h-30 m8 -6 l-8 6 l8 6`} {...line} strokeWidth={1.5} stroke="#d9a86a" />)}
+            </g>
+            <path d="M14 164 H226" {...line} />
+          </>
+        )}
       </svg>
     </div>
   );
@@ -88,15 +104,16 @@ export const INSULATION: { kind: InsulationKind; title: L; text: L }[] = [
   { kind: 'vloer', title: ['Vloerisolatie', 'Floor insulation', 'Izolacja podłogi'], text: ['Geen koude voeten meer: we isoleren vanuit de kruipruimte.', 'No more cold feet: we insulate from the crawl space.', 'Koniec z zimną podłogą: ocieplamy od strony przestrzeni podpodłogowej.'] },
   { kind: 'dak', title: ['Dakisolatie', 'Roof insulation', 'Izolacja dachu'], text: ['De meeste warmte verdwijnt door het dak. Daar begint de winst.', 'Most heat leaves through the roof. That is where the gain starts.', 'Najwięcej ciepła ucieka przez dach. Tu zysk jest największy.'] },
   { kind: 'spouw', title: ['Spouwmuurisolatie', 'Cavity wall insulation', 'Izolacja ścian szczelinowych'], text: ['De lege ruimte in de gevel gevuld, zonder breekwerk binnen.', 'The empty space in the wall filled, with no work indoors.', 'Pusta szczelina w ścianie wypełniona, bez prac w środku domu.'] },
+  { kind: 'gevel', title: ['Gevelisolatie met steenstrips', 'Facade insulation with brick slips', 'Ocieplenie elewacji z płytką klinkierową'], text: ['Een warme jas om het huis, afgewerkt als echt metselwerk.', 'A warm coat around the house, finished like real brickwork.', 'Ciepły płaszcz wokół domu, wykończony jak prawdziwy mur.'] },
 ];
 
 export const InsulationTiles = () => {
   const t = useT();
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-14">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-14">
       {INSULATION.map((m) => (
         <Link key={m.kind} to={`/isolatie#${m.kind}`} className="group block">
-          <Frame className="h-56 sm:h-64"><InsulationMotion kind={m.kind} className="h-[70%] aspect-[4/3]" /></Frame>
+          <Frame className="h-56"><InsulationMotion kind={m.kind} className="h-[70%] aspect-[4/3]" /></Frame>
           <span className="block font-display text-2xl md:text-3xl text-white mt-5 mb-1.5">{t(m.title)}</span>
           <span className="block text-white/50 font-light text-sm leading-relaxed max-w-xs">{t(m.text)}</span>
         </Link>

@@ -57,7 +57,7 @@ const input =
   'w-full bg-zinc-900/60 border border-zinc-800 rounded-2xl px-5 py-4 text-white placeholder:text-zinc-600 outline-none transition-colors focus:border-amber-500 focus:bg-zinc-900';
 const label = 'block text-[11px] uppercase tracking-[0.3em] text-white/55 mb-2';
 
-export function QuoteForm({ defaultKind = 'offerte', includeList = true, prefill = '' }: { defaultKind?: RequestKind; includeList?: boolean; prefill?: string }) {
+export function QuoteForm({ defaultKind = 'offerte', includeList = true, prefill = '', doors = true }: { defaultKind?: RequestKind; includeList?: boolean; prefill?: string; doors?: boolean }) {
   const t = useT();
   const { items, clear, code, discount } = useQuote();
   const [kind, setKind] = useState<RequestKind>(defaultKind);
@@ -184,7 +184,7 @@ export function QuoteForm({ defaultKind = 'offerte', includeList = true, prefill
         </div>
       </div>
 
-      {kind !== 'vraag' && !withList && (
+      {doors && kind !== 'vraag' && !withList && (
         <div>
           <label className={label} htmlFor="qf-aantal">{t(TX.count)}</label>
           <input id="qf-aantal" name="aantal" type="number" min={1} max={99} inputMode="numeric" className={`${input} max-w-[160px]`} />
@@ -193,7 +193,7 @@ export function QuoteForm({ defaultKind = 'offerte', includeList = true, prefill
 
       <div>
         <label className={label} htmlFor="qf-bericht">{t(TX.message)}</label>
-        <textarea id="qf-bericht" name="bericht" rows={5} defaultValue={prefill} placeholder={t(TX.messagePh)} className={`${input} resize-y`} />
+        <textarea id="qf-bericht" name="bericht" rows={5} defaultValue={prefill} placeholder={doors ? t(TX.messagePh) : undefined} className={`${input} resize-y`} />
       </div>
 
       {withList && (

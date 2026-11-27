@@ -12,9 +12,9 @@ const TX = {
   badge: ['Isolatie', 'Insulation', 'Izolacja'],
   title: ['Warm huis, lagere rekening', 'A warm home, a lower bill', 'Ciepły dom, niższe rachunki'],
   sub: [
-    'Vloer, dak en spouwmuur geïsoleerd door één ploeg. We meten op, rekenen de isolatiewaarde uit en werken het netjes af.',
-    'Floor, roof and cavity wall insulated by one crew. We survey, calculate the insulation value and finish it neatly.',
-    'Podłoga, dach i ściany szczelinowe ocieplone przez jedną ekipę. Mierzymy, liczymy wartość izolacji i wykańczamy na czysto.',
+    'Vloer, dak, spouwmuur en gevel geïsoleerd door één ploeg. We meten op, rekenen de isolatiewaarde uit en werken het netjes af.',
+    'Floor, roof, cavity wall and facade insulated by one crew. We survey, calculate the insulation value and finish it neatly.',
+    'Podłoga, dach, ściany szczelinowe i elewacja ocieplone przez jedną ekipę. Mierzymy, liczymy wartość izolacji i wykańczamy na czysto.',
   ],
   cta: ['Vraag een offerte aan', 'Request a quote', 'Poproś o wycenę'],
   how: ['Bekijk de werkwijze', 'See how it works', 'Zobacz, jak to robimy'],
@@ -78,6 +78,21 @@ const DETAIL: Record<InsulationKind, { body: L; material: L; time: L; fits: L; p
       ['Natuurcheck (vleermuizen) bespreken we vooraf', 'We discuss the nature check (bats) beforehand', 'Kontrolę przyrodniczą (nietoperze) omawiamy wcześniej'],
     ],
   },
+  gevel: {
+    body: [
+      'We plaatsen isolatieplaten tegen de buitenmuur en werken ze af met echte steenstrips en voegwerk. Het huis krijgt een nieuwe gevel die eruitziet als metselwerk, en binnen verlies je geen centimeter.',
+      'We fix insulation boards to the outside wall and finish them with real brick slips and pointing. The house gets a new facade that looks like brickwork, and you lose no space indoors.',
+      'Mocujemy płyty izolacyjne do ściany zewnętrznej i wykańczamy je prawdziwą płytką klinkierową z fugą. Dom dostaje nową elewację wyglądającą jak mur, a w środku nie tracisz ani centymetra.',
+    ],
+    material: ['Isolatieplaten met keramische steenstrips', 'Insulation boards with ceramic brick slips', 'Płyty izolacyjne z ceramiczną płytką klinkierową'],
+    time: ['Eén tot drie weken, met steiger', 'One to three weeks, with scaffolding', 'Od jednego do trzech tygodni, z rusztowaniem'],
+    fits: ['Woningen zonder of met een smalle spouw', 'Homes with no cavity or a narrow one', 'Domy bez szczeliny lub z wąską szczeliną'],
+    points: [
+      ['Hoogste isolatiewaarde van alle gevelopties', 'Highest insulation value of all facade options', 'Najwyższa izolacyjność ze wszystkich opcji dla ściany'],
+      ['Nieuwe uitstraling in de steen en voeg van je keuze', 'A new look in the brick and joint of your choice', 'Nowy wygląd z wybraną cegłą i fugą'],
+      ['We zoeken vooraf uit of een vergunning nodig is', 'We check beforehand whether a permit is needed', 'Wcześniej sprawdzamy, czy potrzebne jest pozwolenie'],
+    ],
+  },
 };
 
 const MATERIALS: { t: L; d: L }[] = [
@@ -85,6 +100,7 @@ const MATERIALS: { t: L; d: L }[] = [
   { t: ['Glaswol', 'Glass wool', 'Wełna szklana'], d: ['Soepel tussen balken en gordingen, dempt ook geluid.', 'Flexible between joists and purlins; dampens sound too.', 'Elastyczna między belkami i płatwiami, tłumi też hałas.'] },
   { t: ['Thermokussens', 'Thermal cushions', 'Poduszki termiczne'], d: ['Reflecterende luchtkussens onder de vloer, ongevoelig voor vocht.', 'Reflective air cushions under the floor, unaffected by damp.', 'Odblaskowe poduszki powietrzne pod podłogą, odporne na wilgoć.'] },
   { t: ['Isolatieparels', 'Insulation beads', 'Granulat izolacyjny'], d: ['Vullen de spouw tot in de hoeken en nemen geen water op.', 'Fill the cavity into every corner and take up no water.', 'Wypełniają szczelinę po same narożniki i nie chłoną wody.'] },
+  { t: ['Steenstrips', 'Brick slips', 'Płytki klinkierowe'], d: ['Dunne plakken echte baksteen: vorstbestendig en kleurvast.', 'Thin slices of real brick: frost-proof and colour-fast.', 'Cienkie plastry prawdziwej cegły: mrozoodporne i trwałe w kolorze.'] },
   { t: ['Bodemfolie', 'Ground foil', 'Folia na grunt'], d: ['Houdt vocht uit de kruipruimte, zodat de vloer droog blijft.', 'Keeps damp out of the crawl space so the floor stays dry.', 'Zatrzymuje wilgoć z gruntu, więc podłoga zostaje sucha.'] },
 ];
 
@@ -170,7 +186,7 @@ const Insulation = () => {
         <div className="max-w-7xl mx-auto px-6">
           <p className="sd-label mb-6">{t(TX.matKicker)}</p>
           <SplitText key={`${lang}-mat`} as="h2" mode="words" text={t(TX.matTitle)} className="font-display text-4xl md:text-6xl text-white leading-[1] max-w-3xl mb-14" />
-          <Reveal stagger={0.07} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <Reveal stagger={0.07} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {MATERIALS.map((m, i) => (
               <Frame key={m.t[0]} className="!block p-7 pt-9 min-h-[13rem]">
                 <span className="block font-display italic text-amber-200/60 text-lg mb-5">{String(i + 1).padStart(2, '0')}</span>
@@ -201,7 +217,7 @@ const Insulation = () => {
           <p className="sd-label mb-6">{t(TX.askKicker)}</p>
           <h2 className="font-display text-4xl md:text-6xl text-white leading-[1] mb-5">{t(TX.askTitle)}</h2>
           <p className="text-white/60 font-light max-w-xl mb-10">{t(TX.askText)}</p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
             {INSULATION.map((m) => {
               const on = picked.includes(m.kind);
               return (
@@ -222,7 +238,7 @@ const Insulation = () => {
             <label className="block"><span className="sd-label block mb-1">{t(TX.year)}</span>
               <input inputMode="numeric" value={year} onChange={(e) => setYear(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="1975" className={field} /></label>
           </div>
-          <QuoteForm key={prefill} defaultKind="offerte" includeList={false} prefill={prefill} />
+          <QuoteForm key={prefill} defaultKind="offerte" includeList={false} prefill={prefill} doors={false} />
           <p className="text-white/40 text-sm mt-6">{t(UI.indicative)}</p>
         </div>
       </section>
