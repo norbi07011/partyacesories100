@@ -8,6 +8,7 @@ export const UI = {
     doors: ['Producten', 'Products', 'Produkty'],
     configurator: ['Configurator', 'Configurator', 'Konfigurator'],
     services: ['Diensten', 'Services', 'Usługi'],
+    insulation: ['Isolatie', 'Insulation', 'Izolacja'],
     measure: ['Inmeten', 'Measuring', 'Pomiar'],
     about: ['Over ons', 'About', 'O nas'],
     contact: ['Contact', 'Contact', 'Kontakt'],

@@ -10,6 +10,7 @@ import { Picture, MEDIA, type MediaName } from '../components/Media';
 import { asset } from '../components/Door';
 import { Kicker } from '../components/PageHero';
 import { SplitText, Reveal } from '../fx/components';
+import { InsulationTiles } from '../components/Insulation';
 import { Motion, type MotionKind } from '../components/Motion';
 
 export const SERVICE_ICONS: Record<ServiceIcon, typeof DoorOpen> = {
@@ -195,6 +196,25 @@ const Movement = () => {
   );
 };
 
+const Insulate = () => {
+  const t = useT();
+  const { lang } = useLanguage();
+  return (
+    <section className="py-32 md:py-48 border-t border-white/10">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-8 mb-16 md:mb-20">
+          <div className="max-w-3xl">
+            <p className="sd-label mb-6">{t(UI.nav.insulation)}</p>
+            <SplitText key={`${lang}-iso`} as="h2" mode="words" text={t(['Ook de warmte houden we binnen', 'We keep the warmth in, too', 'Zatrzymujemy też ciepło w domu'])} className="font-display text-5xl md:text-7xl text-white leading-[0.98]" />
+          </div>
+          <Link to="/isolatie" className="sd-link self-start md:self-auto">{t(['Alles over isolatie', 'All about insulation', 'Wszystko o izolacji'])} <ArrowRight className="w-4 h-4" /></Link>
+        </div>
+        <Reveal><InsulationTiles /></Reveal>
+      </div>
+    </section>
+  );
+};
+
 /* ═════════════════════════════  PROCESS — four plain steps  ═════════════════════════════ */
 
 const Process = () => {
@@ -333,6 +353,7 @@ const Home = () => {
       <Editorial />
       <Recommended />
       <Movement />
+      <Insulate />
       <Process />
       <Services />
       <Faq />

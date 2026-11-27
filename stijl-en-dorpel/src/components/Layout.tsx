@@ -133,6 +133,7 @@ const Navbar = () => {
     { name: t(UI.nav.doors), href: '/producten' },
     { name: t(UI.nav.configurator), href: '/configurator' },
     { name: t(UI.nav.services), href: '/diensten' },
+    { name: t(UI.nav.insulation), href: '/isolatie' },
     { name: t(UI.nav.measure), href: '/inmeten' },
     { name: t(UI.nav.about), href: '/over-ons' },
     { name: t(UI.nav.contact), href: '/contact' },
@@ -272,7 +273,7 @@ const Footer = () => {
             <h4 className="text-white font-bold mb-6 uppercase tracking-widest text-sm">{t(UI.menu)}</h4>
             <ul className="space-y-4">
               {([
-                ['/deuren', UI.nav.doors], ['/configurator', UI.nav.configurator], ['/diensten', UI.nav.services],
+                ['/deuren', UI.nav.doors], ['/configurator', UI.nav.configurator], ['/diensten', UI.nav.services], ['/isolatie', UI.nav.insulation],
                 ['/inmeten', UI.nav.measure], ['/over-ons', UI.nav.about], ['/contact', UI.nav.contact],
               ] as const).map(([href, label]) => (
                 <li key={href}>
