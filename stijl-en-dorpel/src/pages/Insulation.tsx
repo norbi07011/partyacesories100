@@ -7,6 +7,7 @@ import { PageHero, Badge } from '../components/PageHero';
 import { Reveal, SplitText } from '../fx/components';
 import { QuoteForm } from '../components/QuoteForm';
 import { Frame, InsulationMotion, INSULATION, type InsulationKind } from '../components/Insulation';
+import { Studio3D } from '../fx/Studio3D';
 
 const TX = {
   badge: ['Isolatie', 'Insulation', 'Izolacja'],
@@ -29,6 +30,7 @@ const TX = {
   askText: ['Kies de onderdelen en vul de oppervlakte in als je die weet. Een schatting is genoeg; we meten alles zelf na.', 'Pick the parts and enter the area if you know it. An estimate is enough; we measure everything ourselves.', 'Wybierz elementy i wpisz powierzchnię, jeśli ją znasz. Wystarczy szacunek; wszystko sami zmierzymy.'],
   area: ['Oppervlakte in m² (schatting)', 'Area in m² (estimate)', 'Powierzchnia w m² (szacunek)'],
   year: ['Bouwjaar van de woning', 'Year the home was built', 'Rok budowy domu'],
+  drag: ['Sleep om te draaien', 'Drag to rotate', 'Przeciągnij, aby obrócić'],
   msgHead: ['Aanvraag isolatie', 'Insulation request', 'Zapytanie o izolację'],
 } satisfies Record<string, L>;
 
@@ -141,7 +143,7 @@ const Insulation = () => {
         badge={<Badge icon={<Thermometer className="w-3.5 h-3.5" />}>{t(TX.badge)}</Badge>}
         title={t(TX.title)}
         subtitle={t(TX.sub)}
-        aside={<Frame className="w-[26rem] h-[22rem]"><InsulationMotion kind="dak" className="w-[78%] aspect-[4/3]" /></Frame>}
+        aside={<Frame className="w-[30rem] h-[26rem]"><Studio3D kind="gevel" className="absolute inset-0" /></Frame>}
       >
         <div className="flex flex-col sm:flex-row sm:items-center gap-6">
           <a href="#aanvraag" className="sd-btn">{t(TX.cta)} <ArrowRight className="w-4 h-4" /></a>
@@ -156,7 +158,8 @@ const Insulation = () => {
             return (
               <Reveal key={m.kind} className="group grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-20 items-center scroll-mt-28" >
                 <div id={m.kind} className={`scroll-mt-28 ${i % 2 ? 'lg:order-2' : ''}`}>
-                  <Frame className="aspect-[4/3] w-full"><InsulationMotion kind={m.kind} className="w-[72%] aspect-[4/3]" /></Frame>
+                  <Frame className="aspect-[4/3] w-full"><Studio3D kind={m.kind} className="absolute inset-0" /></Frame>
+                  <p className="sd-label mt-3 !tracking-[0.2em] opacity-60">{t(TX.drag)}</p>
                 </div>
                 <div>
                   <p className="font-display italic text-amber-200/70 text-2xl mb-4">{String(i + 1).padStart(2, '0')}</p>

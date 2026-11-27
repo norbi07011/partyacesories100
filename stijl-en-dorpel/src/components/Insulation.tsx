@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useT, type L } from '../i18n';
+import { Studio3D } from '../fx/Studio3D';
 
 /* Looping line drawings that show where the insulation goes: under the floor, against the
  * roof and inside the cavity wall. Plain SVG moved with CSS; they run only while on screen
@@ -113,7 +114,7 @@ export const InsulationTiles = () => {
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-14">
       {INSULATION.map((m) => (
         <Link key={m.kind} to={`/isolatie#${m.kind}`} className="group block">
-          <Frame className="h-56"><InsulationMotion kind={m.kind} className="h-[70%] aspect-[4/3]" /></Frame>
+          <Frame className="h-64"><Studio3D kind={m.kind} className="absolute inset-0" /></Frame>
           <span className="block font-display text-2xl md:text-3xl text-white mt-5 mb-1.5">{t(m.title)}</span>
           <span className="block text-white/50 font-light text-sm leading-relaxed max-w-xs">{t(m.text)}</span>
         </Link>
