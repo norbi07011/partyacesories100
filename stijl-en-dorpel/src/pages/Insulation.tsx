@@ -8,6 +8,7 @@ import { Reveal, SplitText } from '../fx/components';
 import { QuoteForm } from '../components/QuoteForm';
 import { Frame, InsulationMotion, INSULATION, type InsulationKind } from '../components/Insulation';
 import { Studio3D } from '../fx/Studio3D';
+import type { StudioKind } from '../fx/wallStudio';
 
 const TX = {
   badge: ['Isolatie', 'Insulation', 'Izolacja'],
@@ -82,20 +83,48 @@ const DETAIL: Record<InsulationKind, { body: L; material: L; time: L; fits: L; p
   },
   gevel: {
     body: [
-      'We werken met kant-en-klare panelen: echte steenstrips die in de fabriek op een isolatieplaat zijn gezet. De randen verspringen, zodat elk paneel als een puzzelstuk in het vorige haakt en je na het voegen geen naad meer ziet.',
-      'We work with ready-made panels: real brick slips bonded to an insulation board in the factory. The edges are stepped, so each panel hooks into the previous one like a puzzle piece and no seam shows after pointing.',
-      'Pracujemy na gotowych panelach: prawdziwa płytka klinkierowa osadzona fabrycznie na płycie izolacyjnej. Krawędzie są schodkowe, więc każdy panel zazębia się z poprzednim jak puzzel, a po fugowaniu nie widać łączeń.',
+      'Een nieuwe, geïsoleerde gevel van echte baksteen. Met prefab panelen, waarvan de randen als puzzelstukken in elkaar haken, of met losse steenstrips die we één voor één in de lijm zetten. Kies hieronder de methode en kijk hoe het werk verloopt.',
+      'A new, insulated facade of real brick. With prefab panels whose edges hook together like puzzle pieces, or with loose brick slips set one by one in adhesive. Pick the method below and watch how the work goes.',
+      'Nowa, ocieplona elewacja z prawdziwej cegły. Z gotowych paneli, których krawędzie zazębiają się jak puzzle, albo z pojedynczych płytek klinkierowych osadzanych w kleju. Wybierz metodę poniżej i zobacz, jak przebiega praca.',
     ],
     material: ['Isolatiepanelen met keramische steenstrips', 'Insulation panels with ceramic brick slips', 'Panele izolacyjne z ceramiczną płytką klinkierową'],
     time: ['Eén tot drie weken, met steiger', 'One to three weeks, with scaffolding', 'Od jednego do trzech tygodni, z rusztowaniem'],
     fits: ['Woningen zonder of met een smalle spouw', 'Homes with no cavity or a narrow one', 'Domy bez szczeliny lub z wąską szczeliną'],
     points: [
-      ['1. Startprofiel waterpas onderaan de gevel', '1. Starter rail set level at the foot of the wall', '1. Listwa startowa wypoziomowana u dołu ściany'],
-      ['2. Panelen rij voor rij vanaf de hoek in elkaar schuiven', '2. Panels slid into each other row by row from the corner', '2. Panele wsuwane jeden w drugi, rząd po rzędzie od narożnika'],
-      ['3. Verankeren door de voegen, passtukken aan het eind', '3. Anchored through the joints, closing pieces at the end', '3. Kotwienie przez fugi, na końcu elementy docinane'],
-      ['4. Voegen in de kleur van je keuze', '4. Pointing in the colour of your choice', '4. Fugowanie w wybranym kolorze'],
+      ['Hoogste isolatiewaarde van alle gevelopties', 'Highest insulation value of all facade options', 'Najwyższa izolacyjność ze wszystkich opcji dla ściany'],
+      ['Prefab panelen of losse steenstrips: we adviseren per gevel', 'Prefab panels or loose slips: we advise per facade', 'Gotowe panele albo pojedyncze płytki: doradzamy dla każdej elewacji'],
+      ['We zoeken vooraf uit of een vergunning nodig is', 'We check beforehand whether a permit is needed', 'Wcześniej sprawdzamy, czy potrzebne jest pozwolenie'],
     ],
   },
+};
+
+/** what the 3D scene is doing at each stage, shown under the frame */
+const STEPS: Record<StudioKind, L[]> = {
+  vloer: [
+    ['Bodemfolie over de grond van de kruipruimte', 'Ground foil over the crawl-space soil', 'Folia na gruncie pod podłogą'],
+    ['Isolatie van onderaf tussen de balken', 'Insulation fitted between the joists from below', 'Izolacja wsuwana od spodu między belki'],
+  ],
+  dak: [
+    ['Isolatieplaten tussen de sporen', 'Insulation boards between the rafters', 'Płyty izolacyjne między krokwie'],
+    ['Dampremmende folie, naden afgeplakt', 'Vapour-control foil, seams taped', 'Folia paroizolacyjna, klejone zakłady'],
+    ['Afwerkplaat, klaar om te schilderen', 'Finishing board, ready to paint', 'Płyta wykończeniowa, gotowa do malowania'],
+  ],
+  spouw: [['Isolatieparels vullen de spouw van onder naar boven', 'Insulation beads fill the cavity from the bottom up', 'Granulat wypełnia szczelinę od dołu do góry']],
+  gevel: [
+    ['Startprofiel waterpas onderaan', 'Starter rail set level at the bottom', 'Listwa startowa wypoziomowana u dołu'],
+    ['Panelen rij voor rij in elkaar schuiven en verankeren', 'Panels slid into each other row by row and anchored', 'Panele wsuwane jeden w drugi, rząd po rzędzie, i kotwione'],
+    ['Laatste rij sluit aan onder de dakrand', 'Last row closes under the eaves', 'Ostatni rząd zamyka się pod okapem'],
+    ['Passtukken vullen de vertanding bij de hoek', 'Closing pieces fill the stepped edge at the corner', 'Docinki zamykają schodkową krawędź przy narożniku'],
+    ['Voegen: naden en ankers verdwijnen', 'Pointing: seams and anchors disappear', 'Fugowanie: łączenia i kotwy znikają'],
+  ],
+  strips: [
+    ['Startprofiel waterpas onderaan', 'Starter rail set level at the bottom', 'Listwa startowa wypoziomowana u dołu'],
+    ['Isolatieplaten verlijmen, naden verspringend', 'Insulation boards glued, joints staggered', 'Płyty izolacyjne klejone z przesunięciem spoin'],
+    ['Wapeningslaag met gaas over de platen', 'Reinforced base coat with mesh over the boards', 'Warstwa zbrojona z siatką na płytach'],
+    ['Pluggen door het gaas in de muur', 'Anchors through the mesh into the wall', 'Kołki przez siatkę w mur'],
+    ['Lijm kammen en strips zetten, van boven naar beneden langs de draad', 'Adhesive combed and slips set from the top down along the string line', 'Klej grzebieniem i płytki od góry w dół, wzdłuż sznurka'],
+    ['Voegen en afborstelen', 'Pointing and brushing off', 'Fugowanie i szczotkowanie'],
+  ],
 };
 
 const MATERIALS: { t: L; d: L }[] = [
@@ -112,6 +141,34 @@ const NOTES: { t: L; d: L }[] = [
   { t: ['Eerst kijken, dan adviseren', 'Look first, advise second', 'Najpierw oględziny, potem rada'], d: ['Niet elke vloer, dak of spouw is geschikt. We komen kijken en zeggen eerlijk wat zin heeft en wat niet.', 'Not every floor, roof or cavity is suitable. We come and look, and say honestly what is worth doing.', 'Nie każda podłoga, dach czy szczelina się nadaje. Przyjeżdżamy, oglądamy i mówimy uczciwie, co ma sens.'] },
   { t: ['Eén offerte', 'One quote', 'Jedna wycena'], d: ['Materiaal, arbeid en afwerking als aparte regels, zodat je ziet waar je voor betaalt.', 'Material, labour and finishing as separate lines, so you see what you pay for.', 'Materiał, robocizna i wykończenie w osobnych pozycjach, żeby było widać, za co płacisz.'] },
 ];
+
+/** One framed 3D scene with the current stage written under it; the facade has two methods. */
+const Scene = ({ kind }: { kind: InsulationKind }) => {
+  const t = useT();
+  const [variant, setVariant] = useState<StudioKind>(kind);
+  const [step, setStep] = useState(0);
+  const list = STEPS[variant];
+  const tab = (v: StudioKind, label: L) => (
+    <button type="button" onClick={() => { setVariant(v); setStep(0); }} aria-pressed={variant === v}
+      className={`px-4 py-2 text-[11px] uppercase tracking-[0.2em] border transition-colors ${variant === v ? 'border-amber-200 text-black bg-amber-200' : 'border-white/15 text-white/70 hover:border-white/40'}`}>{t(label)}</button>
+  );
+  return (
+    <>
+      {kind === 'gevel' && (
+        <div className="flex gap-2 mb-3">
+          {tab('gevel', ['Prefab panelen', 'Prefab panels', 'Gotowe panele'])}
+          {tab('strips', ['Losse steenstrips', 'Loose brick slips', 'Pojedyncze płytki'])}
+        </div>
+      )}
+      <Frame className="aspect-[4/3] w-full"><Studio3D key={variant} kind={variant} className="absolute inset-0" onStep={setStep} /></Frame>
+      <div className="flex items-start gap-4 mt-4 min-h-[3.25rem]">
+        <span className="font-display italic text-amber-200/80 text-xl leading-none pt-0.5 shrink-0">{Math.min(step, list.length - 1) + 1}/{list.length}</span>
+        <p className="text-white/80 leading-snug">{t(list[Math.min(step, list.length - 1)])}</p>
+      </div>
+      <p className="sd-label mt-1 !tracking-[0.2em] opacity-50">{t(TX.drag)}</p>
+    </>
+  );
+};
 
 const Insulation = () => {
   const t = useT();
@@ -159,8 +216,7 @@ const Insulation = () => {
             return (
               <Reveal key={m.kind} className="group grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-20 items-center scroll-mt-28" >
                 <div id={m.kind} className={`scroll-mt-28 ${i % 2 ? 'lg:order-2' : ''}`}>
-                  <Frame className="aspect-[4/3] w-full"><Studio3D kind={m.kind} className="absolute inset-0" /></Frame>
-                  <p className="sd-label mt-3 !tracking-[0.2em] opacity-60">{t(TX.drag)}</p>
+                  <Scene kind={m.kind} />
                 </div>
                 <div>
                   <p className="font-display italic text-amber-200/70 text-2xl mb-4">{String(i + 1).padStart(2, '0')}</p>

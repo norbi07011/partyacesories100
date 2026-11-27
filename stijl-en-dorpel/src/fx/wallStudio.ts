@@ -6,9 +6,9 @@
  * drawn only while the tile is on screen. */
 import * as THREE from 'three';
 
-export type StudioKind = 'vloer' | 'dak' | 'spouw' | 'gevel';
+export type StudioKind = 'vloer' | 'dak' | 'spouw' | 'gevel' | 'strips';
 
-export function createWallStudio(host: HTMLElement, kind: StudioKind, opts: { reduce?: boolean } = {}) {
+export function createWallStudio(host: HTMLElement, kind: StudioKind, opts: { reduce?: boolean; onStep?: (i: number) => void } = {}) {
   const T = THREE;
   let renderer;
   try { renderer = new T.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' }); } catch { return null; }
@@ -98,7 +98,7 @@ export function createWallStudio(host: HTMLElement, kind: StudioKind, opts: { re
   const grow = (m, axis, from, a, b) => { const size = new T.Box3().setFromObject(m).getSize(new T.Vector3())[axis], h = m.position[axis];
     anim.push((t) => { const k = P(t, a, b); m.visible = k > 0.002; m.scale[axis] = Math.max(k, 0.0001); m.position[axis] = h + from * (size / 2) * (1 - k); }); };
 
-  let loop = 11, YB = -0.9, look = new T.Vector3(0, 0, 0), yaw0 = -0.55, pitch0 = 0.2, dist = 5.6;
+  let steps = [0], loop = 11, YB = -0.9, look = new T.Vector3(0, 0, 0), yaw0 = -0.55, pitch0 = 0.2, dist = 5.6;
   const W = 2.2, H = 1.7;
 
   if (kind === 'gevel') {
@@ -147,7 +147,49 @@ export function createWallStudio(host: HTMLElement, kind: StudioKind, opts: { re
       pins.forEach((n, i) => { const k = P(t, n.p.a + dur, n.p.a + dur + 0.03); d.position.set(n.x, n.y, zs + 0.004 + (1 - k) * 0.25); d.scale.setScalar(Math.max(k, 0.0001)); d.updateMatrix(); pinM.setMatrixAt(i, d.matrix); });
       pinM.instanceMatrix.needsUpdate = true;
     });
-    YB = -GH / 2; yaw0 = -0.6; pitch0 = 0.15; dist = 5.0; loop = 15;
+    YB = -GH / 2; yaw0 = -0.6; pitch0 = 0.15; dist = 5.0; loop = 15; steps = [0, 0.1, 0.62, 0.7, 0.76];
+  }
+
+  if (kind === 'strips') {
+    /* Loose brick slips on external insulation, in the order the work is done on site:
+     * starter rail, insulation boards glued with staggered joints, reinforced base coat with
+     * mesh, anchors through the mesh, combed adhesive and slips laid course by course from the
+     * top along a string line, then pointing. Each layer stops short of the one below it. */
+    const bl = 0.262, bj = 0.012, ch = 0.07, rail = 0.03, ROWS = 24, GH = ROWS * ch + rail, GW = 2.4;
+    const y0 = -GH / 2 + rail, x0 = -GW / 2, HH = GH - rail, CW = 2.05, MW = CW * 0.93, AW = bl * 6.5;
+    box(GW, GH, 0.1, M.ks(GW, GH), 0, 0, -0.19);
+    box(GW, GH, 0.1, M.brick(GW, GH), 0, 0, -0.05);
+    const alu = new T.MeshStandardMaterial({ color: 0xb9bcc0, metalness: 0.9, roughness: 0.35, envMapIntensity: 1.1 });
+    grow(box(CW, rail, 0.125, alu, x0 + CW / 2, -GH / 2 + rail / 2, 0.0625), 'x', -1, 0.01, 0.06);
+    const bh = HH / 3; let n = 0;
+    for (let r = 0; r < 3; r++) { let x = x0; (r % 2 ? [0.45, 0.8, 0.8] : [0.8, 0.8, 0.45]).forEach((w) => {
+      const m = box(w - 0.005, bh - 0.005, 0.12, M.eps(w, bh), x + w / 2, y0 + bh * (r + 0.5), 0.06); fly(m, 0, 0, 1.2, 0.07 + n * 0.022, 0.15 + n * 0.022); n++; x += w; }); }
+    const meshC = (() => { const c = canvas(256, 256), g = c.getContext('2d'); g.fillStyle = '#8d8a84'; g.fillRect(0, 0, 256, 256); speck(g, 256, 3000, 0.08);
+      g.strokeStyle = 'rgba(232,150,60,.75)'; g.lineWidth = 2; for (let i = 0; i <= 256; i += 16) { g.beginPath(); g.moveTo(i, 0); g.lineTo(i, 256); g.moveTo(0, i); g.lineTo(256, i); g.stroke(); } return c; })();
+    const combC = (() => { const c = canvas(64, 64), g = c.getContext('2d'); for (let y = 0; y < 64; y += 8) { const gr = g.createLinearGradient(0, y, 0, y + 8); gr.addColorStop(0, '#2c2a27'); gr.addColorStop(0.5, '#77726a'); gr.addColorStop(1, '#2c2a27'); g.fillStyle = gr; g.fillRect(0, y, 64, 8); } return c; })();
+    const coat = box(MW, HH, 0.006, new T.MeshStandardMaterial({ map: tex(meshC, MW / 0.32, HH / 0.32), roughness: 0.95, envMapIntensity: 0.3 }), x0 + MW / 2, y0 + HH / 2, 0.123); grow(coat, 'y', -1, 0.3, 0.4);
+    const pts = []; for (let r = 0; r < 4; r++) for (let c = 0; c < 5; c++) pts.push({ x: x0 + 0.2 + c * 0.4 + (r % 2 ? 0.2 : 0), y: y0 + 0.21 + r * 0.42, a: 0.4 + (r * 5 + c) * 0.003 });
+    const pinM = new T.InstancedMesh(new T.CylinderGeometry(0.03, 0.03, 0.006, 20), new T.MeshStandardMaterial({ color: 0xe9e6df, roughness: 0.6 }), pts.length); pinM.geometry.rotateX(Math.PI / 2); pinM.castShadow = true; root.add(pinM);
+    const glue = box(AW, HH, 0.005, new T.MeshStandardMaterial({ map: tex(combC, 1, HH / 0.05), bumpMap: tex(combC, 1, HH / 0.05, false), bumpScale: 0.01, roughness: 1, envMapIntensity: 0.2 }), x0 + AW / 2, y0 + HH / 2, 0.1295);
+    grow(glue, 'y', 1, 0.455, 0.775);
+    const zs = 0.139, slots = [], cols = Math.ceil(AW / bl) + 1;
+    for (let r = 0; r < ROWS; r++) { const top = ROWS - 1 - r; for (let c = 0; c < cols; c++) {
+      let a0 = x0 + c * bl - (r % 2 ? bl / 2 : 0), a1 = a0 + bl - bj; a0 = Math.max(a0, x0); a1 = Math.min(a1, x0 + AW - (r % 2 ? 0 : bl / 2) + 0.001);
+      if (a1 - a0 > 0.04) slots.push({ x: (a0 + a1) / 2, w: (a1 - a0) / (bl - bj), y: y0 + r * ch + ch / 2, a: 0.47 + (top / ROWS) * 0.3 + c * 0.0016 }); } }
+    const slips = new T.InstancedMesh(new T.BoxGeometry(bl - bj, ch - bj, 0.012), new T.MeshStandardMaterial({ roughness: 0.82, envMapIntensity: 0.55 }), slots.length);
+    slips.castShadow = slips.receiveShadow = true; root.add(slips);
+    const col = new T.Color(), d = new T.Object3D();
+    slots.forEach((q, i) => { col.setHSL(rand(0.02, 0.055), rand(0.45, 0.65), rand(0.16, 0.34)).convertSRGBToLinear(); slips.setColorAt(i, col); });
+    const line = box(GW + 0.3, 0.006, 0.006, new T.MeshBasicMaterial({ color: 0xffd27a }), 0, 0, zs + 0.02); line.castShadow = false;
+    const grout = box(AW, HH, 0.004, new T.MeshStandardMaterial({ color: 0x8f8a80, roughness: 1, envMapIntensity: 0.25 }), x0 + AW / 2, y0 + HH / 2, zs - 0.001); grow(grout, 'y', -1, 0.81, 0.9);
+    anim.push((t) => {
+      slots.forEach((q, i) => { const k = P(t, q.a, q.a + 0.035), v = Math.max(k, 0.0001); d.position.set(q.x, q.y, zs + (1 - k) * 0.28); d.scale.set(q.w * v, v, 1); d.updateMatrix(); slips.setMatrixAt(i, d.matrix); });
+      slips.instanceMatrix.needsUpdate = true;
+      pts.forEach((q, i) => { const k = P(t, q.a, q.a + 0.03); d.position.set(q.x, q.y, 0.1268 + (1 - k) * 0.3); d.scale.setScalar(Math.max(k, 0.0001)); d.updateMatrix(); pinM.setMatrixAt(i, d.matrix); });
+      pinM.instanceMatrix.needsUpdate = true;
+      const lk = cl((t - 0.47) / 0.3); line.visible = t > 0.46 && t < 0.79; line.position.y = y0 + HH - lk * HH;
+    });
+    YB = -GH / 2; yaw0 = -0.6; pitch0 = 0.15; dist = 5.0; loop = 17; steps = [0, 0.07, 0.3, 0.4, 0.455, 0.81];
   }
 
   if (kind === 'spouw') {
@@ -173,7 +215,7 @@ export function createWallStudio(host: HTMLElement, kind: StudioKind, opts: { re
     box(2.3, 0.04, L + 0.1, M.soil(2.3, L), 0, top - 1.0, 0);
     const foil = box(2.1, 0.005, L, M.foil(), 0, top - 0.976, 0); grow(foil, 'x', -1, 0.05, 0.3);
     for (let i = 0; i < 4; i++) { const m = box(0.375, 0.15, L - 0.02, M.wool(0.4, L), -0.675 + i * 0.45, top - 0.105, 0); fly(m, 0, -0.75, 0, 0.3 + i * 0.07, 0.5 + i * 0.07); }
-    YB = top - 1.0; look.set(0, -0.2, 0); yaw0 = -0.6; pitch0 = 0.1; dist = 5.0;
+    YB = top - 1.0; look.set(0, -0.2, 0); yaw0 = -0.6; pitch0 = 0.1; dist = 5.0; steps = [0, 0.3];
   }
 
   if (kind === 'dak') {
@@ -184,7 +226,7 @@ export function createWallStudio(host: HTMLElement, kind: StudioKind, opts: { re
     for (let i = 0; i < 4; i++) { const m = box(0.385, LN - 0.02, 0.12, M.pir(0.4, LN), -0.675 + i * 0.45, 0, -0.015, g); fly(m, 0, 0, 1.2, 0.05 + i * 0.08, 0.26 + i * 0.08); }
     const foil = box(2.2, LN * 0.72, 0.004, M.foil(), 0, LN * 0.14, 0.084, g); grow(foil, 'y', 1, 0.52, 0.66);
     const pb = box(2.2, LN * 0.42, 0.0125, M.board(), 0, LN * 0.29, 0.096, g); fly(pb, 0, 0, 0.9, 0.68, 0.8);
-    YB = -1.0; yaw0 = 0.55; pitch0 = 0.02; dist = 5.0; look.set(0, 0.05, 0);
+    YB = -1.0; yaw0 = 0.55; pitch0 = 0.02; dist = 5.0; look.set(0, 0.05, 0); steps = [0, 0.5, 0.67];
   }
 
   const ground = new T.Mesh(new T.PlaneGeometry(30, 30), new T.ShadowMaterial({ opacity: 0.4 })); ground.rotation.x = -Math.PI / 2; ground.position.y = YB - 0.001; ground.receiveShadow = true; scene.add(ground);
@@ -199,10 +241,12 @@ export function createWallStudio(host: HTMLElement, kind: StudioKind, opts: { re
   const fit = () => { const w = host.clientWidth || 1, h = host.clientHeight || 1; renderer.setSize(w, h, false); cam.aspect = w / h; cam.fov = w / h < 1 ? 38 : 30; cam.updateProjectionMatrix(); };
   const ro = new ResizeObserver(fit); ro.observe(host); fit();
 
-  const LOOP = loop; let raf = 0, t0 = performance.now(), running = false;
+  const LOOP = loop; let stepNow = -1, raf = 0, t0 = performance.now(), running = false;
   const frame = (now) => {
     const sec = (now - t0) / 1000, t = opts.reduce ? 0.85 : (sec % LOOP) / LOOP;
     anim.forEach((f) => f(t));
+    let si = 0; while (si < steps.length - 1 && t >= steps[si + 1]) si++;
+    if (si !== stepNow) { stepNow = si; opts.onStep?.(si); }
     const yaw = yaw0 + uy + (opts.reduce ? 0 : Math.sin(sec * 0.28) * 0.16), pitch = pitch0 + up;
     cam.position.set(look.x + Math.sin(yaw) * Math.cos(pitch) * dist, look.y + Math.sin(pitch) * dist, look.z + Math.cos(yaw) * Math.cos(pitch) * dist); cam.lookAt(look);
     renderer.render(scene, cam);
