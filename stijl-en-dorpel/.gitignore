@@ -1,0 +1,12 @@
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example
+media-src/
+dist-preview/
+# fabrieksfoto's: pas committen na toestemming van de fabrikant
+public/fabriek/
