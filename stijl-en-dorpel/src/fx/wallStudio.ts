@@ -98,30 +98,56 @@ export function createWallStudio(host: HTMLElement, kind: StudioKind, opts: { re
   const grow = (m, axis, from, a, b) => { const size = new T.Box3().setFromObject(m).getSize(new T.Vector3())[axis], h = m.position[axis];
     anim.push((t) => { const k = P(t, a, b); m.visible = k > 0.002; m.scale[axis] = Math.max(k, 0.0001); m.position[axis] = h + from * (size / 2) * (1 - k); }); };
 
-  let YB = -0.9, look = new T.Vector3(0, 0, 0), yaw0 = -0.55, pitch0 = 0.2, dist = 5.6;
+  let loop = 11, YB = -0.9, look = new T.Vector3(0, 0, 0), yaw0 = -0.55, pitch0 = 0.2, dist = 5.6;
   const W = 2.2, H = 1.7;
 
   if (kind === 'gevel') {
-    box(W, H, 0.1, M.ks(W, H), 0, 0, -0.19);
-    box(W, H, 0.1, M.brick(W, H), 0, 0, -0.05);
-    const WI = W * 0.82, bw = WI / 3, bh = H / 3;
-    for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) {
-      const m = box(bw - 0.006, bh - 0.006, 0.12, M.eps(bw, bh), -W / 2 + bw * (c + 0.5), -H / 2 + bh * (r + 0.5), 0.06);
-      fly(m, 0, 0, 1.3 + c * 0.15, 0.04 + (r * 3 + c) * 0.035, 0.2 + (r * 3 + c) * 0.035);
+    /* Prefab panels: brick slips bonded to an insulation board in the factory. Alternate courses
+     * stick out half a brick, so each panel hooks into the previous one like a puzzle piece.
+     * Order on site: starter rail, panels row by row from the corner (joints staggered),
+     * anchors through the joints, closing pieces at the end, then pointing. */
+    const bl = 0.262, bj = 0.012, ch = 0.07, PH = ch * 4, ROWS = 6, rail = 0.03, GH = ROWS * PH + rail, GW = 2.4, cover = bl * 8;
+    const y0 = -GH / 2 + rail, x0 = -GW / 2, zb = 0.05, zs = 0.1 + 0.008;
+    box(GW, GH, 0.1, M.ks(GW, GH), 0, 0, -0.19);
+    box(GW, GH, 0.1, M.brick(GW, GH), 0, 0, -0.05);
+    const alu = new T.MeshStandardMaterial({ color: 0xb9bcc0, metalness: 0.9, roughness: 0.35, envMapIntensity: 1.1 });
+    const rl = box(cover + bl / 2, rail, 0.115, alu, x0 + (cover + bl / 2) / 2, -GH / 2 + rail / 2, 0.0575); grow(rl, 'x', -1, 0.02, 0.09);
+
+    const panels = [], slots = [], pins = [];
+    for (let r = 0; r < ROWS; r++) {
+      let x = x0; const parts = r % 2 ? [2, 4, 2] : [4, 4];
+      parts.forEach((n) => { panels.push({ x, y: y0 + r * PH, n, ox: 0, oz: 0, k: 0 }); x += n * bl; });
     }
-    const WS = W * 0.62, bed = box(WS, H, 0.004, new T.MeshStandardMaterial({ color: 0x1d1c1a, roughness: 1, envMapIntensity: 0.2 }), -W / 2 + WS / 2, 0, 0.122);
-    grow(bed, 'y', -1, 0.44, 0.52);
-    const sw = 0.21, sh = 0.05, j = 0.012, rows = Math.floor(H / (sh + j)), cols = Math.ceil(WS / (sw + j)) + 1, slots = [];
-    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
-      let x0 = -W / 2 + c * (sw + j) - (r % 2 ? (sw + j) / 2 : 0), x1 = x0 + sw; x0 = Math.max(x0, -W / 2); x1 = Math.min(x1, -W / 2 + WS + (r % 2 ? 0.1 : 0));
-      if (x1 - x0 > 0.03) slots.push({ x: (x0 + x1) / 2, w: (x1 - x0) / sw, y: -H / 2 + j / 2 + r * (sh + j) + sh / 2, a: 0.5 + (r / rows) * 0.3 + c * 0.004 });
-    }
-    const slips = new T.InstancedMesh(new T.BoxGeometry(sw, sh, 0.016), new T.MeshStandardMaterial({ roughness: 0.82, envMapIntensity: 0.55 }), slots.length);
+    const step = 0.037, dur = 0.085;
+    panels.forEach((p, i) => {
+      p.a = 0.1 + i * step;
+      const w = p.n * bl, base = box(w - 0.004, PH - 0.004, 0.1, M.eps(w, PH), p.x + w / 2, p.y + PH / 2, zb); p.base = base;
+      for (let c = 0; c < 4; c++) for (let k = 0; k < p.n; k++) slots.push({ p, lx: k * bl + (c % 2 ? bl / 2 : 0) + bl / 2, y: p.y + c * ch + ch / 2, w: 1 });
+      [[0.5, 1], [p.n - 0.5, 1], [0.5, 3], [p.n - 0.5, 3]].forEach(([bx, c]) => pins.push({ p, x: p.x + bx * bl, y: p.y + c * ch }));
+    });
+    /* closing pieces: half bricks that fill the gaps the first panel of every row leaves at the corner */
+    const closers = []; for (let r = 0; r < ROWS; r++) for (const c of [1, 3]) closers.push({ x: x0 + bl / 4, y: y0 + r * PH + c * ch + ch / 2, a: 0.7 + r * 0.008 });
+
+    const slips = new T.InstancedMesh(new T.BoxGeometry(bl - bj, ch - bj, 0.016), new T.MeshStandardMaterial({ roughness: 0.82, envMapIntensity: 0.55 }), slots.length + closers.length);
     slips.castShadow = slips.receiveShadow = true; root.add(slips);
     const col = new T.Color(), d = new T.Object3D();
-    slots.forEach((s, i) => { col.setHSL(rand(0.02, 0.055), rand(0.45, 0.65), rand(0.16, 0.34)).convertSRGBToLinear(); slips.setColorAt(i, col); });
-    anim.push((t) => { slots.forEach((s, i) => { const k = P(t, s.a, s.a + 0.07); d.position.set(s.x, s.y, 0.132 + (1 - k) * 0.3); d.scale.set(s.w * Math.max(k, 0.0001), Math.max(k, 0.0001), 1); d.updateMatrix(); slips.setMatrixAt(i, d.matrix); }); slips.instanceMatrix.needsUpdate = true; });
-    YB = -H / 2; yaw0 = -0.62; pitch0 = 0.16; dist = 4.5;
+    for (let i = 0; i < slots.length + closers.length; i++) { col.setHSL(rand(0.02, 0.055), rand(0.45, 0.65), rand(0.16, 0.34)).convertSRGBToLinear(); slips.setColorAt(i, col); }
+    const pinM = new T.InstancedMesh(new T.CylinderGeometry(0.011, 0.011, 0.006, 12), alu, pins.length); pinM.geometry.rotateX(Math.PI / 2); root.add(pinM);
+    /* pointing: a mortar layer just below the brick faces that rises over the finished wall */
+    const grout = box(cover + bl / 2, GH - rail, 0.004, new T.MeshStandardMaterial({ color: 0x8f8a80, roughness: 1, envMapIntensity: 0.25 }), x0 + (cover + bl / 2) / 2, y0 + (GH - rail) / 2, zs + 0.003);
+    grow(grout, 'y', -1, 0.76, 0.88);
+
+    anim.push((t) => {
+      panels.forEach((p) => { const k = P(t, p.a, p.a + dur), k1 = Math.min(k / 0.6, 1), k2 = Math.max((k - 0.6) / 0.4, 0);
+        p.k = k; p.oz = (1 - k1) * 1.15; p.ox = (1 - k2) * 0.2;
+        p.base.visible = k > 0.002; p.base.position.x = p.x + (p.n * bl) / 2 + p.ox; p.base.position.z = zb + p.oz; });
+      slots.forEach((s, i) => { const p = s.p, v = p.k > 0.002 ? 1 : 0.0001; d.position.set(p.x + s.lx + p.ox, s.y, zs + p.oz); d.scale.set(v, v, 1); d.updateMatrix(); slips.setMatrixAt(i, d.matrix); });
+      closers.forEach((c, i) => { const k = P(t, c.a, c.a + 0.05); d.position.set(c.x, c.y, zs + (1 - k) * 0.4); d.scale.set(0.5 * Math.max(k, 0.0001) + (k > 0.002 ? 0 : 0), Math.max(k, 0.0001), 1); d.scale.x = k > 0.002 ? (bl / 2 - bj) / (bl - bj) : 0.0001; d.updateMatrix(); slips.setMatrixAt(slots.length + i, d.matrix); });
+      slips.instanceMatrix.needsUpdate = true;
+      pins.forEach((n, i) => { const k = P(t, n.p.a + dur, n.p.a + dur + 0.03); d.position.set(n.x, n.y, zs + 0.004 + (1 - k) * 0.25); d.scale.setScalar(Math.max(k, 0.0001)); d.updateMatrix(); pinM.setMatrixAt(i, d.matrix); });
+      pinM.instanceMatrix.needsUpdate = true;
+    });
+    YB = -GH / 2; yaw0 = -0.6; pitch0 = 0.15; dist = 5.0; loop = 15;
   }
 
   if (kind === 'spouw') {
@@ -173,7 +199,7 @@ export function createWallStudio(host: HTMLElement, kind: StudioKind, opts: { re
   const fit = () => { const w = host.clientWidth || 1, h = host.clientHeight || 1; renderer.setSize(w, h, false); cam.aspect = w / h; cam.fov = w / h < 1 ? 38 : 30; cam.updateProjectionMatrix(); };
   const ro = new ResizeObserver(fit); ro.observe(host); fit();
 
-  const LOOP = 11; let raf = 0, t0 = performance.now(), running = false;
+  const LOOP = loop; let raf = 0, t0 = performance.now(), running = false;
   const frame = (now) => {
     const sec = (now - t0) / 1000, t = opts.reduce ? 0.85 : (sec % LOOP) / LOOP;
     anim.forEach((f) => f(t));

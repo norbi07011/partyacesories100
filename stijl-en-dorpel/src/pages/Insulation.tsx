@@ -82,17 +82,18 @@ const DETAIL: Record<InsulationKind, { body: L; material: L; time: L; fits: L; p
   },
   gevel: {
     body: [
-      'We plaatsen isolatieplaten tegen de buitenmuur en werken ze af met echte steenstrips en voegwerk. Het huis krijgt een nieuwe gevel die eruitziet als metselwerk, en binnen verlies je geen centimeter.',
-      'We fix insulation boards to the outside wall and finish them with real brick slips and pointing. The house gets a new facade that looks like brickwork, and you lose no space indoors.',
-      'Mocujemy płyty izolacyjne do ściany zewnętrznej i wykańczamy je prawdziwą płytką klinkierową z fugą. Dom dostaje nową elewację wyglądającą jak mur, a w środku nie tracisz ani centymetra.',
+      'We werken met kant-en-klare panelen: echte steenstrips die in de fabriek op een isolatieplaat zijn gezet. De randen verspringen, zodat elk paneel als een puzzelstuk in het vorige haakt en je na het voegen geen naad meer ziet.',
+      'We work with ready-made panels: real brick slips bonded to an insulation board in the factory. The edges are stepped, so each panel hooks into the previous one like a puzzle piece and no seam shows after pointing.',
+      'Pracujemy na gotowych panelach: prawdziwa płytka klinkierowa osadzona fabrycznie na płycie izolacyjnej. Krawędzie są schodkowe, więc każdy panel zazębia się z poprzednim jak puzzel, a po fugowaniu nie widać łączeń.',
     ],
-    material: ['Isolatieplaten met keramische steenstrips', 'Insulation boards with ceramic brick slips', 'Płyty izolacyjne z ceramiczną płytką klinkierową'],
+    material: ['Isolatiepanelen met keramische steenstrips', 'Insulation panels with ceramic brick slips', 'Panele izolacyjne z ceramiczną płytką klinkierową'],
     time: ['Eén tot drie weken, met steiger', 'One to three weeks, with scaffolding', 'Od jednego do trzech tygodni, z rusztowaniem'],
     fits: ['Woningen zonder of met een smalle spouw', 'Homes with no cavity or a narrow one', 'Domy bez szczeliny lub z wąską szczeliną'],
     points: [
-      ['Hoogste isolatiewaarde van alle gevelopties', 'Highest insulation value of all facade options', 'Najwyższa izolacyjność ze wszystkich opcji dla ściany'],
-      ['Nieuwe uitstraling in de steen en voeg van je keuze', 'A new look in the brick and joint of your choice', 'Nowy wygląd z wybraną cegłą i fugą'],
-      ['We zoeken vooraf uit of een vergunning nodig is', 'We check beforehand whether a permit is needed', 'Wcześniej sprawdzamy, czy potrzebne jest pozwolenie'],
+      ['1. Startprofiel waterpas onderaan de gevel', '1. Starter rail set level at the foot of the wall', '1. Listwa startowa wypoziomowana u dołu ściany'],
+      ['2. Panelen rij voor rij vanaf de hoek in elkaar schuiven', '2. Panels slid into each other row by row from the corner', '2. Panele wsuwane jeden w drugi, rząd po rzędzie od narożnika'],
+      ['3. Verankeren door de voegen, passtukken aan het eind', '3. Anchored through the joints, closing pieces at the end', '3. Kotwienie przez fugi, na końcu elementy docinane'],
+      ['4. Voegen in de kleur van je keuze', '4. Pointing in the colour of your choice', '4. Fugowanie w wybranym kolorze'],
     ],
   },
 };
